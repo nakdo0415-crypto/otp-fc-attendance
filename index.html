@@ -294,6 +294,15 @@
                 });
             };
 
+            // 종료 시간 직후 판정 로직
+            const isMeetingEnded = useMemo(() => {
+                if (selectedViewDate !== meetingTimes.date) return false;
+                const [eH, eM] = meetingTimes.end.split(':').map(Number);
+                const [year, month, day] = selectedViewDate.split('-').map(Number);
+                const endLimit = new Date(year, month - 1, day, eH, eM, 0);
+                return currentTime >= endLimit;
+            }, [currentTime, selectedViewDate, meetingTimes]);
+
             if (error) return <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 text-center font-bold">서버 연결 권한 오류</div>;
 
             return (
@@ -316,14 +325,16 @@
                                 <header className="text-center mb-10">
                                     <h1 className="text-5xl font-black text-blue-900 italic tracking-tighter mb-6 uppercase">OTP FC</h1>
                                     <div className="flex flex-col gap-4 items-center max-w-md mx-auto">
+                                        {/* 날짜 선택 달력 */}
                                         <div className="w-full flex items-center gap-3 bg-white px-5 py-4 rounded-[30px] border border-slate-200 shadow-sm">
                                             <Icon.Calendar size={22} className="text-blue-500" />
                                             <input type="date" className="flex-1 font-black text-lg text-slate-700 outline-none" value={selectedViewDate} onChange={e => setSelectedViewDate(e.target.value)} />
                                             {selectedViewDate === meetingTimes.date && <span className="text-[10px] font-black bg-blue-100 text-blue-600 px-2 py-1 rounded-lg">LIVE</span>}
                                         </div>
                                         
-                                        {displayParticipants.source === 'active' && (
-                                            <button onClick={saveAndResetCurrent} className="w-full flex items-center justify-center gap-2 bg-purple-600 text-white py-4 rounded-3xl font-black text-sm shadow-xl hover:bg-purple-700 transition-all">
+                                        {/* 기록 저장 버튼: 종료 시간 이후에만 노출 */}
+                                        {displayParticipants.source === 'active' && isMeetingEnded && (
+                                            <button onClick={saveAndResetCurrent} className="w-full flex items-center justify-center gap-2 bg-purple-600 text-white py-4 rounded-3xl font-black text-sm shadow-xl hover:bg-purple-700 transition-all animate-bounce">
                                                 <Icon.Save size={18}/> {selectedViewDate} 기록 저장 및 명단 리셋
                                             </button>
                                         )}
@@ -342,9 +353,9 @@
                                         {displayParticipants.list.map(p => {
                                             const isHistory = displayParticipants.source === 'history';
                                             const [eH, eM] = meetingTimes.end.split(':').map(Number);
-                                            const endLimit = new Date(); endLimit.setHours(eH, eM, 0, 0);
+                                            const endThreshold = new Date(); endThreshold.setHours(eH, eM, 0, 0);
                                             const todayStrL = currentTime.toLocaleDateString('en-CA');
-                                            const isNoShow = !isHistory && !p.checkedIn && (todayStrL > selectedViewDate || (todayStrL === selectedViewDate && currentTime > endLimit));
+                                            const isNoShow = !isHistory && !p.checkedIn && (todayStrL > selectedViewDate || (todayStrL === selectedViewDate && currentTime > endThreshold));
                                             const finalStatus = p.status === '미출석' && isNoShow ? '노쇼' : p.status;
 
                                             return (
@@ -426,7 +437,6 @@
                                     })}
                                 </div>
 
-                                {/* 확인 버튼 추가 */}
                                 <div className="max-w-md mx-auto">
                                     <button onClick={() => { setSelectedViewDate(meetingTimes.date); setView('attendance'); }} className="w-full bg-blue-600 text-white py-5 rounded-[32px] font-black text-xl shadow-2xl shadow-blue-200 active:scale-95 transition-all">
                                         선정 완료 및 출석부로 이동
@@ -499,7 +509,7 @@
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center animate-zoom-in shadow-2xl">
                                 <h2 className="text-4xl font-black text-slate-900 mb-10 tracking-tighter break-keep">{modal.data.name} 님</h2>
                                 <button onClick={() => handleCheckIn(modal.data)} className="w-full bg-blue-600 text-white py-8 rounded-[32px] text-2xl font-black shadow-xl active:scale-95 transition-all">출석 확인</button>
-                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold">닫기</button>
+                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold hover:text-slate-600">닫기</button>
                             </div>
                         </div>
                     )}
