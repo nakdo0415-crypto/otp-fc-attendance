@@ -160,7 +160,6 @@
                 setIsPending(true);
                 try {
                     const membersRef = getMemberCol();
-                    // Firebase 삭제는 배치 단위로 처리
                     const snap = await membersRef.get();
                     const batch = db.batch();
                     snap.docs.forEach(doc => batch.delete(doc.ref));
@@ -280,7 +279,7 @@
                                     <p className="text-[10px] font-bold text-slate-400 tracking-[0.4em] uppercase italic">Attendance Tracker</p>
                                 </header>
                                 {session.length === 0 ? (
-                                    <div className="text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-slate-100">
+                                    <div className="text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-slate-100 shadow-sm">
                                         <p className="text-slate-400 font-bold mb-4">현재 참여 명단이 비어있습니다.</p>
                                         <button onClick={() => setView('setup')} className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg">인원 선정하기</button>
                                     </div>
@@ -290,11 +289,11 @@
                                         {session.sort((a,b) => a.name.localeCompare(b.name)).map(p => (
                                             <button key={p.id} onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})}
                                                 className={`relative h-40 sm:h-52 rounded-[40px] flex flex-col items-center justify-center px-4 transition-all shadow-lg active:scale-90 ${p.checkedIn ? 'bg-blue-50/30 text-slate-300 border-2 border-blue-100' : 'bg-white border-2 border-blue-50 text-blue-900'}`}>
-                                                {/* 한 줄 표시 및 말줄임표 처리 */}
-                                                <span className={`text-2xl sm:text-4xl font-black w-full truncate text-center ${p.checkedIn ? 'text-blue-100' : ''}`}>
+                                                {/* 말줄임표 제거 및 글자 크기 최적화 (모든 글자가 다 보이게) */}
+                                                <span className={`text-xl sm:text-2xl font-black w-full text-center leading-tight break-keep ${p.checkedIn ? 'text-blue-100' : ''}`}>
                                                     {p.name}
                                                 </span>
-                                                {p.checkedIn ? <span className="text-xs font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-full mt-2">{p.checkInTime}</span> : <span className="text-[10px] font-bold opacity-30 mt-1">{p.gender}</span>}
+                                                {p.checkedIn ? <span className="text-xs font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-full mt-2">{p.checkInTime}</span> : <span className="text-[10px] font-bold opacity-30 mt-1 uppercase">{p.gender}</span>}
                                             </button>
                                         ))}
                                     </div>
@@ -304,13 +303,15 @@
 
                         {view === 'setup' && (
                             <div>
-                                <h2 className="text-2xl font-black mb-8 flex items-center gap-2">참여 인원 선정</h2>
+                                <h2 className="text-2xl font-black mb-8 flex items-center gap-2"><Icon.Calendar className="text-green-600" /> 참여 인원 선정</h2>
                                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                    {/* 이름 순 정렬 적용 */}
                                     {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => {
                                         const isSel = session.some(p => p.memberId === m.id);
                                         return (
                                             <button key={m.id} onClick={() => toggleParticipant(m)} className={`p-4 h-24 rounded-2xl border-2 transition-all flex flex-col items-center justify-center relative active:scale-95 ${isSel ? 'border-green-500 bg-green-50 shadow-md' : 'bg-white border-slate-50 opacity-60'}`}>
-                                                <span className="font-black text-xl w-full truncate text-center">{m.name}</span>
+                                                {/* 말줄임표 제거 및 글자 크기 최적화 */}
+                                                <span className="font-black text-lg w-full text-center leading-tight break-keep">{m.name}</span>
                                                 <span className="text-[10px] font-bold opacity-30">{m.gender}</span>
                                                 {isSel && <div className="absolute top-2 right-2 text-green-600"><Icon.Check /></div>}
                                             </button>
@@ -325,25 +326,19 @@
                                 <div className="flex flex-col gap-6 mb-8">
                                     <div className="flex justify-between items-center">
                                         <h2 className="text-2xl font-black flex items-center gap-2"><Icon.Users className="text-blue-600" /> 명단 통합 관리</h2>
-                                        <button onClick={() => setIsBulkMode(!isBulkMode)} className="bg-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-black">{isBulkMode ? '개별 모드' : '일괄 모드'}</button>
+                                        <button onClick={() => setIsBulkMode(!isBulkMode)} className="bg-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-black hover:bg-blue-200 transition-all">{isBulkMode ? '개별 모드' : '일괄 모드'}</button>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        <button onClick={cleanupDuplicates} disabled={isPending} className="flex-1 bg-purple-50 text-purple-600 px-4 py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border border-purple-100 hover:bg-purple-100 transition-colors">
-                                            <Icon.Sparkles /> 중복 정리
-                                        </button>
-                                        <button onClick={deleteSelected} disabled={isPending || selectedMemberIds.size === 0} className="flex-1 bg-orange-50 text-orange-600 px-4 py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border border-orange-100 hover:bg-orange-100 transition-colors">
-                                            <Icon.Trash /> 선택 삭제 ({selectedMemberIds.size})
-                                        </button>
-                                        <button onClick={deleteAllMembers} disabled={isPending || members.length === 0} className="flex-1 bg-red-50 text-red-600 px-4 py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border border-red-100 hover:bg-red-100 transition-colors">
-                                            <Icon.Alert /> 전체 삭제
-                                        </button>
+                                        <button onClick={cleanupDuplicates} disabled={isPending} className="flex-1 bg-purple-50 text-purple-600 px-4 py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border border-purple-100 hover:bg-purple-100">중복 정리</button>
+                                        <button onClick={deleteSelected} disabled={isPending || selectedMemberIds.size === 0} className="flex-1 bg-orange-50 text-orange-600 px-4 py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border border-orange-100 hover:bg-orange-100">선택 삭제 ({selectedMemberIds.size})</button>
+                                        <button onClick={deleteAllMembers} disabled={isPending || members.length === 0} className="flex-1 bg-red-50 text-red-600 px-4 py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border border-red-100 hover:bg-red-100">전체 삭제</button>
                                     </div>
                                 </div>
 
                                 <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm mb-8">
                                     {isBulkMode ? (
                                         <div className="space-y-4">
-                                            <textarea rows="8" placeholder="엑셀 셀을 복사해서 붙여넣으세요..." className="w-full p-5 bg-slate-50 rounded-3xl font-bold outline-none resize-none border border-transparent focus:border-blue-500 transition-all custom-scrollbar" value={bulkText} onChange={e => setBulkText(e.target.value)} />
+                                            <textarea rows="10" placeholder="엑셀 명단을 그대로 붙여넣으세요. 이름들이 하나씩 자동으로 등록됩니다." className="w-full p-5 bg-slate-50 rounded-3xl font-bold outline-none resize-none border border-transparent focus:border-blue-500 transition-all custom-scrollbar" value={bulkText} onChange={e => setBulkText(e.target.value)} />
                                             <div className="flex gap-2">
                                                 <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-bold outline-none cursor-pointer" value={newMemberGender} onChange={e => setNewMemberGender(e.target.value)}><option>남성</option><option>여성</option></select>
                                                 <button onClick={handleBulkAdd} disabled={isPending} className="bg-blue-600 text-white px-8 rounded-2xl font-black shadow-lg">일괄 등록</button>
@@ -353,10 +348,8 @@
                                         <div className="flex flex-col gap-3">
                                             <input type="text" placeholder="이름 입력" className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border border-transparent focus:border-blue-500 transition-all" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} />
                                             <div className="flex gap-2">
-                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-bold outline-none cursor-pointer" value={newMemberGender} onChange={e => setNewMemberGender(e.target.value)}>
-                                                    <option>남성</option><option>여성</option>
-                                                </select>
-                                                <button onClick={addMember} disabled={isPending} className="bg-blue-600 text-white px-8 rounded-2xl font-black shadow-lg">추가</button>
+                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-bold outline-none cursor-pointer" value={newMemberGender} onChange={e => setNewMemberGender(e.target.value)}><option>남성</option><option>여성</option></select>
+                                                <button onClick={addMember} disabled={isPending} className="bg-blue-600 text-white px-8 rounded-2xl font-black shadow-lg">회원 추가</button>
                                             </div>
                                         </div>
                                     )}
@@ -372,9 +365,9 @@
                                         <div key={m.id} className={`flex items-center justify-between p-4 bg-white rounded-2xl border transition-all ${selectedMemberIds.has(m.id) ? 'border-blue-500 bg-blue-50/10 shadow-md' : 'border-slate-50 shadow-sm'}`}>
                                             <div className="flex items-center gap-4 w-2/3">
                                                 <input type="checkbox" checked={selectedMemberIds.has(m.id)} onChange={() => toggleSelect(m.id)} />
-                                                <span className="font-bold text-lg text-slate-700 truncate">{m.name} <small className="text-slate-300 ml-1">{m.gender}</small></span>
+                                                <span className="font-bold text-lg text-slate-700">{m.name} <small className="text-slate-300 ml-1">{m.gender}</small></span>
                                             </div>
-                                            <button onClick={() => deleteMember(m.id, m.name)} className="text-slate-200 hover:text-red-500 p-2 transition-colors"><Icon.Trash /></button>
+                                            <button onClick={() => deleteMember(m.id, m.name)} className="text-slate-200 hover:text-red-500 p-2"><Icon.Trash /></button>
                                         </div>
                                     ))}
                                 </div>
@@ -382,18 +375,18 @@
                         )}
                     </main>
 
-                    {/* Footer Stats */}
+                    {/* Footer Stats Bar */}
                     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-2xl border border-white shadow-2xl rounded-full px-10 py-4 flex gap-10 items-center z-40 scale-90 sm:scale-100 border-t border-slate-50">
-                        <div className="text-center"><p className="text-[8px] text-slate-400 font-black uppercase">Selected</p><p className="text-xl font-black text-slate-900">{session.length}</p></div>
+                        <div className="text-center"><p className="text-[8px] text-slate-400 font-black uppercase tracking-widest">Selected</p><p className="text-xl font-black text-slate-900">{session.length}</p></div>
                         <div className="w-px h-8 bg-slate-100" />
-                        <div className="text-center"><p className="text-[8px] text-slate-400 font-black uppercase">Presence</p><p className="text-xl font-black text-green-600">{session.filter(p=>p.checkedIn).length}</p></div>
+                        <div className="text-center"><p className="text-[8px] text-slate-400 font-black uppercase tracking-widest">Presence</p><p className="text-xl font-black text-green-600">{session.filter(p=>p.checkedIn).length}</p></div>
                     </div>
 
                     {/* Modals */}
                     {modal.type === 'check' && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center animate-zoom-in shadow-2xl">
-                                <h2 className="text-4xl font-black mb-10 text-slate-900 tracking-tighter truncate">{modal.data.name} 님</h2>
+                                <h2 className="text-4xl font-black text-slate-900 mb-10 tracking-tighter">{modal.data.name} 님</h2>
                                 <button onClick={async () => {
                                     try {
                                         await getSessionCol().doc(modal.data.id).update({
@@ -402,7 +395,7 @@
                                         setModal({ type: null, data: null });
                                     } catch(e) { alert("출석 실패"); }
                                 }} className="w-full bg-blue-600 text-white py-6 rounded-[32px] text-2xl font-black shadow-xl hover:bg-blue-700 transition-all">출석 확인</button>
-                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold">닫기</button>
+                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold hover:text-slate-600">닫기</button>
                             </div>
                         </div>
                     )}
@@ -410,7 +403,7 @@
                     {modal.type === 'cancel' && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center animate-zoom-in shadow-2xl">
-                                <h2 className="text-3xl font-black mb-8 text-slate-900 tracking-tighter truncate">{modal.data.name} 님</h2>
+                                <h2 className="text-3xl font-black mb-8 text-slate-900 tracking-tighter">{modal.data.name} 님</h2>
                                 <p className="mb-10 text-slate-400 font-bold italic text-sm">출석 기록을 취소하시겠습니까?</p>
                                 <button onClick={async () => {
                                     try {
@@ -418,7 +411,7 @@
                                         setModal({ type: null, data: null });
                                     } catch(e) { alert("오류"); }
                                 }} className="w-full bg-red-500 text-white py-6 rounded-[32px] text-xl font-black shadow-xl hover:bg-red-600 active:scale-95 transition-all">출석 취소하기</button>
-                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold">돌아가기</button>
+                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold hover:text-slate-600">돌아가기</button>
                             </div>
                         </div>
                     )}
