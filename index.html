@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OTP FC Attendance</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel Standalone -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Firebase SDK (Compat Version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap');
+        body { 
+            font-family: 'Pretendard', sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+            overflow-x: hidden;
+            background-color: #f8fafc;
+        }
+        .animate-zoom-in { animation: zoomIn 0.2s ease-out; }
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        button:active { transform: scale(0.95); }
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <p class="mt-4 font-bold text-slate-500 italic">OTP FC 출석부 로딩 중...</p>
+    </div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Custom SVG Icons ---
+        const Icon = {
+            Users: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+            Check: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+            Settings: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+            UserPlus: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>,
+            Trash: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+            X: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+            Rotate: () => <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></svg>,
+            UserCheck: () => <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>,
+            Calendar: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+            Eraser: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.9-9.9c1-1 2.5-1 3.4 0l6.6 6.6c1 1 1 2.5 0 3.4L13 21"/><path d="m22 21-8.2-.1"/><path d="m11 5 4.6 4.6"/></svg>,
+            Sparkles: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        };
+
+        // --- Firebase Configuration ---
+        const MY_FIREBASE_CONFIG = {
+          apiKey: "AIzaSyCAcQzliuWJTB8vPm9gb0vsyR8pIAx7YTw",
+          authDomain: "otp-fc-check.firebaseapp.com",
+          projectId: "otp-fc-check",
+          storageBucket: "otp-fc-check.firebasestorage.app",
+          messagingSenderId: "907414776392",
+          appId: "1:907414776392:web:0a29a660bb956e5a40467d"
+        };
+
+        if (!firebase.apps.length) firebase.initializeApp(MY_FIREBASE_CONFIG);
+        const fAuth = firebase.auth();
+        const fDb = firebase.firestore();
+        const APP_ID = 'otp-fc-attendance';
+
+        // 정규 멤버 명단
+        const MALES = "김민찬 김용빈 김재현 김재환 김준범 김태원 김희태 문종헌 박성현 봉영근 석형선 손봉석 안용주 양정모 오유균 오제혁 오현준 유진욱 윤일건 이강민 이강표 이동현 이성훈 이은수 이재천 전원구 전은택 정기범 정남화 정봉근 정현섭 정회권 조상현 최서호 피지환 한다빈 홍권표 황경민".split(' ');
+        const FEMALES = "김경진 김서연 김현림 나예린 문혜연 박가희 박인애 안성연 안현진 이두경 이주하 장샛별 정혜영 한수정".split(' ');
+
+        function App() {
+            const [view, setView] = useState('attendance'); 
+            const [members, setMembers] = useState([]);
+            const [session, setSession] = useState([]);
+            const [user, setUser] = useState(null);
+            const [modal, setModal] = useState({ type: null, data: null });
+            const syncRef = useRef(false);
+
+            // Settings States
+            const [isBulkMode, setIsBulkMode] = useState(false);
+            const [newMemberName, setNewMemberName] = useState('');
+            const [newMemberGender, setNewMemberGender] = useState('남성');
+            const [bulkText, setBulkText] = useState('');
+            const [guestName, setGuestName] = useState('');
+            const [isAddingGuest, setIsAddingGuest] = useState(false);
+            const [isCleaning, setIsCleaning] = useState(false);
+
+            useEffect(() => {
+                const loader = document.getElementById('loading-screen');
+                if (loader) loader.style.display = 'none';
+
+                const initAuth = async () => {
+                    try { await fAuth.signInAnonymously(); } catch (e) { console.error(e); }
+                };
+                initAuth();
+                const unsub = fAuth.onAuthStateChanged(u => setUser(u));
+                return () => unsub();
+            }, []);
+
+            useEffect(() => {
+                if (!user) return;
+                const mRef = fDb.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('members');
+                const sRef = fDb.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('weekly_session');
+
+                const unsubM = mRef.onSnapshot(snap => {
+                    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setMembers(list);
+                    if (!syncRef.current && list.length < 52) {
+                        syncRef.current = true;
+                        autoInit(mRef, list);
+                    }
+                });
+
+                const unsubS = sRef.onSnapshot(snap => {
+                    setSession(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+                });
+
+                return () => { unsubM(); unsubS(); };
+            }, [user]);
+
+            const autoInit = async (ref, current) => {
+                const all = [...MALES.map(n => ({n, g:'남성'})), ...FEMALES.map(n => ({n, g:'여성'}))];
+                for (const p of all) {
+                    if (!current.some(m => m.name === p.n)) {
+                        await ref.add({ name: p.n, gender: p.g, type: 'regular' });
+                    }
+                }
+            };
+
+            const addMember = async () => {
+                if (!newMemberName.trim()) return;
+                await fDb.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('members').add({
+                    name: newMemberName, gender: newMemberGender, type: 'regular', createdAt: new Date().toISOString()
+                });
+                setNewMemberName('');
+            };
+
+            const addBulkMembers = async () => {
+                if (!bulkText.trim()) return;
+                const names = bulkText.split(/[\n, ]+/).filter(n => n.trim());
+                for (const name of names) {
+                    await fDb.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('members').add({
+                        name: name, gender: newMemberGender, type: 'regular', createdAt: new Date().toISOString()
+                    });
+                }
+                setBulkText('');
+                setIsBulkMode(false);
+            };
+
+            const deleteMember = async (id) => {
+                if (!confirm("정말 삭제할까요?")) return;
+                await fDb.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('members').doc(id).delete();
+            };
+
+            const cleanup = async () => {
+                if (!confirm("중복 명단을 정리할까요?")) return;
+                setIsCleaning(true);
+                const ref = fDb.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('members');
+                const snap = await ref.get();
+                const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const seen = new Set();
+                for (const m of list) {
+                    if (seen.has(m.name)) await ref.doc(m.id).delete();
+                    else seen.add(m.name);
+                }
+                setIsCleaning(false);
+            };
+
+            const toggleMember = async (m) => {
+                const sRef = fDb.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('weekly_session');
+                const existing = session.find(p => p.memberId === m.id);
+                if (existing) await sRef.doc(existing.id).delete();
+                else await sRef.add({ memberId: m.id, name: m.name, gender: m.gender, type: 'regular', checkedIn: false });
+            };
+
+            const addGuest = async () => {
+                if (!guestName.trim()) return;
+                await fDb.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('weekly_session').add({
+                    memberId: 'guest-' + Date.now(), name: guestName + '(G)', gender: '게스트', type: 'guest', checkedIn: false
+                });
+                setGuestName(''); setIsAddingGuest(false);
+            };
+
+            const resetAll = async () => {
+                if(!confirm("모든 명단을 비울까요?")) return;
+                const sRef = fDb.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('weekly_session');
+                for (const p of session) { await sRef.doc(p.id).delete(); }
+            };
+
+            return (
+                <div className="min-h-screen pb-32">
+                    {/* Header Nav */}
+                    <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 sm:h-20 px-4">
+                        <div className="max-w-5xl mx-auto h-full flex items-center justify-between">
+                            <div className="flex gap-2">
+                                <button onClick={() => setView('attendance')} className={`px-5 py-2 rounded-2xl font-black text-sm sm:text-lg transition-all ${view === 'attendance' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>출석</button>
+                                <button onClick={() => setView('setup')} className={`px-5 py-2 rounded-2xl font-black text-sm sm:text-lg transition-all ${view === 'setup' ? 'bg-green-600 text-white shadow-lg' : 'text-slate-400'}`}>선정</button>
+                            </div>
+                            <button onClick={() => setView('members')} className={`p-3 rounded-2xl transition-all ${view === 'members' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'}`}><Icon.Settings /></button>
+                        </div>
+                    </nav>
+
+                    <main className="p-4 sm:p-8 max-w-5xl mx-auto animate-zoom-in">
+                        {view === 'attendance' && (
+                            <div>
+                                <header className="text-center mb-10">
+                                    <h1 className="text-5xl sm:text-7xl font-black text-blue-900 italic tracking-tighter mb-1">OTP FC</h1>
+                                    <p className="text-[10px] font-bold text-slate-400 tracking-[0.4em] uppercase mt-1 text-center">Attendance</p>
+                                </header>
+                                {session.length === 0 ? (
+                                    <div className="text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-slate-100">
+                                        <p className="text-slate-400 font-bold">참여 명단을 먼저 선정해 주세요.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                                        {session.sort((a,b) => (a.checkedIn ? 1 : -1) || a.name.localeCompare(b.name)).map(p => (
+                                            <button key={p.id} onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})}
+                                                className={`relative h-40 sm:h-52 rounded-[40px] flex flex-col items-center justify-center transition-all shadow-lg active:scale-90 ${p.checkedIn ? 'bg-blue-50/30 text-slate-300 border-2 border-blue-100' : 'bg-white border-2 border-blue-50 text-blue-900'}`}>
+                                                <span className={`text-3xl sm:text-4xl font-black ${p.checkedIn ? 'text-blue-100' : (p.type === 'guest' ? 'text-amber-600' : '')}`}>{p.name}</span>
+                                                {p.checkedIn ? <span className="text-xs sm:text-sm font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-full">{p.checkInTime}</span> : <span className="text-[10px] font-bold opacity-30">{p.gender}</span>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {view === 'setup' && (
+                            <div>
+                                <div className="flex justify-between items-center mb-8">
+                                    <h2 className="text-2xl font-black flex items-center gap-2"><Icon.Calendar /> 참여 인원 선정</h2>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setIsAddingGuest(true)} className="p-3 bg-amber-500 text-white rounded-2xl flex items-center gap-2 px-4 font-bold text-sm hover:bg-amber-600 transition-colors"><Icon.UserPlus /> 게스트 추가</button>
+                                        <button onClick={resetAll} className="p-3 bg-red-50 text-red-500 rounded-2xl hover:bg-red-100 transition-colors"><Icon.Eraser /></button>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => {
+                                        const isSel = session.some(p => p.memberId === m.id);
+                                        return (
+                                            <button key={m.id} onClick={() => toggleMember(m)} className={`p-4 h-24 rounded-2xl border-2 transition-all flex flex-col items-center justify-center relative active:scale-95 ${isSel ? 'border-green-500 bg-green-50' : 'bg-white border-slate-50 opacity-60'}`}>
+                                                <span className="font-black text-xl">{m.name}</span>
+                                                <span className="text-[10px] font-bold opacity-30">{m.gender}</span>
+                                                {isSel && <div className="absolute top-2 right-2 text-green-600"><Icon.Check /></div>}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'members' && (
+                            <div className="max-w-2xl mx-auto pb-20">
+                                <div className="flex justify-between items-center mb-8">
+                                    <h2 className="text-2xl font-black flex items-center gap-2"><Icon.Users /> 전체 회원 관리</h2>
+                                    <div className="flex gap-2">
+                                        <button onClick={cleanup} disabled={isCleaning} className="bg-purple-100 text-purple-700 px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-purple-200 transition-colors">
+                                            {isCleaning ? <div className="w-3 h-3 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></div> : <Icon.Sparkles />} 중복 정리
+                                        </button>
+                                        <button onClick={() => setIsBulkMode(!isBulkMode)} className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${isBulkMode ? 'bg-slate-200 text-slate-700' : 'bg-blue-100 text-blue-700'}`}>
+                                            {isBulkMode ? '개별 등록' : '대량 등록'}
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm mb-8">
+                                    {!isBulkMode ? (
+                                        <div className="flex flex-col gap-3">
+                                            <input type="text" placeholder="새 회원 이름" className="p-4 bg-slate-50 rounded-2xl font-bold outline-none" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} />
+                                            <div className="flex gap-2">
+                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-bold outline-none" value={newMemberGender} onChange={e => setNewMemberGender(e.target.value)}>
+                                                    <option value="남성">남성</option>
+                                                    <option value="여성">여성</option>
+                                                </select>
+                                                <button onClick={addMember} className="bg-blue-600 text-white px-8 rounded-2xl font-bold shadow-lg shadow-blue-100">추가</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <textarea rows="5" placeholder="이름을 줄바꿈이나 쉼표로 구분해 입력하세요..." className="w-full p-5 bg-slate-50 rounded-3xl font-bold outline-none resize-none" value={bulkText} onChange={e => setBulkText(e.target.value)} />
+                                            <div className="flex gap-3">
+                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-bold outline-none" value={newMemberGender} onChange={e => setNewMemberGender(e.target.value)}>
+                                                    <option value="남성">남성</option>
+                                                    <option value="여성">여성</option>
+                                                </select>
+                                                <button onClick={addBulkMembers} className="bg-blue-600 text-white px-8 rounded-2xl font-bold shadow-lg shadow-blue-100">일괄 등록</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="px-2 mb-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">명단 ({members.length}명)</span></div>
+                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                        <div key={m.id} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-50 shadow-sm">
+                                            <span className="font-bold text-lg">{m.name} <small className="text-slate-300 ml-1">({m.gender})</small></span>
+                                            <button onClick={() => deleteMember(m.id)} className="text-slate-200 hover:text-red-500 transition-colors p-1"><Icon.Trash /></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Stats Bar */}
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-2xl border border-white shadow-2xl rounded-full px-8 py-3 flex gap-10 items-center z-40 scale-90 sm:scale-100">
+                        <div className="text-center"><p className="text-[8px] text-slate-400 font-black uppercase tracking-widest">Total</p><p className="text-xl font-black text-slate-900">{session.length}</p></div>
+                        <div className="w-px h-8 bg-slate-100"></div>
+                        <div className="text-center"><p className="text-[8px] text-slate-400 font-black uppercase tracking-widest">Present</p><p className="text-xl font-black text-green-600">{session.filter(p=>p.checkedIn).length}</p></div>
+                    </div>
+
+                    {/* Modals */}
+                    {modal.type === 'check' && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center animate-zoom-in shadow-2xl">
+                                <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6"><Icon.UserCheck /></div>
+                                <h2 className="text-4xl font-black mb-10 text-slate-900 tracking-tighter">{modal.data.name} 님</h2>
+                                <button onClick={async () => {
+                                    const dRef = fDb.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('weekly_session').doc(modal.data.id);
+                                    const time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                    await dRef.update({ checkedIn: true, checkInTime: time });
+                                    setModal({ type: null, data: null });
+                                }} className="w-full bg-blue-600 text-white py-6 rounded-[32px] text-2xl font-black shadow-xl">출석 확인</button>
+                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold">닫기</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {modal.type === 'cancel' && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center animate-zoom-in shadow-2xl">
+                                <div className="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6"><Icon.Rotate /></div>
+                                <h2 className="text-3xl font-black mb-8 text-slate-900 tracking-tighter">{modal.data.name} 님</h2>
+                                <p className="mb-10 text-slate-400 font-bold italic leading-relaxed">잘못 누르셨나요?<br/>출석 기록을 삭제하시겠습니까?</p>
+                                <button onClick={async () => {
+                                    const dRef = fDb.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('weekly_session').doc(modal.data.id);
+                                    await dRef.update({ checkedIn: false, checkInTime: null });
+                                    setModal({ type: null, data: null });
+                                }} className="w-full bg-red-500 text-white py-6 rounded-[32px] text-xl font-black shadow-xl">출석 취소하기</button>
+                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold">돌아가기</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {isAddingGuest && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in">
+                                <h3 className="text-2xl font-black mb-6 text-amber-600 flex items-center gap-2"><Icon.UserPlus /> 게스트 추가</h3>
+                                <input type="text" placeholder="이름 입력" className="w-full p-4 border rounded-2xl font-bold outline-none mb-6 bg-slate-50" value={guestName} onChange={e => setGuestName(e.target.value)} />
+                                <div className="flex gap-3">
+                                    <button onClick={() => setIsAddingGuest(false)} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold">취소</button>
+                                    <button onClick={addGuest} className="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-bold shadow-lg shadow-amber-100">추가</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
