@@ -250,7 +250,11 @@
                 try {
                     const [sH, sM] = meetingTimes.start.split(':').map(Number);
                     const startLimit = new Date(); startLimit.setHours(sH, sM, 0, 0);
-                    let finalStatus = now >= startLimit ? '지각' : '정상';
+                    
+                    // 지각 기준 수정: 시작 시간 + 1분 (60,000ms) 여유 시간 부여
+                    const lateThreshold = new Date(startLimit.getTime() + 60000);
+                    let finalStatus = now >= lateThreshold ? '지각' : '정상';
+                    
                     const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                     await getSessionCol().doc(participant.id).update({ checkedIn: true, checkInTime: timeStr, status: finalStatus });
                     setModal({ type: null, data: null });
