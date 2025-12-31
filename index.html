@@ -27,21 +27,23 @@
             font-family: 'Pretendard', sans-serif; 
             -webkit-tap-highlight-color: transparent; 
             background-color: #f8fafc;
-            user-select: none; /* 텍스트 선택 방지로 앱 느낌 강화 */
+            user-select: none;
         }
         .animate-zoom-in { animation: zoomIn 0.2s ease-out; }
         @keyframes zoomIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-        
-        /* 터치 피드백 애니메이션 */
         button:active { transform: scale(0.95); opacity: 0.8; }
-        
         #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         input[type="checkbox"] { width: 22px; height: 22px; border-radius: 6px; cursor: pointer; accent-color: #2563eb; }
-        
-        /* 모바일에서 스크롤 시 바운스 효과 제거 */
         html, body { overscroll-behavior-y: contain; }
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -54,7 +56,18 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- 아이콘 세트 ---
+        // --- 전역 변수 및 헬퍼 함수 (최상단 배치하여 ReferenceError 방지) ---
+        const todayStr = new Date().toLocaleDateString('en-CA');
+
+        const getThisSunday = () => {
+            const d = new Date();
+            const day = d.getDay(); 
+            const diff = (day === 0) ? 0 : 7 - day;
+            const sunday = new Date(d);
+            sunday.setDate(d.getDate() + diff);
+            return sunday.toLocaleDateString('en-CA');
+        };
+
         const Icon = {
             Users: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
             Trash: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
@@ -68,7 +81,8 @@
             ArrowLeft: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
             ChevronRight: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>,
             CheckCircle: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-            FileSpreadsheet: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
+            Lock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+            Unlock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
         };
 
         // --- Firebase Configuration ---
@@ -107,9 +121,15 @@
             const [isPending, setIsPending] = useState(false);
             const [error, setError] = useState(null);
 
-            const todayStr = new Date().toLocaleDateString('en-CA'); 
-            const [meetingTimes, setMeetingTimes] = useState({ date: todayStr, start: "19:00", end: "21:00" });
-            const [selectedViewDate, setSelectedViewDate] = useState(todayStr); 
+            // 잠금 기능 State
+            const [isAppLocked, setIsAppLocked] = useState(false);
+            const [lockPassword, setLockPassword] = useState('');
+            const [lockModalMode, setLockModalMode] = useState(null); 
+            const [tempPassword, setTempPassword] = useState('');
+
+            const sundayStr = getThisSunday();
+            const [meetingTimes, setMeetingTimes] = useState({ date: sundayStr, start: "08:00", end: "10:00" });
+            const [selectedViewDate, setSelectedViewDate] = useState(sundayStr); 
 
             const [bulkText, setBulkText] = useState('');
             const [newMemberName, setNewMemberName] = useState('');
@@ -118,7 +138,18 @@
             const [selectedMemberIds, setSelectedMemberIds] = useState(new Set());
             const [currentTime, setCurrentTime] = useState(new Date());
 
-            // 알림 모달
+            const timeOptions = useMemo(() => {
+                const times = [];
+                for (let h = 0; h < 24; h++) {
+                    for (let m = 0; m < 60; m += 30) {
+                        const hh = String(h).padStart(2, '0');
+                        const mm = String(m).padStart(2, '0');
+                        times.push(`${hh}:${mm}`);
+                    }
+                }
+                return times;
+            }, []);
+
             const [alertModal, setAlertModal] = useState({ show: false, title: '', content: '', type: 'info', onConfirm: null });
             const showAlert = (title, content, type = 'info') => setAlertModal({ show: true, title, content, type, onConfirm: null });
             const showConfirm = (title, content, onConfirm) => setAlertModal({ show: true, title, content, type: 'confirm', onConfirm });
@@ -150,31 +181,23 @@
                                 finalStatus = '노쇼';
                             }
                             return { 
-                                name: p.name, 
-                                gender: p.gender, 
-                                status: finalStatus, 
-                                checkInTime: p.checkInTime || '-', 
-                                type: p.type,
+                                name: p.name, gender: p.gender, status: finalStatus, 
+                                checkInTime: p.checkInTime || '-', type: p.type,
                                 timestamp: p.checkedIn ? p.checkInTime : '99:99:99'
                             };
                         });
 
-                        // 1. 역사 기록 저장 (문서 ID를 지정하지 않고 .add()를 사용하여 복수 기록 지원)
                         await getHistoryCol().add({
-                            date: selectedViewDate, 
-                            meetingTime: `${meetingTimes.start} ~ ${meetingTimes.end}`,
-                            total: records.length, 
-                            present: records.filter(r => r.status === '정상' || r.status === '지각').length,
-                            records: records, 
-                            createdAt: new Date().toISOString()
+                            date: selectedViewDate, meetingTime: `${meetingTimes.start} ~ ${meetingTimes.end}`,
+                            total: records.length, present: records.filter(r => r.status === '정상' || r.status === '지각').length,
+                            records: records, createdAt: new Date().toISOString()
                         });
 
-                        // 2. 해당 날짜 세션 데이터 삭제 (리셋)
                         const batch = db.batch();
                         currentParticipants.forEach(p => batch.delete(getSessionCol().doc(p.id)));
                         await batch.commit();
 
-                        showAlert("저장 완료", "기록이 저장되었습니다. 이제 기록 탭에서 이 데이터를 확인할 수 있습니다.");
+                        showAlert("저장 완료", "기록이 저장되었습니다.");
                     } catch (e) { showAlert("오류", "저장 중 문제가 발생했습니다."); } 
                     finally { setIsPending(false); }
                 });
@@ -188,26 +211,6 @@
                     setNewMemberName('');
                 } catch (e) { showAlert("오류", "회원 추가 실패"); }
                 finally { setIsPending(false); }
-            };
-
-            const handleBulkAdd = async () => {
-                if (!bulkText.trim() || isPending) return;
-                const names = bulkText.split(/[\r\n\t,]+/).map(n => n.trim()).filter(n => n.length > 0);
-                if (names.length === 0) return showAlert("알림", "이름을 입력하세요.");
-                showConfirm("일괄 등록", `${names.length}명을 등록할까요?`, async () => {
-                    setIsPending(true);
-                    try {
-                        const membersRef = getMemberCol();
-                        for (let i = 0; i < names.length; i += 400) {
-                            const batch = db.batch();
-                            names.slice(i, i + 400).forEach(name => { batch.set(membersRef.doc(), { name, gender: newMemberGender, type: 'regular', createdAt: new Date().toISOString() }); });
-                            await batch.commit();
-                        }
-                        setBulkText(''); setIsBulkMode(false);
-                        showAlert("완료", "명단이 등록되었습니다.");
-                    } catch (e) { showAlert("오류", "등록 실패"); }
-                    finally { setIsPending(false); }
-                });
             };
 
             const deleteMember = async (id, name) => {
@@ -264,6 +267,30 @@
                 } catch (e) { showAlert("오류", "출석 실패"); }
             };
 
+            const handleLockClick = () => {
+                if (isAppLocked) setLockModalMode('unlock');
+                else setLockModalMode('set');
+                setTempPassword('');
+            };
+
+            const confirmLock = () => {
+                if (!tempPassword.trim()) return showAlert("알림", "비밀번호를 입력하세요.");
+                setLockPassword(tempPassword);
+                setIsAppLocked(true);
+                setLockModalMode(null);
+                setView('attendance'); 
+            };
+
+            const confirmUnlock = () => {
+                if (tempPassword === lockPassword) {
+                    setIsAppLocked(false);
+                    setLockModalMode(null);
+                    setLockPassword('');
+                } else {
+                    showAlert("오류", "비밀번호가 일치하지 않습니다.");
+                }
+            };
+
             // -- Sync --
             useEffect(() => {
                 const initAuth = async () => {
@@ -279,17 +306,31 @@
                 if (!user) return;
                 const unsubM = getMemberCol().onSnapshot(snap => setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
                 const unsubS = getSessionCol().onSnapshot(snap => setSessionData(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-                const unsubT = getSettingsCol().doc('meeting_time').onSnapshot(doc => { if (doc.exists) setMeetingTimes(doc.data()); });
+                
+                const unsubT = getSettingsCol().doc('meeting_time').onSnapshot(doc => { 
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.date < todayStr) {
+                            const newDefault = { date: sundayStr, start: "08:00", end: "10:00" };
+                            setMeetingTimes(newDefault);
+                            setSelectedViewDate(newDefault.date);
+                            saveMeetingSettings(newDefault.date, newDefault.start, newDefault.end);
+                        } else {
+                            setMeetingTimes(data);
+                            setSelectedViewDate(data.date);
+                        }
+                    } else {
+                        saveMeetingSettings(sundayStr, "08:00", "10:00");
+                    }
+                });
                 const unsubH = getHistoryCol().onSnapshot(snap => setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.date.localeCompare(a.date))));
                 return () => { unsubM(); unsubS(); unsubT(); unsubH(); };
             }, [user]);
 
-            // 출석 탭 전용 필터 (오직 '활성 세션'만 보여줌)
             const activeParticipants = useMemo(() => {
                 return sessionData.filter(p => p.date === selectedViewDate).sort((a,b) => a.name.localeCompare(b.name));
             }, [selectedViewDate, sessionData]);
 
-            // 기록 상세 정렬 로직
             const sortedHistoryRecords = useMemo(() => {
                 if (!selectedHistoryDetail || !selectedHistoryDetail.records) return [];
                 const list = [...selectedHistoryDetail.records];
@@ -306,273 +347,229 @@
                 return list;
             }, [selectedHistoryDetail, historySortKey]);
 
-            const toggleSelect = (id) => {
-                const next = new Set(selectedMemberIds);
-                if (next.has(id)) next.delete(id); else next.add(id);
-                setSelectedMemberIds(next);
-            };
-
-            const toggleAllSelect = () => {
-                if (selectedMemberIds.size === members.length && members.length > 0) setSelectedMemberIds(new Set());
-                else setSelectedMemberIds(new Set(members.map(m => m.id)));
-            };
-
-            const deleteAllMembers = async () => {
-                if (members.length === 0) return showAlert("확인", "삭제할 명단이 없습니다.");
-                showConfirm("전체 삭제", "⚠️ 주의: 전체 명단을 모두 삭제하시겠습니까?", async () => {
-                    setIsPending(true);
-                    try {
-                        const membersRef = getMemberCol();
-                        const snap = await membersRef.get();
-                        const batch = db.batch();
-                        snap.docs.forEach(doc => batch.delete(doc.ref));
-                        await batch.commit();
-                    } catch (e) { showAlert("오류", "전체 삭제 실패"); }
-                    finally { setIsPending(false); }
-                });
-            };
-
             if (error) return <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 text-center font-bold">서버 연결 오류</div>;
 
             return (
                 <div className="min-h-screen pb-40">
-                    {/* Navigation */}
-                    <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 sm:h-20 flex items-center px-4 shadow-sm">
-                        <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
-                            <div className="flex gap-2">
-                                <button onClick={() => setView('attendance')} className={`px-4 sm:px-5 py-2 rounded-xl font-black text-sm sm:text-lg transition-all ${view === 'attendance' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>출석</button>
-                                <button onClick={() => setView('setup')} className={`px-4 sm:px-5 py-2 rounded-xl font-black text-sm sm:text-lg transition-all ${view === 'setup' ? 'bg-green-600 text-white shadow-lg' : 'text-slate-400'}`}>선정</button>
-                                <button onClick={() => { setView('history_list'); setSelectedHistoryDetail(null); }} className={`px-4 sm:px-5 py-2 rounded-xl font-black text-sm sm:text-lg transition-all ${view.includes('history') ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400'}`}>기록</button>
+                    {/* Navigation - 잠금 시 숨김 */}
+                    {!isAppLocked && (
+                        <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 sm:h-20 flex items-center px-4 shadow-sm">
+                            <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
+                                <div className="flex gap-2">
+                                    <button onClick={() => setView('attendance')} className={`px-4 sm:px-5 py-2 rounded-xl font-black text-sm sm:text-lg transition-all ${view === 'attendance' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>출석</button>
+                                    <button onClick={() => setView('setup')} className={`px-4 sm:px-5 py-2 rounded-xl font-black text-sm sm:text-lg transition-all ${view === 'setup' ? 'bg-green-600 text-white shadow-lg' : 'text-slate-400'}`}>선정</button>
+                                    <button onClick={() => { setView('history_list'); setSelectedHistoryDetail(null); }} className={`px-4 sm:px-5 py-2 rounded-xl font-black text-sm sm:text-lg transition-all ${view.includes('history') ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400'}`}>기록</button>
+                                </div>
+                                <div className="flex gap-2">
+                                    {/* 잠금 버튼: '출석' 탭에서만 렌더링되도록 수정 */}
+                                    {view === 'attendance' && (
+                                        <button onClick={handleLockClick} className="p-2.5 rounded-xl bg-slate-100 text-slate-400 hover:text-blue-600 transition-all">
+                                            <Icon.Lock />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            <button onClick={() => setView('members')} className={`p-2.5 rounded-xl transition-all ${view === 'members' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}><Icon.Users /></button>
-                        </div>
-                    </nav>
+                        </nav>
+                    )}
 
-                    <main className="p-4 sm:p-8 max-w-5xl mx-auto animate-zoom-in">
+                    <main className={`p-4 sm:p-8 max-w-5xl mx-auto animate-zoom-in ${isAppLocked ? 'pt-12 sm:pt-20' : ''}`}>
                         {view === 'attendance' && (
                             <div>
                                 <header className="text-center mb-8">
                                     <h1 className="text-4xl sm:text-5xl font-black text-blue-900 italic tracking-tighter mb-4 uppercase">OTP FC</h1>
                                     <div className="flex flex-col gap-4 items-center max-w-md mx-auto">
-                                        {/* 날짜 선택 창 */}
+                                        
+                                        {/* 실시간 시계 표시 섹션 (흰색 배경) */}
+                                        <div className="bg-white px-8 py-5 rounded-[32px] shadow-xl flex flex-col items-center gap-1 animate-zoom-in border-2 border-slate-50">
+                                            <p className="text-[10px] font-black text-blue-600 tracking-[0.3em] uppercase">Current Time</p>
+                                            <span className="font-black text-slate-900 text-3xl sm:text-5xl tracking-tighter tabular-nums leading-none">
+                                                {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 bg-white px-6 py-2.5 rounded-full border border-slate-100 shadow-sm">
+                                            <Icon.Clock size={16} className="text-green-500" />
+                                            <span className="font-black text-slate-700 text-sm sm:text-base">
+                                                {meetingTimes.start} ~ {meetingTimes.end}
+                                            </span>
+                                        </div>
+
                                         <div className="w-full flex items-center gap-3 bg-white px-5 py-3.5 rounded-[24px] border border-slate-200 shadow-sm">
                                             <Icon.Calendar size={20} className="text-blue-500" />
-                                            <input type="date" className="flex-1 font-black text-base sm:text-lg text-slate-700 outline-none" value={selectedViewDate} onChange={e => setSelectedViewDate(e.target.value)} />
+                                            <input type="date" className="flex-1 font-black text-base sm:text-lg text-slate-700 outline-none" value={selectedViewDate} onChange={e => setSelectedViewDate(e.target.value)} disabled={isAppLocked} />
                                             {selectedViewDate === todayStr && <span className="text-[9px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-lg">LIVE</span>}
                                         </div>
                                         
-                                        {/* 종료 시간 여부 확인 후 저장 버튼 노출 */}
-                                        {activeParticipants.length > 0 && selectedViewDate === meetingTimes.date && (
-                                            currentTime >= new Date(`${meetingTimes.date} ${meetingTimes.end}`) && (
-                                                <button onClick={saveAndResetCurrent} className="w-full flex items-center justify-center gap-2 bg-purple-600 text-white py-3.5 rounded-2xl font-black text-sm shadow-xl hover:bg-purple-700 transition-all">
-                                                    <Icon.Save size={18}/> 기록 확정 및 리셋
-                                                </button>
-                                            )
+                                        {!isAppLocked && activeParticipants.length > 0 && selectedViewDate === meetingTimes.date && currentTime >= new Date(`${meetingTimes.date} ${meetingTimes.end}`) && (
+                                            <button onClick={saveAndResetCurrent} className="w-full flex items-center justify-center gap-2 bg-purple-600 text-white py-3.5 rounded-2xl font-black text-sm shadow-xl hover:bg-purple-700 transition-all"><Icon.Save size={18}/> 기록 확정 및 리셋</button>
                                         )}
                                     </div>
                                 </header>
 
                                 {activeParticipants.length === 0 ? (
                                     <div className="text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-slate-100 shadow-sm">
-                                        <p className="text-slate-400 font-black mb-4 text-sm sm:text-base">현재 명단이 없습니다. (과거 기록은 '기록' 탭 확인)</p>
-                                        <button onClick={() => setView('setup')} className="bg-blue-600 text-white px-8 py-3.5 rounded-2xl font-black shadow-xl">새 명단 선정하기</button>
+                                        <p className="text-slate-400 font-black mb-4 text-sm sm:text-base">현재 명단이 없습니다.</p>
+                                        {!isAppLocked && <button onClick={() => setView('setup')} className="bg-blue-600 text-white px-8 py-3.5 rounded-2xl font-black shadow-xl">새 명단 선정하기</button>}
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
-                                        {activeParticipants.map(p => {
-                                            const endThreshold = new Date(`${meetingTimes.date} ${meetingTimes.end}`);
-                                            const isNoShow = !p.checkedIn && (todayStr > p.date || (todayStr === p.date && currentTime > endThreshold));
-                                            const status = p.status === '미출석' && isNoShow ? '노쇼' : p.status;
-
-                                            return (
-                                                <button key={p.id} 
-                                                    onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})}
-                                                    className={`relative h-36 sm:h-52 rounded-[32px] sm:rounded-[40px] flex flex-col items-center justify-center px-4 transition-all shadow-lg active:scale-95 ${p.checkedIn ? 'bg-blue-50/50 text-slate-400 border-2 border-blue-200' : status === '노쇼' ? 'bg-red-50 border-2 border-red-200 opacity-80' : 'bg-white border-2 border-blue-50 text-blue-900'}`}>
-                                                    <div className="absolute top-3">
-                                                        {(p.checkedIn || status === '노쇼') && (
-                                                            <span className={`text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-full ${status === '정상' ? 'bg-green-100 text-green-600' : status === '지각' ? 'bg-orange-100 text-orange-600' : 'bg-red-600 text-white animate-pulse'}`}>
-                                                                {status}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <span className={`text-xl sm:text-2xl font-black w-full text-center leading-tight break-keep ${p.checkedIn ? 'text-blue-400' : status === '노쇼' ? 'text-red-400' : ''}`}>{p.name}</span>
-                                                    {p.checkedIn ? <span className="text-[10px] sm:text-xs font-black text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full mt-2">{p.checkInTime}</span> : <span className={`text-[9px] sm:text-[10px] font-black mt-2 uppercase ${p.gender === '남성' ? 'text-blue-600' : 'text-red-500'}`}>{p.gender}</span>}
-                                                </button>
-                                            );
-                                        })}
+                                        {activeParticipants.map(p => (
+                                            <button key={p.id} 
+                                                onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})}
+                                                className={`relative h-36 sm:h-52 rounded-[32px] sm:rounded-[40px] flex flex-col items-center justify-center px-4 transition-all shadow-lg active:scale-95 ${p.checkedIn ? 'bg-blue-50/50 text-slate-400 border-2 border-blue-200' : 'bg-white border-2 border-blue-50 text-blue-900'}`}>
+                                                <div className="absolute top-3">{p.checkedIn && <span className={`text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-full ${p.status === '정상' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{p.status}</span>}</div>
+                                                <span className={`text-xl sm:text-2xl font-black w-full text-center leading-tight break-keep ${p.checkedIn ? 'text-blue-400' : ''}`}>{p.name}</span>
+                                                {p.checkedIn ? <span className="text-[10px] sm:text-xs font-black text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full mt-2">{p.checkInTime}</span> : <span className={`text-[9px] sm:text-[10px] font-black mt-2 uppercase ${p.gender === '남성' ? 'text-blue-600' : 'text-red-500'}`}>{p.gender}</span>}
+                                            </button>
+                                        ))}
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {view === 'history_list' && (
-                            <div className="max-w-2xl mx-auto">
-                                {!selectedHistoryDetail ? (
-                                    <>
-                                        <h2 className="text-xl sm:text-2xl font-black mb-6 flex items-center gap-2 px-2"><Icon.History className="text-purple-600" /> 과거 기록 보관함</h2>
-                                        <div className="space-y-3">
-                                            {history.length === 0 ? <p className="text-center py-20 text-slate-400 font-black">저장된 기록이 없습니다.</p> : history.map(h => (
-                                                <button key={h.id} onClick={() => setSelectedHistoryDetail(h)} className="w-full flex items-center justify-between p-6 bg-white rounded-[24px] border border-slate-100 shadow-sm active:bg-slate-50 transition-all text-left">
-                                                    <div><p className="text-lg font-black text-slate-900">{h.date}</p><p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{h.meetingTime}</p></div>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="text-right"><p className="text-xl font-black text-purple-600">{h.present}/{h.total}</p><p className="text-[9px] font-bold text-slate-300">ATTENDANCE</p></div>
-                                                        <Icon.ChevronRight className="text-slate-200" />
+                        {!isAppLocked && (
+                            <>
+                                {view === 'history_list' && (
+                                    <div className="max-w-2xl mx-auto">
+                                        {!selectedHistoryDetail ? (
+                                            <>
+                                                <h2 className="text-xl sm:text-2xl font-black mb-6 flex items-center gap-2 px-2"><Icon.History className="text-purple-600" /> 과거 기록 보관함</h2>
+                                                <div className="space-y-3">
+                                                    {history.length === 0 ? <p className="text-center py-20 text-slate-400 font-black">저장된 기록이 없습니다.</p> : history.map(h => (
+                                                        <button key={h.id} onClick={() => setSelectedHistoryDetail(h)} className="w-full flex items-center justify-between p-6 bg-white rounded-[24px] border border-slate-100 shadow-sm active:bg-slate-50 transition-all text-left">
+                                                            <div><p className="text-lg font-black text-slate-900">{h.date}</p><p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{h.meetingTime}</p></div>
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="text-right"><p className="text-xl font-black text-purple-600">{h.present}/{h.total}</p><p className="text-[9px] font-bold text-slate-300">ATTENDANCE</p></div>
+                                                                <Icon.ChevronRight className="text-slate-200" />
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl overflow-hidden animate-zoom-in">
+                                                <div className="p-6 sm:p-8 bg-slate-900 text-white flex justify-between items-center"><button onClick={() => setSelectedHistoryDetail(null)} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all"><Icon.ArrowLeft size={20} /></button><div className="text-right"><h3 className="text-xl sm:text-2xl font-black">{selectedHistoryDetail.date}</h3><p className="text-[10px] font-bold opacity-50">{selectedHistoryDetail.meetingTime}</p></div></div>
+                                                <div className="p-5 sm:p-6">
+                                                    <div className="flex gap-2 mb-6"><button onClick={() => setHistorySortKey('time')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'time' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 시간순</button><button onClick={() => setHistorySortKey('status')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'status' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 구분순</button></div>
+                                                    <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar">
+                                                        {sortedHistoryRecords.map((r, idx) => (
+                                                            <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-[20px]">
+                                                                <div className="flex items-center gap-3"><span className="font-black text-base text-slate-700">{r.name}</span><span className={`text-[9px] font-black ${r.gender === '남성' ? 'text-blue-500' : 'text-red-400'}`}>{r.gender}</span></div>
+                                                                <div className="flex items-center gap-3"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${r.status === '정상' ? 'bg-green-100 text-green-600' : r.status === '지각' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}>{r.status}</span><span className="text-[10px] font-black text-slate-400 min-w-[55px] text-right">{r.checkInTime}</span></div>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                </button>
+                                                    <button onClick={() => showConfirm("기록 삭제", "이 기록을 영구적으로 삭제하시겠습니까?", async () => { await getHistoryCol().doc(selectedHistoryDetail.id).delete(); setSelectedHistoryDetail(null); })} className="w-full mt-6 py-4 text-red-400 text-xs font-bold border-t border-slate-100 hover:text-red-600 transition-colors">데이터 영구 삭제</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {view === 'setup' && (
+                                    <div className="pb-24">
+                                        <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm mb-6 animate-zoom-in">
+                                            <h3 className="text-sm font-black text-slate-400 mb-4 flex items-center gap-2"><Icon.Clock size={16}/> 일정 및 시간 설정</h3>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                <div><label className="text-[10px] font-black text-slate-400 ml-2">모임 날짜</label><input type="date" className="w-full p-3 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-green-500" value={meetingTimes.date} onChange={e => { const v = e.target.value; setMeetingTimes(p => ({...p, date: v})); saveMeetingSettings(v, meetingTimes.start, meetingTimes.end); }} /></div>
+                                                <div><label className="text-[10px] font-black text-slate-400 ml-2">시작 시간</label><select className="w-full p-3 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-green-500 cursor-pointer" value={meetingTimes.start} onChange={e => { const v = e.target.value; setMeetingTimes(p => ({...p, start: v})); saveMeetingSettings(meetingTimes.date, v, meetingTimes.end); }}>{timeOptions.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+                                                <div><label className="text-[10px] font-black text-slate-400 ml-2">종료 시간</label><select className="w-full p-3 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-green-500 cursor-pointer" value={meetingTimes.end} onChange={e => { const v = e.target.value; setMeetingTimes(p => ({...p, end: v})); saveMeetingSettings(meetingTimes.date, meetingTimes.start, v); }}>{timeOptions.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+                                            </div>
+                                        </div>
+                                        <h2 className="text-xl sm:text-2xl font-black mb-5 flex items-center gap-2 px-1"><Icon.Check className="text-green-600" /> {meetingTimes.date} 인원 선정</h2>
+                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-8">
+                                            {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => {
+                                                const isSel = sessionData.some(p => p.memberId === m.id && p.date === meetingTimes.date);
+                                                return (
+                                                    <button key={m.id} onClick={() => toggleParticipant(m)} className={`p-4 h-20 rounded-[20px] border-2 transition-all flex flex-col items-center justify-center relative active:scale-95 ${isSel ? 'border-green-500 bg-green-50 shadow-md' : 'bg-white border-slate-100 opacity-60'}`}>
+                                                        <span className="font-black text-lg">{m.name}</span><span className={`text-[9px] font-bold ${m.gender === '남성' ? 'text-blue-500' : 'text-red-500'}`}>{m.gender}</span>
+                                                        {isSel && <div className="absolute top-2 right-2 text-green-600"><Icon.CheckCircle size={14} /></div>}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="max-w-md mx-auto sticky bottom-24 z-10 px-4"><button onClick={() => { setSelectedViewDate(meetingTimes.date); setView('attendance'); }} className="w-full bg-blue-600 text-white py-4 rounded-3xl font-black text-lg shadow-2xl active:scale-95 transition-all">선정 완료</button></div>
+                                    </div>
+                                )}
+                                {view === 'members' && (
+                                    <div className="max-w-2xl mx-auto px-1 pb-24">
+                                        <div className="flex justify-between items-center mb-6"><h2 className="text-xl sm:text-2xl font-black flex items-center gap-2"><Icon.Users className="text-blue-600" /> 회원 데이터 관리</h2><button onClick={() => setIsBulkMode(!isBulkMode)} className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-[10px] font-black">{isBulkMode ? '개별 등록' : '대량 등록'}</button></div>
+                                        <div className="flex flex-wrap gap-2 mb-6"><button onClick={cleanupDuplicates} disabled={isPending} className="flex-1 bg-purple-50 text-purple-600 px-3 py-2.5 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 border border-purple-100"><Icon.Sparkles size={14} /> 중복 정리</button><button onClick={deleteAllMembers} disabled={isPending || members.length === 0} className="flex-1 bg-red-50 text-red-600 px-3 py-2.5 rounded-xl text-[10px] font-black">전체 삭제</button></div>
+                                        <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm mb-6">
+                                            {isBulkMode ? (
+                                                <div className="space-y-3"><textarea rows="5" placeholder="엑셀 명단을 붙여넣으세요..." className="w-full p-4 bg-slate-50 rounded-2xl font-black text-sm outline-none resize-none border-2 border-transparent focus:border-blue-500" value={bulkText} onChange={e => setBulkText(e.target.value)} /><button onClick={handleBulkAdd} disabled={isPending} className="w-full bg-blue-600 text-white py-3 rounded-2xl font-black text-sm shadow-lg">일괄 등록하기</button></div>
+                                            ) : (
+                                                <div className="flex flex-col gap-3"><input type="text" placeholder="이름" className="p-4 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-blue-500 text-base" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} /><div className="flex gap-2"><select className="flex-1 p-4 bg-slate-50 rounded-xl font-black outline-none" value={newMemberGender} onChange={e => setNewMemberGender(e.target.value)}><option>남성</option><option>여성</option></select><button onClick={addMember} disabled={isPending} className="bg-blue-600 text-white px-6 rounded-xl font-black shadow-lg">추가</button></div></div>
+                                            )}
+                                        </div>
+                                        <div className="space-y-1.5 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                                <div key={m.id} className="flex items-center justify-between p-4 bg-white rounded-[20px] border border-slate-50 shadow-sm">
+                                                    <div className="flex items-center gap-3"><div className={`w-8 h-8 rounded-full flex items-center justify-center ${m.gender === '남성' ? 'bg-blue-50 text-blue-500' : 'bg-pink-50 text-pink-500'}`}><Icon.Users size={16} /></div><span className="font-bold text-lg">{m.name} <small className="opacity-30">{m.gender}</small></span></div>
+                                                    <button onClick={() => deleteMember(m.id, m.name)} className="text-slate-200 p-2"><Icon.Trash /></button>
+                                                </div>
                                             ))}
                                         </div>
-                                    </>
-                                ) : (
-                                    <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl overflow-hidden animate-zoom-in">
-                                        <div className="p-6 sm:p-8 bg-slate-900 text-white flex justify-between items-center">
-                                            <button onClick={() => setSelectedHistoryDetail(null)} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all"><Icon.ArrowLeft size={20} /></button>
-                                            <div className="text-right">
-                                                <h3 className="text-xl sm:text-2xl font-black">{selectedHistoryDetail.date}</h3>
-                                                <p className="text-[10px] font-bold opacity-50">{selectedHistoryDetail.meetingTime}</p>
-                                            </div>
-                                        </div>
-                                        <div className="p-5 sm:p-6">
-                                            <div className="flex gap-2 mb-6">
-                                                <button onClick={() => setHistorySortKey('time')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'time' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 시간순</button>
-                                                <button onClick={() => setHistorySortKey('status')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'status' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 구분순</button>
-                                            </div>
-
-                                            <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar">
-                                                {sortedHistoryRecords.map((r, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-[20px]">
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="font-black text-base text-slate-700">{r.name}</span>
-                                                            <span className={`text-[9px] font-black ${r.gender === '남성' ? 'text-blue-500' : 'text-red-400'}`}>{r.gender}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${r.status === '정상' ? 'bg-green-100 text-green-600' : r.status === '지각' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}>{r.status}</span>
-                                                            <span className="text-[10px] font-black text-slate-400 min-w-[55px] text-right">{r.checkInTime}</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <button onClick={() => showConfirm("기록 삭제", "이 기록을 영구적으로 삭제하시겠습니까?", async () => { await getHistoryCol().doc(selectedHistoryDetail.id).delete(); setSelectedHistoryDetail(null); })} className="w-full mt-6 py-4 text-red-400 text-xs font-bold border-t border-slate-100 hover:text-red-600 transition-colors">데이터 영구 삭제</button>
-                                        </div>
                                     </div>
                                 )}
-                            </div>
-                        )}
-
-                        {view === 'setup' && (
-                            <div className="pb-24">
-                                <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm mb-6 animate-zoom-in">
-                                    <h3 className="text-sm font-black text-slate-400 mb-4 flex items-center gap-2"><Icon.Clock size={16}/> 일정 및 시간 설정</h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div><label className="text-[10px] font-black text-slate-400 ml-2">모임 날짜</label>
-                                            <input type="date" className="w-full p-3 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-green-500" value={meetingTimes.date} onChange={e => { const v = e.target.value; setMeetingTimes(p => ({...p, date: v})); saveMeetingSettings(v, meetingTimes.start, meetingTimes.end); }} />
-                                        </div>
-                                        <div><label className="text-[10px] font-black text-slate-400 ml-2">시작 시간</label>
-                                            <input type="time" className="w-full p-3 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-green-500" value={meetingTimes.start} onChange={e => { const v = e.target.value; setMeetingTimes(p => ({...p, start: v})); saveMeetingSettings(meetingTimes.date, v, meetingTimes.end); }} />
-                                        </div>
-                                        <div><label className="text-[10px] font-black text-slate-400 ml-2">종료 시간</label>
-                                            <input type="time" className="w-full p-3 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-green-500" value={meetingTimes.end} onChange={e => { const v = e.target.value; setMeetingTimes(p => ({...p, end: v})); saveMeetingSettings(meetingTimes.date, meetingTimes.start, v); }} />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <h2 className="text-xl sm:text-2xl font-black mb-5 flex items-center gap-2 px-1"><Icon.Check className="text-green-600" /> {meetingTimes.date} 인원 선정</h2>
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-8">
-                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => {
-                                        const isSel = sessionData.some(p => p.memberId === m.id && p.date === meetingTimes.date);
-                                        return (
-                                            <button key={m.id} onClick={() => toggleParticipant(m)} className={`p-4 h-20 rounded-[20px] border-2 transition-all flex flex-col items-center justify-center relative active:scale-95 ${isSel ? 'border-green-500 bg-green-50 shadow-md shadow-green-100' : 'bg-white border-slate-100 opacity-60'}`}>
-                                                <span className="font-black text-lg">{m.name}</span>
-                                                <span className={`text-[9px] font-bold ${m.gender === '남성' ? 'text-blue-500' : 'text-red-500'}`}>{m.gender}</span>
-                                                {isSel && <div className="absolute top-2 right-2 text-green-600"><Icon.CheckCircle size={14} /></div>}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <div className="max-w-md mx-auto sticky bottom-24 z-10 px-4">
-                                    <button onClick={() => { setSelectedViewDate(meetingTimes.date); setView('attendance'); }} className="w-full bg-blue-600 text-white py-4 rounded-3xl font-black text-lg shadow-2xl active:scale-95 transition-all">
-                                        선정 완료 및 출석부로 이동
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'members' && (
-                            <div className="max-w-2xl mx-auto px-1">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-xl sm:text-2xl font-black flex items-center gap-2"><Icon.Users className="text-blue-600" /> 회원 데이터 관리</h2>
-                                    <button onClick={() => setIsBulkMode(!isBulkMode)} className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-[10px] font-black">{isBulkMode ? '개별 등록' : '대량 등록'}</button>
-                                </div>
-                                <div className="flex flex-wrap gap-2 mb-6">
-                                    <button onClick={cleanupDuplicates} disabled={isPending} className="flex-1 bg-purple-50 text-purple-600 px-3 py-2.5 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 border border-purple-100"><Icon.Sparkles size={14} /> 중복 정리</button>
-                                    <button onClick={() => { if(confirm(`선택한 ${selectedMemberIds.size}명을 삭제하시겠습니까?`)) { const b = db.batch(); selectedMemberIds.forEach(id => b.delete(getMemberCol().doc(id))); b.commit(); setSelectedMemberIds(new Set()); }}} disabled={isPending || selectedMemberIds.size === 0} className="flex-1 bg-orange-50 text-orange-600 px-3 py-2.5 rounded-xl text-[10px] font-black">선택 삭제 ({selectedMemberIds.size})</button>
-                                    <button onClick={deleteAllMembers} disabled={isPending || members.length === 0} className="flex-1 bg-red-50 text-red-600 px-3 py-2.5 rounded-xl text-[10px] font-black">전체 삭제</button>
-                                </div>
-                                <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm mb-6">
-                                    {isBulkMode ? (
-                                        <div className="space-y-3">
-                                            <textarea rows="5" placeholder="엑셀 명단을 붙여넣으세요..." className="w-full p-4 bg-slate-50 rounded-2xl font-black text-sm outline-none resize-none transition-all custom-scrollbar border-2 border-transparent focus:border-blue-500" value={bulkText} onChange={e => setBulkText(e.target.value)} />
-                                            <button onClick={handleBulkAdd} disabled={isPending} className="w-full bg-blue-600 text-white py-3 rounded-2xl font-black text-sm shadow-lg">일괄 등록하기</button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col gap-3">
-                                            <input type="text" placeholder="이름" className="p-4 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-blue-500 transition-all text-base" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} />
-                                            <div className="flex gap-2"><select className="flex-1 p-4 bg-slate-50 rounded-xl font-black outline-none" value={newMemberGender} onChange={e => setNewMemberGender(e.target.value)}><option>남성</option><option>여성</option></select><button onClick={addMember} disabled={isPending} className="bg-blue-600 text-white px-6 rounded-xl font-black shadow-lg">추가</button></div>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-2 mb-3 px-2"><input type="checkbox" checked={members.length > 0 && selectedMemberIds.size === members.length} onChange={toggleAllSelect} /><span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">전체 명단 ({members.length}명)</span></div>
-                                <div className="space-y-1.5 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar">
-                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
-                                        <div key={m.id} className={`flex items-center justify-between p-4 bg-white rounded-[20px] border transition-all ${selectedMemberIds.has(m.id) ? 'border-blue-500 bg-blue-50/10 shadow-md' : 'border-slate-50'}`}>
-                                            <div className="flex items-center gap-4 w-2/3"><input type="checkbox" checked={selectedMemberIds.has(m.id)} onChange={() => toggleSelect(m.id)} /><span className="font-bold text-lg truncate text-slate-700">{m.name} <small className={`ml-1 font-black ${m.gender === '남성' ? 'text-blue-600' : 'text-red-500'}`}>{m.gender}</small></span></div>
-                                            <button onClick={() => deleteMember(m.id, m.name)} className="text-slate-200 p-2"><Icon.Trash /></button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                            </>
                         )}
                     </main>
 
-                    {/* Stats Floating Bar */}
+                    {isAppLocked && (
+                        <button onClick={handleLockClick} className="fixed bottom-6 right-6 w-14 h-14 bg-white text-slate-400 rounded-full shadow-2xl flex items-center justify-center border-2 border-slate-100 z-[150] active:scale-90 transition-all">
+                            <Icon.Unlock size={24} />
+                        </button>
+                    )}
+
                     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-2xl border border-white shadow-2xl rounded-full px-8 py-3.5 flex gap-8 items-center z-40 border-t border-slate-50 scale-90 sm:scale-100">
-                        <div className="text-center"><p className="text-[8px] text-slate-400 font-black uppercase tracking-tight">Scheduled</p><p className="text-xl font-black text-slate-900">{activeParticipants.length}</p></div>
+                        <div className="text-center"><p className="text-[9px] text-slate-400 font-black uppercase tracking-tight">Scheduled</p><p className="text-xl font-black text-slate-900">{activeParticipants.length}</p></div>
                         <div className="w-px h-8 bg-slate-100" />
                         <div className="text-center"><p className="text-[8px] text-slate-400 font-black uppercase tracking-tight">Present</p><p className="text-xl font-black text-green-600">{activeParticipants.filter(p=>p.checkedIn).length}</p></div>
                     </div>
 
-                    {/* Alert Modals */}
-                    {alertModal.show && (
-                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+                    {lockModalMode && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[300] flex items-center justify-center p-4">
                             <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in text-center">
-                                <h3 className="text-xl sm:text-2xl font-black mb-3 text-slate-900">{alertModal.title}</h3>
-                                <p className="text-slate-500 font-bold mb-8 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">{alertModal.content}</p>
+                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-900">
+                                    {lockModalMode === 'set' ? <Icon.Lock size={30} /> : <Icon.Unlock size={30} />}
+                                </div>
+                                <h3 className="text-xl font-black mb-2 text-slate-900">
+                                    {lockModalMode === 'set' ? '잠금 비밀번호 설정' : '잠금 해제'}
+                                </h3>
+                                <p className="text-slate-400 text-sm mb-8 font-bold">
+                                    {lockModalMode === 'set' ? '아이패드 비치를 위해 숫자 비밀번호를 설정하세요.' : '잠금을 해제하려면 비밀번호를 입력하세요.'}
+                                </p>
+                                <input 
+                                    type="password" 
+                                    inputMode="numeric"
+                                    placeholder="비밀번호" 
+                                    className="w-full p-4 bg-slate-50 rounded-2xl font-black text-center text-2xl outline-none border-2 border-transparent focus:border-blue-500 mb-6"
+                                    value={tempPassword}
+                                    onChange={e => setTempPassword(e.target.value)}
+                                    autoFocus
+                                />
                                 <div className="flex gap-2">
-                                    {alertModal.type === 'confirm' && <button onClick={() => setAlertModal(p => ({...p, show: false}))} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm">취소</button>}
-                                    <button onClick={() => { if (alertModal.onConfirm) alertModal.onConfirm(); setAlertModal(p => ({...p, show: false})); }} className={`flex-1 py-4 text-white rounded-2xl font-black shadow-lg text-sm ${alertModal.type === 'confirm' ? 'bg-blue-600' : 'bg-slate-900'}`}>확인</button>
+                                    <button onClick={() => setLockModalMode(null)} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm">취소</button>
+                                    <button onClick={lockModalMode === 'set' ? confirmLock : confirmUnlock} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm shadow-lg">
+                                        {lockModalMode === 'set' ? '잠금 시작' : '해제하기'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {modal.type === 'check' && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-[40px] sm:rounded-[48px] w-full max-w-sm p-8 sm:p-10 text-center animate-zoom-in shadow-2xl">
-                                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-8 sm:mb-10 tracking-tighter break-keep">{modal.data.name} 님</h2>
-                                <button onClick={() => handleCheckIn(modal.data)} className="w-full bg-blue-600 text-white py-6 rounded-[30px] text-xl sm:text-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 transition-all">출석 확인</button>
-                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold text-sm">닫기</button>
-                            </div>
+                    {alertModal.show && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in text-center"><h3 className="text-xl sm:text-2xl font-black mb-3 text-slate-900">{alertModal.title}</h3><p className="text-slate-500 font-bold mb-8 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">{alertModal.content}</p><div className="flex gap-2">{alertModal.type === 'confirm' && <button onClick={() => setAlertModal(p => ({...p, show: false}))} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm">취소</button>}<button onClick={() => { if (alertModal.onConfirm) alertModal.onConfirm(); setAlertModal(p => ({...p, show: false})); }} className={`flex-1 py-4 text-white rounded-2xl font-black shadow-lg text-sm ${alertModal.type === 'confirm' ? 'bg-blue-600' : 'bg-slate-900'}`}>확인</button></div></div>
                         </div>
                     )}
 
+                    {modal.type === 'check' && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-center justify-center p-4"><div className="bg-white rounded-[40px] sm:rounded-[48px] w-full max-w-sm p-8 sm:p-10 text-center animate-zoom-in shadow-2xl"><h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-8 sm:mb-10 tracking-tighter break-keep">{modal.data.name} 님</h2><button onClick={() => handleCheckIn(modal.data)} className="w-full bg-blue-600 text-white py-6 rounded-[30px] text-xl sm:text-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 transition-all">출석 확인</button><button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold text-sm">닫기</button></div></div>
+                    )}
+
                     {modal.type === 'cancel' && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-4">
-                            <div className="bg-white rounded-t-[40px] sm:rounded-[48px] w-full max-w-sm p-8 sm:p-10 text-center animate-zoom-in shadow-2xl">
-                                <h2 className="text-2xl sm:text-3xl font-black mb-6 text-slate-900 tracking-tighter break-keep">{modal.data.name} 님</h2>
-                                <p className="mb-8 text-slate-400 font-bold italic text-sm">출석 기록을 취소하시겠습니까?</p>
-                                <button onClick={async () => { try { await getSessionCol().doc(modal.data.id).update({ checkedIn: false, checkInTime: null, status: '미출석' }); setModal({ type: null, data: null }); } catch(e) { console.error(e); } }} className="w-full bg-red-500 text-white py-5 rounded-[24px] text-lg font-black shadow-xl active:scale-95 transition-all">출석 취소하기</button>
-                                <button onClick={() => setModal({type:null, data:null})} className="mt-3 text-slate-400 font-bold text-sm">돌아가기</button>
-                            </div>
-                        </div>
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-end sm:items-center justify-center p-4"><div className="bg-white rounded-t-[40px] sm:rounded-[48px] w-full max-w-sm p-8 sm:p-10 text-center animate-zoom-in shadow-2xl"><h2 className="text-2xl sm:text-3xl font-black mb-6 text-slate-900 tracking-tighter break-keep">{modal.data.name} 님</h2><p className="mb-8 text-slate-400 font-bold italic text-sm">출석 기록을 취소하시겠습니까?</p><button onClick={async () => { try { await getSessionCol().doc(modal.data.id).update({ checkedIn: false, checkInTime: null, status: '미출석' }); setModal({ type: null, data: null }); } catch(e) { console.error(e); } }} className="w-full bg-red-500 text-white py-5 rounded-[24px] text-lg font-black shadow-xl active:scale-95 transition-all">출석 취소하기</button><button onClick={() => setModal({type:null, data:null})} className="mt-3 text-slate-400 font-bold text-sm">돌아가기</button></div></div>
                     )}
                 </div>
             );
