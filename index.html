@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#f8fafc">
     
-    <title>OTP FC Attendance</title>
+    <title>OTP FC Attendance Master</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -31,12 +31,18 @@
         }
         .animate-zoom-in { animation: zoomIn 0.2s ease-out; }
         @keyframes zoomIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        
         button:active { transform: scale(0.95); opacity: 0.8; }
+        
         #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        input[type="checkbox"] { width: 22px; height: 22px; border-radius: 6px; cursor: pointer; accent-color: #2563eb; }
+        input[type="checkbox"] { width: 18px; height: 18px; border-radius: 4px; cursor: pointer; accent-color: #2563eb; }
+        
         html, body { overscroll-behavior-y: contain; }
+        select, input { outline: none; transition: border-color 0.2s; }
+        select:focus, input:focus { border-color: #3b82f6 !important; }
+
         select {
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
@@ -71,18 +77,56 @@
         const Icon = {
             Users: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
             Trash: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
-            Settings: ({size=22, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-            Check: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
             Clock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-            History: ({size=22, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>,
             Save: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
             Calendar: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-            Sparkles: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>,
-            ArrowLeft: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
-            ChevronRight: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>,
             CheckCircle: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
             Lock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
-            Unlock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+            Unlock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>,
+            Plus: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+            Heart: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>,
+            History: ({size=22, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>,
+            ChevronRight: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>,
+            ArrowLeft: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+            Edit: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+            FileSpreadsheet: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>,
+            RotateCcw: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>,
+            UserPlus: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>,
+        };
+
+        // --- Helper Styles ---
+        const getPosColorClass = (pos) => {
+            const p = String(pos).toLowerCase();
+            if (p.includes('피보')) return 'bg-red-50 text-red-500 border-red-100';
+            if (p.includes('아라')) return 'bg-green-50 text-green-600 border-green-100';
+            if (p.includes('픽소')) return 'bg-blue-50 text-blue-500 border-blue-100';
+            if (p.includes('all')) return 'bg-yellow-50 text-yellow-600 border-yellow-100';
+            return 'bg-slate-50 text-slate-400 border-slate-100';
+        };
+
+        const getGenderPastelClass = (gender) => {
+            return gender === '남성' 
+                ? 'bg-[#E1F0FF] text-[#2563EB]' 
+                : 'bg-[#FFE5ED] text-[#DB2777]';
+        };
+
+        const getRoleBadgeClass = (role) => {
+            switch(role) {
+                case '회장': return 'bg-slate-900 text-white';
+                case '매니저': return 'bg-blue-600 text-white';
+                case '총무': return 'bg-green-600 text-white';
+                case '부총무': return 'bg-green-100 text-green-700';
+                default: return 'bg-slate-100 text-slate-400';
+            }
+        };
+
+        const formatBirth = (birth) => {
+            if (!birth) return '생일미입력';
+            const clean = String(birth).replace(/[^0-9]/g, '');
+            if (clean.length === 8) {
+                return `${clean.substring(0,4)}-${clean.substring(4,6)}-${clean.substring(6,8)}`;
+            }
+            return birth;
         };
 
         // --- Firebase Configuration ---
@@ -107,184 +151,231 @@
         const getSettingsCol = () => getCol('settings');
 
         function App() {
-            // -- State --
+            // -- States --
             const [view, setView] = useState('attendance');
             const [members, setMembers] = useState([]);
-            const [sessionData, setSessionData] = useState([]); 
+            const [sessionData, setSessionData] = useState([]);
             const [history, setHistory] = useState([]);
             const [selectedHistoryDetail, setSelectedHistoryDetail] = useState(null); 
             const [historySortKey, setHistorySortKey] = useState('time'); 
-            const [user, setUser] = useState(null);
-            const [modal, setModal] = useState({ type: null, data: null });
-            const [isPending, setIsPending] = useState(false);
-            const [error, setError] = useState(null);
-
-            // 잠금 기능 State
+            const [meetingTimes, setMeetingTimes] = useState({ date: getThisSunday(), start: "08:00", end: "10:00" });
+            const [currentTime, setCurrentTime] = useState(new Date());
             const [isAppLocked, setIsAppLocked] = useState(false);
             const [lockPassword, setLockPassword] = useState('');
-            const [lockModalMode, setLockModalMode] = useState(null); 
+            const [lockModalMode, setLockModalMode] = useState(null);
             const [tempPassword, setTempPassword] = useState('');
+            const [modal, setModal] = useState({ type: null, data: null });
+            const [alertModal, setAlertModal] = useState({ show: false, title: '', content: '', type: 'info', onConfirm: null });
 
-            const sundayStr = getThisSunday();
-            const [meetingTimes, setMeetingTimes] = useState({ date: sundayStr, start: "08:00", end: "10:00" });
-            const [selectedViewDate, setSelectedViewDate] = useState(sundayStr); 
-
-            const [bulkText, setBulkText] = useState('');
-            const [newMemberName, setNewMemberName] = useState('');
-            const [newMemberGender, setNewMemberGender] = useState('남성');
+            // 회원 관리 State
+            const [newMember, setNewMember] = useState({ name: '', birth: '', gender: '남성', position: 'all', level: '1', coupleId: '', isEarlyBirth: false, role: '회원' });
+            const [editingMember, setEditingMember] = useState(null);
             const [isBulkMode, setIsBulkMode] = useState(false);
-            const [selectedMemberIds, setSelectedMemberIds] = useState(new Set());
-            const [currentTime, setCurrentTime] = useState(new Date());
+            const [bulkPasteText, setBulkPasteText] = useState('');
+            const [isPending, setIsPending] = useState(false);
 
-            // 10분 단위 시간 목록 생성 (00:00 ~ 23:50)
+            const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
+            const [newGuest, setNewGuest] = useState({ name: '', gender: '남성', inviterId: '', inviterName: '' });
+
+            const roles = ['회장', '매니저', '총무', '부총무', '회원'];
+
             const timeOptions = useMemo(() => {
                 const times = [];
                 for (let h = 0; h < 24; h++) {
-                    for (let m = 0; m < 60; m += 10) { // 30에서 10으로 변경
-                        const hh = String(h).padStart(2, '0');
-                        const mm = String(m).padStart(2, '0');
-                        times.push(`${hh}:${mm}`);
+                    for (let m = 0; m < 60; m += 10) {
+                        times.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
                     }
                 }
                 return times;
             }, []);
 
-            const [alertModal, setAlertModal] = useState({ show: false, title: '', content: '', type: 'info', onConfirm: null });
-            const showAlert = (title, content, type = 'info') => setAlertModal({ show: true, title, content, type, onConfirm: null });
-            const showConfirm = (title, content, onConfirm) => setAlertModal({ show: true, title, content, type: 'confirm', onConfirm });
+            const showAlert = (title, content, type = 'info') => setAlertModal({ show: true, title, content, type, onConfirm: null, zIndex: 9999 });
+            const showConfirm = (title, content, onConfirm) => setAlertModal({ show: true, title, content, type: 'confirm', onConfirm, zIndex: 9999 });
 
-            // 실시간 시계 업데이트 (초 단위)
+            // 실시간 시계
             useEffect(() => {
                 const timer = setInterval(() => setCurrentTime(new Date()), 1000);
                 return () => clearInterval(timer);
             }, []);
 
-            // -- Logic --
-            const saveMeetingSettings = async (date, start, end) => {
-                try { await getSettingsCol().doc('meeting_time').set({ date, start, end }); } 
-                catch (e) { console.error(e); }
+            // Firebase Sync
+            useEffect(() => {
+                const initAuth = async () => {
+                    try { 
+                        await auth.signInAnonymously(); 
+                        document.getElementById('loading-screen').style.display = 'none'; 
+                    } catch (e) { 
+                        document.getElementById('loading-screen').innerText = "접속 오류"; 
+                    }
+                };
+                initAuth();
+                const unsubAuth = auth.onAuthStateChanged(u => {
+                    if (u) {
+                        getMemberCol().onSnapshot(snap => setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+                        getSessionCol().onSnapshot(snap => setSessionData(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+                        getHistoryCol().onSnapshot(snap => setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.date.localeCompare(a.date))));
+                        getSettingsCol().doc('meeting_time').onSnapshot(doc => { 
+                            if (doc.exists) {
+                                const data = doc.data();
+                                if (data.date < todayStr) {
+                                    const nextSun = getThisSunday();
+                                    setMeetingTimes({ date: nextSun, start: "08:00", end: "10:00" });
+                                    getSettingsCol().doc('meeting_time').set({ date: nextSun, start: "08:00", end: "10:00" });
+                                } else {
+                                    setMeetingTimes(data);
+                                }
+                            }
+                        });
+                    }
+                });
+                return () => unsubAuth();
+            }, []);
+
+            // -- Functions --
+            const handleAddMember = async () => {
+                if (!newMember.name.trim()) return showAlert("알림", "이름을 입력해주세요.");
+                const birthClean = String(newMember.birth).replace(/[^0-9]/g, '');
+                if (birthClean.length > 0 && birthClean.length !== 8) return showAlert("알림", "생년월일은 8자리 숫자로 입력해주세요.");
+                try {
+                    await getMemberCol().add({ ...newMember, birth: birthClean, createdAt: new Date().toISOString() });
+                    setNewMember({ name: '', birth: '', gender: '남성', position: 'all', level: '1', coupleId: '', isEarlyBirth: false, role: '회원' });
+                    showAlert("성공", "회원이 등록되었습니다.");
+                } catch (e) { showAlert("오류", "회원 등록 실패"); }
+            };
+
+            const handleBulkAdd = async () => {
+                if (!bulkPasteText.trim()) return showAlert("알림", "붙여넣은 내용이 없습니다.");
+                const lines = bulkPasteText.split(/\r?\n/).filter(line => line.trim() !== "");
+                showConfirm("대량 등록", `${lines.length}명을 등록할까요?`, async () => {
+                    setIsPending(true);
+                    try {
+                        const batch = db.batch();
+                        const membersRef = getMemberCol();
+                        lines.forEach(line => {
+                            const fields = line.split(/[\t,]+/).map(f => f.trim());
+                            if (fields.length >= 2) {
+                                const [name, birth, gender, position, level, role] = fields;
+                                let finalGender = '남성';
+                                if (gender && (gender.includes('여') || gender.includes('Female'))) finalGender = '여성';
+                                batch.set(membersRef.doc(), {
+                                    name, birth: birth ? birth.replace(/[^0-9]/g, '') : '', gender: finalGender, position: position || 'all',
+                                    level: level ? level.replace(/[^0-9]/g, '') : (finalGender === '남성' ? '1' : '7'),
+                                    role: role || '회원',
+                                    coupleId: '', isEarlyBirth: false, createdAt: new Date().toISOString()
+                                });
+                            }
+                        });
+                        await batch.commit();
+                        setBulkPasteText(''); setIsBulkMode(false);
+                        showAlert("성공", "대량 등록 완료");
+                    } catch (e) { showAlert("오류", "대량 등록 실패"); } finally { setIsPending(false); }
+                });
+            };
+
+            const handleUpdateMember = async () => {
+                if (!editingMember.name.trim()) return showAlert("알림", "이름을 입력해주세요.");
+                const birthClean = String(editingMember.birth).replace(/[^0-9]/g, '');
+                if (birthClean.length > 0 && birthClean.length !== 8) return showAlert("알림", "생년월일은 8자리 숫자로 입력해주세요.");
+                try {
+                    await getMemberCol().doc(editingMember.id).update({ ...editingMember, birth: birthClean });
+                    const matches = sessionData.filter(p => p.memberId === editingMember.id);
+                    if (matches.length > 0) {
+                        const batch = db.batch();
+                        matches.forEach(p => batch.update(getSessionCol().doc(p.id), { name: editingMember.name, gender: editingMember.gender }));
+                        await batch.commit();
+                    }
+                    setEditingMember(null);
+                    showAlert("완료", "정보가 수정되었습니다.");
+                } catch (e) { showAlert("오류", "수정 실패"); }
+            };
+
+            const handleResetSelection = () => {
+                const targets = sessionData.filter(p => p.date === meetingTimes.date);
+                if (targets.length === 0) return showAlert("알림", "초기화할 명단이 없습니다.");
+                showConfirm("명단 초기화", "이번 모임에 선정된 모든 인원을 해제하시겠습니까?", async () => {
+                    setIsPending(true);
+                    try {
+                        const batch = db.batch();
+                        targets.forEach(p => batch.delete(getSessionCol().doc(p.id)));
+                        await batch.commit();
+                        showAlert("성공", "선정 명단이 초기화되었습니다.");
+                    } catch (e) { showAlert("오류", "초기화 실패"); } finally { setIsPending(false); }
+                });
+            };
+
+            const handleAddGuest = async () => {
+                if (!newGuest.name.trim()) return showAlert("알림", "게스트 이름을 입력해주세요.");
+                const inviter = members.find(m => m.id === newGuest.inviterId);
+                const inviterName = inviter ? inviter.name : '없음';
+                try {
+                    await getSessionCol().add({
+                        memberId: 'guest_' + Date.now(),
+                        name: `${newGuest.name}(G)`,
+                        inviterName,
+                        inviterId: newGuest.inviterId || '',
+                        gender: newGuest.gender,
+                        date: meetingTimes.date,
+                        checkedIn: false,
+                        checkInTime: null,
+                        status: '미출석',
+                        isGuest: true
+                    });
+                    setIsGuestModalOpen(false);
+                    setNewGuest({ name: '', gender: '남성', inviterId: '', inviterName: '' });
+                } catch (e) { showAlert("오류", "게스트 등록 실패"); }
             };
 
             const saveAndResetCurrent = async () => {
-                const currentParticipants = sessionData.filter(p => p.date === selectedViewDate);
-                if (currentParticipants.length === 0) return showAlert("확인", "현재 출석부에 등록된 인원이 없습니다.");
-                
-                showConfirm("기록 저장 및 리셋", `${selectedViewDate}일자 출결 기록을 저장하고 출석 탭에서 명단을 비우시겠습니까?`, async () => {
+                const currentParticipants = sessionData.filter(p => p.date === meetingTimes.date);
+                if (currentParticipants.length === 0) return showAlert("확인", "현재 출석부에 인원이 없습니다.");
+                showConfirm("기록 저장 및 리셋", "현재 출결 기록을 저장하고 명단을 비우시겠습니까?", async () => {
                     setIsPending(true);
                     try {
-                        const [eH, eM] = meetingTimes.end.split(':').map(Number);
-                        const endLimit = new Date(); endLimit.setHours(eH, eM, 0, 0);
-
-                        const records = currentParticipants.map(p => {
-                            let finalStatus = p.status || '미출석';
-                            if (!p.checkedIn && (todayStr > selectedViewDate || (todayStr === selectedViewDate && currentTime > endLimit))) {
-                                finalStatus = '노쇼';
-                            }
-                            return { 
-                                name: p.name, gender: p.gender, status: finalStatus, 
-                                checkInTime: p.checkInTime || '-', type: p.type,
-                                timestamp: p.checkedIn ? p.checkInTime : '99:99:99'
-                            };
-                        });
-
+                        const records = currentParticipants.map(p => ({ 
+                            name: p.isGuest ? `${p.name} - 초대:${p.inviterName}` : p.name, 
+                            gender: p.gender, status: p.status || '미출석', 
+                            checkInTime: p.checkInTime || '-', type: p.isGuest ? '게스트' : '정규', 
+                            timestamp: p.checkedIn ? p.checkInTime : '99:99:99'
+                        }));
                         await getHistoryCol().add({
-                            date: selectedViewDate, meetingTime: `${meetingTimes.start} ~ ${meetingTimes.end}`,
+                            date: meetingTimes.date, meetingTime: `${meetingTimes.start} ~ ${meetingTimes.end}`,
                             total: records.length, present: records.filter(r => r.status === '정상' || r.status === '지각').length,
                             records: records, createdAt: new Date().toISOString()
                         });
-
                         const batch = db.batch();
                         currentParticipants.forEach(p => batch.delete(getSessionCol().doc(p.id)));
                         await batch.commit();
-
                         showAlert("저장 완료", "기록이 저장되었습니다.");
-                    } catch (e) { showAlert("오류", "저장 중 문제가 발생했습니다."); } 
-                    finally { setIsPending(false); }
-                });
-            };
-
-            const addMember = async () => {
-                if (!newMemberName.trim() || isPending) return;
-                setIsPending(true);
-                try {
-                    await getMemberCol().add({ name: newMemberName.trim(), gender: newMemberGender, type: 'regular', createdAt: new Date().toISOString() });
-                    setNewMemberName('');
-                } catch (e) { showAlert("오류", "회원 추가 실패"); }
-                finally { setIsPending(false); }
-            };
-
-            const deleteMember = async (id, name) => {
-                showConfirm("회원 삭제", `${name} 님을 영구 삭제할까요?`, async () => {
-                    try { await getMemberCol().doc(id).delete(); } catch (e) { showAlert("오류", "삭제 실패"); }
-                });
-            };
-
-            const cleanupDuplicates = async () => {
-                showConfirm("중복 정리", "중복된 이름을 가진 회원을 정리하시겠습니까?", async () => {
-                    setIsPending(true);
-                    try {
-                        const seen = new Set();
-                        const toDelete = [];
-                        members.forEach(m => {
-                            if (seen.has(m.name)) toDelete.push(m.id);
-                            else seen.add(m.name);
-                        });
-                        if (toDelete.length === 0) return showAlert("확인", "중복 명단이 없습니다.");
-                        const membersRef = getMemberCol();
-                        const batch = db.batch();
-                        toDelete.forEach(id => batch.delete(membersRef.doc(id)));
-                        await batch.commit();
-                        showAlert("정리 완료", `${toDelete.length}명의 중복 데이터를 정리했습니다.`);
-                    } catch (e) { showAlert("오류", "정리 실패"); }
-                    finally { setIsPending(false); }
+                    } catch (e) { showAlert("오류", "저장 실패"); } finally { setIsPending(false); }
                 });
             };
 
             const toggleParticipant = async (member) => {
                 const targetDate = meetingTimes.date;
                 const existing = sessionData.find(p => p.memberId === member.id && p.date === targetDate);
-                try {
-                    if (existing) await getSessionCol().doc(existing.id).delete();
-                    else await getSessionCol().add({ 
-                        memberId: member.id, name: member.name, gender: member.gender, 
-                        date: targetDate, type: 'regular', checkedIn: false, status: '미출석' 
-                    });
-                } catch (e) { console.error(e); }
+                if (existing) await getSessionCol().doc(existing.id).delete();
+                else await getSessionCol().add({ memberId: member.id, name: member.name, gender: member.gender, date: targetDate, checkedIn: false, checkInTime: null, status: '미출석', isGuest: false });
             };
 
             const handleCheckIn = async (participant) => {
                 const now = new Date();
-                
-                // 모임 시작 시간 파악 (ISO 날짜 + T + HH:mm)
-                const startTimeStr = meetingTimes.start;
-                const meetingStart = new Date(`${participant.date}T${startTimeStr}`);
-                
-                // 출석 가능 시간 계산 (시작 시간 1시간 전)
+                const meetingStart = new Date(`${participant.date}T${meetingTimes.start}`);
                 const allowFrom = new Date(meetingStart.getTime() - 60 * 60 * 1000);
-                
-                // 현재 시간이 가능 시간보다 이전인 경우
                 if (now < allowFrom) {
-                    const year = allowFrom.getFullYear();
-                    const month = String(allowFrom.getMonth() + 1).padStart(2, '0');
-                    const day = String(allowFrom.getDate()).padStart(2, '0');
-                    const hour = String(allowFrom.getHours()).padStart(2, '0');
-                    const min = String(allowFrom.getMinutes()).padStart(2, '0');
-                    
-                    return showAlert("출석 불가", `${year}-${month}-${day} ${hour}:${min}부터 출석 가능합니다.`);
+                    const h = String(allowFrom.getHours()).padStart(2, '0');
+                    const mi = String(allowFrom.getMinutes()).padStart(2, '0');
+                    return showAlert("출석 불가", `${participant.date} ${h}:${mi}부터 가능합니다.`);
                 }
-
+                const lateThreshold = new Date(meetingStart.getTime() + 60000);
+                let finalStatus = now >= lateThreshold ? '지각' : '정상';
+                const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                 try {
-                    const [sH, sM] = meetingTimes.start.split(':').map(Number);
-                    const startLimit = new Date(`${participant.date}T${startTimeStr}`);
-                    const lateThreshold = new Date(startLimit.getTime() + 60000);
-                    let finalStatus = now >= lateThreshold ? '지각' : '정상';
-                    const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                     await getSessionCol().doc(participant.id).update({ checkedIn: true, checkInTime: timeStr, status: finalStatus });
                     setModal({ type: null, data: null });
                 } catch (e) { showAlert("오류", "출석 실패"); }
             };
 
-            const handleLockClick = () => {
+            const handleLockToggle = () => {
                 if (isAppLocked) setLockModalMode('unlock');
                 else setLockModalMode('set');
                 setTempPassword('');
@@ -292,299 +383,369 @@
 
             const confirmLock = () => {
                 if (!tempPassword.trim()) return showAlert("알림", "비밀번호를 입력하세요.");
-                setLockPassword(tempPassword);
-                setIsAppLocked(true);
-                setLockModalMode(null);
-                setView('attendance'); 
+                setLockPassword(tempPassword); setIsAppLocked(true); setLockModalMode(null); setView('attendance');
             };
 
             const confirmUnlock = () => {
-                if (tempPassword === lockPassword) {
-                    setIsAppLocked(false);
-                    setLockModalMode(null);
-                    setLockPassword('');
-                } else {
-                    showAlert("오류", "비밀번호가 일치하지 않습니다.");
-                }
+                if (tempPassword === lockPassword) { setIsAppLocked(false); setLockPassword(''); setLockModalMode(null); }
+                else showAlert("오류", "비밀번호가 틀렸습니다.");
             };
 
-            // -- Sync --
-            useEffect(() => {
-                const initAuth = async () => {
-                    try { await auth.signInAnonymously(); document.getElementById('loading-screen').style.display = 'none'; }
-                    catch (e) { setError('auth'); document.getElementById('loading-screen').style.display = 'none'; }
-                };
-                initAuth();
-                const unsubAuth = auth.onAuthStateChanged(u => setUser(u));
-                return () => unsubAuth();
-            }, []);
-
-            useEffect(() => {
-                if (!user) return;
-                const unsubM = getMemberCol().onSnapshot(snap => setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-                const unsubS = getSessionCol().onSnapshot(snap => setSessionData(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-                
-                const unsubT = getSettingsCol().doc('meeting_time').onSnapshot(doc => { 
-                    if (doc.exists) {
-                        const data = doc.data();
-                        if (data.date < todayStr) {
-                            const newDefault = { date: sundayStr, start: "08:00", end: "10:00" };
-                            setMeetingTimes(newDefault);
-                            setSelectedViewDate(newDefault.date);
-                            saveMeetingSettings(newDefault.date, newDefault.start, newDefault.end);
-                        } else {
-                            setMeetingTimes(data);
-                            setSelectedViewDate(data.date);
-                        }
-                    } else {
-                        saveMeetingSettings(sundayStr, "08:00", "10:00");
-                    }
-                });
-                const unsubH = getHistoryCol().onSnapshot(snap => setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.date.localeCompare(a.date))));
-                return () => { unsubM(); unsubS(); unsubT(); unsubH(); };
-            }, [user]);
-
             const activeParticipants = useMemo(() => {
-                return sessionData.filter(p => p.date === selectedViewDate).sort((a,b) => a.name.localeCompare(b.name));
-            }, [selectedViewDate, sessionData]);
+                return sessionData.filter(p => p.date === meetingTimes.date).sort((a,b) => a.name.localeCompare(b.name));
+            }, [sessionData, meetingTimes.date]);
 
             const sortedHistoryRecords = useMemo(() => {
                 if (!selectedHistoryDetail || !selectedHistoryDetail.records) return [];
                 const list = [...selectedHistoryDetail.records];
-                if (historySortKey === 'time') {
-                    return list.sort((a, b) => {
-                        const timeA = a.timestamp || a.checkInTime || '99:99:99';
-                        const timeB = b.timestamp || b.checkInTime || '99:99:99';
-                        return timeA.localeCompare(timeB) || a.name.localeCompare(b.name);
-                    });
-                } else if (historySortKey === 'status') {
+                if (historySortKey === 'time') return list.sort((a, b) => (a.timestamp || '99').localeCompare(b.timestamp || '99'));
+                if (historySortKey === 'status') {
                     const order = { '정상': 1, '지각': 2, '노쇼': 3, '미출석': 4 };
-                    return list.sort((a, b) => (order[a.status] || 99) - (order[b.status] || 99) || a.name.localeCompare(b.name));
+                    return list.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9));
                 }
                 return list;
             }, [selectedHistoryDetail, historySortKey]);
 
-            if (error) return <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 text-center font-bold">서버 연결 오류</div>;
+            const getCoupleName = (id) => {
+                const c = members.find(m => m.id === id);
+                return c ? c.name : '';
+            };
 
             return (
-                <div className="min-h-screen pb-40">
+                <div className="min-h-screen pb-40 text-slate-900">
+                    {/* Navigation */}
                     {!isAppLocked && (
-                        <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 sm:h-20 flex items-center px-4 shadow-sm">
+                        <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 sm:h-20 flex items-center px-4 shadow-sm text-slate-900">
                             <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
-                                <div className="flex gap-2">
-                                    <button onClick={() => setView('attendance')} className={`px-4 sm:px-5 py-2 rounded-xl font-black text-sm sm:text-lg transition-all ${view === 'attendance' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>출석</button>
-                                    <button onClick={() => setView('setup')} className={`px-4 sm:px-5 py-2 rounded-xl font-black text-sm sm:text-lg transition-all ${view === 'setup' ? 'bg-green-600 text-white shadow-lg' : 'text-slate-400'}`}>선정</button>
-                                    <button onClick={() => { setView('history_list'); setSelectedHistoryDetail(null); }} className={`px-4 sm:px-5 py-2 rounded-xl font-black text-sm sm:text-lg transition-all ${view.includes('history') ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400'}`}>기록</button>
+                                <div className="flex gap-1 sm:gap-2">
+                                    {['attendance', 'setup', 'history_list', 'members_list'].map((v) => (
+                                        <button key={v} onClick={() => setView(v)} className={`px-3 sm:px-6 py-2 rounded-xl font-black text-xs sm:text-base transition-all ${view.includes(v.split('_')[0]) ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+                                            {v === 'attendance' ? '출석' : v === 'setup' ? '선정' : v === 'history_list' ? '기록' : '전체명단'}
+                                        </button>
+                                    ))}
                                 </div>
                                 <div className="flex gap-2">
                                     {view === 'attendance' && (
-                                        <button onClick={handleLockClick} className="p-2.5 rounded-xl bg-slate-100 text-slate-400 hover:text-blue-600 transition-all">
-                                            <Icon.Lock />
-                                        </button>
+                                        <button onClick={handleLockToggle} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-blue-600 border border-slate-100 transition-all"><Icon.Lock /></button>
                                     )}
                                 </div>
                             </div>
                         </nav>
                     )}
 
-                    <main className={`p-4 sm:p-8 max-w-5xl mx-auto animate-zoom-in ${isAppLocked ? 'pt-12 sm:pt-20' : ''}`}>
+                    <main className={`p-4 sm:p-8 max-w-6xl mx-auto animate-zoom-in ${isAppLocked ? 'pt-16 sm:pt-20' : ''}`}>
+                        {/* 1. 출석 탭 */}
                         {view === 'attendance' && (
-                            <div>
-                                <header className="text-center mb-8">
-                                    <h1 className="text-4xl sm:text-5xl font-black text-blue-900 italic tracking-tighter mb-4 uppercase">OTP FC</h1>
-                                    <div className="flex flex-col gap-4 items-center max-w-md mx-auto">
-                                        
-                                        {/* 실시간 시계 표시 섹션 (흰색 배경) */}
-                                        <div className="bg-white px-8 py-5 rounded-[32px] shadow-xl flex flex-col items-center gap-1 animate-zoom-in border-2 border-slate-50">
-                                            <p className="text-[10px] font-black text-blue-600 tracking-[0.3em] uppercase">Current Time</p>
-                                            <span className="font-black text-slate-900 text-3xl sm:text-5xl tracking-tighter tabular-nums leading-none">
-                                                {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center gap-3 bg-white px-6 py-2.5 rounded-full border border-slate-100 shadow-sm">
-                                            <Icon.Clock size={16} className="text-green-500" />
-                                            <span className="font-black text-slate-700 text-sm sm:text-base">
-                                                {meetingTimes.start} ~ {meetingTimes.end}
-                                            </span>
-                                        </div>
-
-                                        <div className="w-full flex items-center gap-3 bg-white px-5 py-3.5 rounded-[24px] border border-slate-200 shadow-sm">
-                                            <Icon.Calendar size={20} className="text-blue-500" />
-                                            <input type="date" className="flex-1 font-black text-base sm:text-lg text-slate-700 outline-none" value={selectedViewDate} onChange={e => setSelectedViewDate(e.target.value)} disabled={isAppLocked} />
-                                            {selectedViewDate === todayStr && <span className="text-[9px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-lg">LIVE</span>}
-                                        </div>
-                                        
-                                        {!isAppLocked && activeParticipants.length > 0 && selectedViewDate === meetingTimes.date && currentTime >= new Date(`${meetingTimes.date} ${meetingTimes.end}`) && (
-                                            <button onClick={saveAndResetCurrent} className="w-full flex items-center justify-center gap-2 bg-purple-600 text-white py-3.5 rounded-2xl font-black text-sm shadow-xl hover:bg-purple-700 transition-all"><Icon.Save size={18}/> 기록 확정 및 리셋</button>
-                                        )}
+                            <div className="max-w-5xl mx-auto text-center">
+                                <h1 className="text-4xl sm:text-6xl font-black text-blue-900 italic tracking-tighter mb-4 uppercase">OTP FC</h1>
+                                <div className="flex flex-col gap-4 items-center mb-10">
+                                    <div className="bg-white px-10 py-6 rounded-[40px] shadow-xl border-2 border-slate-50 flex flex-col items-center">
+                                        <p className="text-[11px] font-black text-blue-600 tracking-[0.3em] uppercase mb-1">Current Time</p>
+                                        <span className="font-black text-slate-900 text-4xl sm:text-6xl tracking-tighter tabular-nums leading-none">
+                                            {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                                        </span>
                                     </div>
-                                </header>
-
-                                {activeParticipants.length === 0 ? (
-                                    <div className="text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-slate-100 shadow-sm">
-                                        <p className="text-slate-400 font-black mb-4 text-sm sm:text-base">현재 명단이 없습니다.</p>
-                                        {!isAppLocked && <button onClick={() => setView('setup')} className="bg-blue-600 text-white px-8 py-3.5 rounded-2xl font-black shadow-xl">새 명단 선정하기</button>}
+                                    <div className="bg-white px-8 py-3 rounded-full border border-slate-100 shadow-sm flex items-center gap-3 font-black text-slate-600 text-sm sm:text-lg">
+                                        <span>{meetingTimes.date}</span>
+                                        <div className="w-px h-4 bg-slate-200"/>
+                                        <span className="text-green-600">{meetingTimes.start} ~ {meetingTimes.end}</span>
                                     </div>
-                                ) : (
-                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
-                                        {activeParticipants.map(p => (
-                                            <button key={p.id} 
-                                                onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})}
-                                                className={`relative h-36 sm:h-52 rounded-[32px] sm:rounded-[40px] flex flex-col items-center justify-center px-4 transition-all shadow-lg active:scale-95 ${p.checkedIn ? 'bg-blue-50/50 text-slate-400 border-2 border-blue-200' : 'bg-white border-2 border-blue-50 text-blue-900'}`}>
-                                                <div className="absolute top-3">{p.checkedIn && <span className={`text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-full ${p.status === '정상' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{p.status}</span>}</div>
-                                                <span className={`text-xl sm:text-2xl font-black w-full text-center leading-tight break-keep ${p.checkedIn ? 'text-blue-400' : ''}`}>{p.name}</span>
-                                                {p.checkedIn ? <span className="text-[10px] sm:text-xs font-black text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full mt-2">{p.checkInTime}</span> : <span className={`text-[9px] sm:text-[10px] font-black mt-2 uppercase ${p.gender === '남성' ? 'text-blue-600' : 'text-red-500'}`}>{p.gender}</span>}
+                                    {!isAppLocked && activeParticipants.length > 0 && currentTime >= new Date(`${meetingTimes.date}T${meetingTimes.end}`) && (
+                                        <button onClick={saveAndResetCurrent} className="mt-4 flex items-center gap-2 bg-purple-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl"><Icon.Save size={18}/> 기록 확정 및 리셋</button>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+                                    {activeParticipants.map(p => {
+                                        const memberInfo = members.find(m => m.id === p.memberId);
+                                        const hasRole = memberInfo?.role && memberInfo.role !== '회원';
+                                        
+                                        return (
+                                            <button key={p.id} onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})} className={`relative h-40 sm:h-56 rounded-[40px] flex flex-col items-center justify-center transition-all shadow-lg active:scale-95 ${p.checkedIn ? 'bg-blue-50/50 text-slate-300 border-2 border-blue-200 shadow-none' : 'bg-white border-2 border-blue-50 text-blue-900'}`}>
+                                                <div className="absolute top-4">{p.checkedIn && <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${p.status === '정상' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{p.status}</span>}</div>
+                                                
+                                                {/* 직책 표시 (회원 아닐 때만) */}
+                                                {!p.checkedIn && hasRole && (
+                                                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md mb-1 ${getRoleBadgeClass(memberInfo.role)}`}>
+                                                        {memberInfo.role}
+                                                    </span>
+                                                )}
+
+                                                <span className={`text-2xl sm:text-3xl font-black leading-tight ${p.checkedIn ? 'text-slate-200' : 'text-slate-900'}`}>
+                                                    {p.name}
+                                                </span>
+                                                
+                                                {p.isGuest && <span className="text-[9px] font-bold text-slate-400 mt-1 italic uppercase text-center">초대: {p.inviterName}</span>}
+                                                
+                                                {p.checkedIn ? (
+                                                    <span className="text-xs font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-full mt-3">{p.checkInTime}</span>
+                                                ) : (
+                                                    /* 성별 문구 색상 강화 (700 계열) */
+                                                    <span className={`text-[10px] font-black mt-2 tracking-widest text-center uppercase ${p.gender === '남성' ? 'text-blue-700' : 'text-pink-700'}`}>
+                                                        {p.gender}
+                                                    </span>
+                                                )}
                                             </button>
-                                        ))}
-                                    </div>
-                                )}
+                                        );
+                                    })}
+                                    {activeParticipants.length === 0 && <div className="col-span-full py-20 text-slate-300 font-bold">선정된 인원이 없습니다.</div>}
+                                </div>
                             </div>
                         )}
 
-                        {!isAppLocked && (
-                            <>
-                                {view === 'history_list' && (
-                                    <div className="max-w-2xl mx-auto">
-                                        {!selectedHistoryDetail ? (
-                                            <>
-                                                <h2 className="text-xl sm:text-2xl font-black mb-6 flex items-center gap-2 px-2"><Icon.History className="text-purple-600" /> 과거 기록 보관함</h2>
-                                                <div className="space-y-3">
-                                                    {history.length === 0 ? <p className="text-center py-20 text-slate-400 font-black">저장된 기록이 없습니다.</p> : history.map(h => (
-                                                        <button key={h.id} onClick={() => setSelectedHistoryDetail(h)} className="w-full flex items-center justify-between p-6 bg-white rounded-[24px] border border-slate-100 shadow-sm active:bg-slate-50 transition-all text-left">
-                                                            <div><p className="text-lg font-black text-slate-900">{h.date}</p><p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{h.meetingTime}</p></div>
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="text-right"><p className="text-xl font-black text-purple-600">{h.present}/{h.total}</p><p className="text-[9px] font-bold text-slate-300">ATTENDANCE</p></div>
-                                                                <Icon.ChevronRight className="text-slate-200" />
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl overflow-hidden animate-zoom-in">
-                                                <div className="p-6 sm:p-8 bg-slate-900 text-white flex justify-between items-center"><button onClick={() => setSelectedHistoryDetail(null)} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all"><Icon.ArrowLeft size={20} /></button><div className="text-right"><h3 className="text-xl sm:text-2xl font-black">{selectedHistoryDetail.date}</h3><p className="text-[10px] font-bold opacity-50">{selectedHistoryDetail.meetingTime}</p></div></div>
-                                                <div className="p-5 sm:p-6">
-                                                    <div className="flex gap-2 mb-6"><button onClick={() => setHistorySortKey('time')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'time' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 시간순</button><button onClick={() => setHistorySortKey('status')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'status' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 구분순</button></div>
-                                                    <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar">
-                                                        {sortedHistoryRecords.map((r, idx) => (
-                                                            <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-[20px]">
-                                                                <div className="flex items-center gap-3"><span className="font-black text-base text-slate-700">{r.name}</span><span className={`text-[9px] font-black ${r.gender === '남성' ? 'text-blue-500' : 'text-red-400'}`}>{r.gender}</span></div>
-                                                                <div className="flex items-center gap-3"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${r.status === '정상' ? 'bg-green-100 text-green-600' : r.status === '지각' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}>{r.status}</span><span className="text-[10px] font-black text-slate-400 min-w-[55px] text-right">{r.checkInTime}</span></div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                    <button onClick={() => showConfirm("기록 삭제", "이 기록을 영구적으로 삭제하시겠습니까?", async () => { await getHistoryCol().doc(selectedHistoryDetail.id).delete(); setSelectedHistoryDetail(null); })} className="w-full mt-6 py-4 text-red-400 text-xs font-bold border-t border-slate-100 hover:text-red-600 transition-colors">데이터 영구 삭제</button>
-                                                </div>
-                                            </div>
-                                        )}
+                        {/* 2. 선정 탭 */}
+                        {view === 'setup' && (
+                            <div className="max-w-5xl mx-auto">
+                                <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
+                                    <div className="flex-1 w-full">
+                                        <h3 className="text-sm font-black text-slate-400 mb-4 tracking-widest text-left">일정 및 시간 설정</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <div><label className="text-[10px] font-black text-slate-400 ml-2">날짜</label><input type="date" className="w-full p-3 bg-slate-50 rounded-xl font-black border border-transparent focus:border-blue-500" value={meetingTimes.date} onChange={e => { setMeetingTimes(p=>({...p, date: e.target.value})); getSettingsCol().doc('meeting_time').set({...meetingTimes, date: e.target.value}); }} /></div>
+                                            <div><label className="text-[10px] font-black text-slate-400 ml-2">시작</label><select className="w-full p-3 bg-slate-50 rounded-xl font-black" value={meetingTimes.start} onChange={e => { setMeetingTimes(p=>({...p, start: e.target.value})); getSettingsCol().doc('meeting_time').set({...meetingTimes, start: e.target.value}); }}>{timeOptions.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+                                            <div><label className="text-[10px] font-black text-slate-400 ml-2">종료</label><select className="w-full p-3 bg-slate-50 rounded-xl font-black" value={meetingTimes.end} onChange={e => { setMeetingTimes(p=>({...p, end: e.target.value})); getSettingsCol().doc('meeting_time').set({...meetingTimes, end: e.target.value}); }}>{timeOptions.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+                                        </div>
                                     </div>
-                                )}
-                                {view === 'setup' && (
-                                    <div className="pb-24">
-                                        <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm mb-6 animate-zoom-in">
-                                            <h3 className="text-sm font-black text-slate-400 mb-4 flex items-center gap-2"><Icon.Clock size={16}/> 일정 및 시간 설정</h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                                <div><label className="text-[10px] font-black text-slate-400 ml-2">모임 날짜</label><input type="date" className="w-full p-3 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-green-500" value={meetingTimes.date} onChange={e => { const v = e.target.value; setMeetingTimes(p => ({...p, date: v})); saveMeetingSettings(v, meetingTimes.start, meetingTimes.end); }} /></div>
-                                                <div><label className="text-[10px] font-black text-slate-400 ml-2">시작 시간</label><select className="w-full p-3 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-green-500 cursor-pointer" value={meetingTimes.start} onChange={e => { const v = e.target.value; setMeetingTimes(p => ({...p, start: v})); saveMeetingSettings(meetingTimes.date, v, meetingTimes.end); }}>{timeOptions.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
-                                                <div><label className="text-[10px] font-black text-slate-400 ml-2">종료 시간</label><select className="w-full p-3 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-green-500 cursor-pointer" value={meetingTimes.end} onChange={e => { const v = e.target.value; setMeetingTimes(p => ({...p, end: v})); saveMeetingSettings(meetingTimes.date, meetingTimes.start, v); }}>{timeOptions.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
-                                            </div>
-                                        </div>
-                                        <h2 className="text-xl sm:text-2xl font-black mb-5 flex items-center gap-2 px-1"><Icon.Check className="text-green-600" /> {meetingTimes.date} 인원 선정</h2>
-                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-8">
-                                            {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => {
-                                                const isSel = sessionData.some(p => p.memberId === m.id && p.date === meetingTimes.date);
-                                                return (
-                                                    <button key={m.id} onClick={() => toggleParticipant(m)} className={`p-4 h-20 rounded-[20px] border-2 transition-all flex flex-col items-center justify-center relative active:scale-95 ${isSel ? 'border-green-500 bg-green-50 shadow-md' : 'bg-white border-slate-100 opacity-60'}`}>
-                                                        <span className="font-black text-lg">{m.name}</span><span className={`text-[9px] font-bold ${m.gender === '남성' ? 'text-blue-500' : 'text-red-500'}`}>{m.gender}</span>
-                                                        {isSel && <div className="absolute top-2 right-2 text-green-600"><Icon.CheckCircle size={14} /></div>}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                        <div className="max-w-md mx-auto sticky bottom-24 z-10 px-4"><button onClick={() => { setSelectedViewDate(meetingTimes.date); setView('attendance'); }} className="w-full bg-blue-600 text-white py-4 rounded-3xl font-black text-lg shadow-2xl active:scale-95 transition-all">선정 완료</button></div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setIsGuestModalOpen(true)} className="flex flex-col items-center justify-center w-24 h-24 rounded-3xl bg-blue-50 text-blue-600 border border-blue-100 shadow-sm hover:bg-blue-100 transition-all active:scale-95">
+                                            <Icon.UserPlus size={24} className="mb-1"/>
+                                            <span className="text-[10px] font-black">게스트 추가</span>
+                                        </button>
+                                        <button onClick={handleResetSelection} className="flex flex-col items-center justify-center w-24 h-24 rounded-3xl bg-red-50 text-red-500 border border-red-100 shadow-sm hover:bg-red-100 transition-all active:scale-95">
+                                            <Icon.RotateCcw size={24} className="mb-1"/>
+                                            <span className="text-[10px] font-black">명단 초기화</span>
+                                        </button>
                                     </div>
-                                )}
-                                {view === 'members' && (
-                                    <div className="max-w-2xl mx-auto px-1 pb-24">
-                                        <div className="flex justify-between items-center mb-6"><h2 className="text-xl sm:text-2xl font-black flex items-center gap-2"><Icon.Users className="text-blue-600" /> 회원 데이터 관리</h2><button onClick={() => setIsBulkMode(!isBulkMode)} className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-[10px] font-black">{isBulkMode ? '개별 등록' : '대량 등록'}</button></div>
-                                        <div className="flex flex-wrap gap-2 mb-6"><button onClick={cleanupDuplicates} disabled={isPending} className="flex-1 bg-purple-50 text-purple-600 px-3 py-2.5 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 border border-purple-100"><Icon.Sparkles size={14} /> 중복 정리</button><button onClick={deleteAllMembers} disabled={isPending || members.length === 0} className="flex-1 bg-red-50 text-red-600 px-3 py-2.5 rounded-xl text-[10px] font-black">전체 삭제</button></div>
-                                        <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm mb-6">
-                                            {isBulkMode ? (
-                                                <div className="space-y-3"><textarea rows="5" placeholder="엑셀 명단을 붙여넣으세요..." className="w-full p-4 bg-slate-50 rounded-2xl font-black text-sm outline-none resize-none border-2 border-transparent focus:border-blue-500" value={bulkText} onChange={e => setBulkText(e.target.value)} /><button onClick={handleBulkAdd} disabled={isPending} className="w-full bg-blue-600 text-white py-3 rounded-2xl font-black text-sm shadow-lg">일괄 등록하기</button></div>
-                                            ) : (
-                                                <div className="flex flex-col gap-3"><input type="text" placeholder="이름" className="p-4 bg-slate-50 rounded-xl font-black outline-none border-2 border-transparent focus:border-blue-500 text-base" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} /><div className="flex gap-2"><select className="flex-1 p-4 bg-slate-50 rounded-xl font-black outline-none" value={newMemberGender} onChange={e => setNewMemberGender(e.target.value)}><option>남성</option><option>여성</option></select><button onClick={addMember} disabled={isPending} className="bg-blue-600 text-white px-6 rounded-xl font-black shadow-lg">추가</button></div></div>
-                                            )}
-                                        </div>
-                                        <div className="space-y-1.5 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar">
-                                            {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
-                                                <div key={m.id} className="flex items-center justify-between p-4 bg-white rounded-[20px] border border-slate-50 shadow-sm">
-                                                    <div className="flex items-center gap-3"><div className={`w-8 h-8 rounded-full flex items-center justify-center ${m.gender === '남성' ? 'bg-blue-50 text-blue-500' : 'bg-pink-50 text-pink-500'}`}><Icon.Users size={16} /></div><span className="font-bold text-lg">{m.name} <small className="opacity-30">{m.gender}</small></span></div>
-                                                    <button onClick={() => deleteMember(m.id, m.name)} className="text-slate-200 p-2"><Icon.Trash /></button>
+                                </div>
+
+                                {activeParticipants.some(p => p.isGuest) && (
+                                    <div className="mb-8 animate-zoom-in text-left">
+                                        <h2 className="text-xl font-black mb-4 flex items-center gap-2 px-1 text-blue-600">추가된 게스트</h2>
+                                        <div className="flex flex-wrap gap-2">
+                                            {activeParticipants.filter(p => p.isGuest).map(g => (
+                                                <div key={g.id} className={`px-4 py-2 rounded-2xl border-2 shadow-md flex items-center gap-2 ${g.gender === '남성' ? 'bg-[#E1F0FF] border-[#2563EB] text-[#2563EB]' : 'bg-[#FFE5ED] border-[#DB2777] text-[#DB2777]'}`}>
+                                                    <span className="font-black">{g.name} <small className="text-[9px] opacity-70">초대:{g.inviterName}</small></span>
+                                                    <button onClick={() => getSessionCol().doc(g.id).delete()} className="text-red-400 hover:text-red-600 p-0.5"><Icon.Trash size={14}/></button>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 )}
-                            </>
+
+                                <h2 className="text-2xl font-black mb-6 flex items-center gap-2 px-1 text-slate-700 text-left"><Icon.CheckCircle size={24} className="text-green-500" /> 주간 참여자 선정</h2>
+                                <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 text-left">
+                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => {
+                                        const isSel = sessionData.some(p => p.memberId === m.id && p.date === meetingTimes.date);
+                                        return (
+                                            <button key={m.id} onClick={() => toggleParticipant(m)} className={`p-4 h-24 rounded-2xl border-2 transition-all flex flex-col items-center justify-center relative active:scale-95 ${isSel ? 'border-green-500 bg-green-50 shadow-md' : 'bg-white border-slate-50 opacity-60'} ${!isSel ? (m.gender === '남성' ? 'hover:border-blue-200' : 'hover:border-pink-200') : ''}`}>
+                                                <span className={`font-black text-lg ${m.gender === '남성' ? 'text-blue-700' : 'text-pink-700'}`}>{m.name}</span>
+                                                <div className="flex gap-1 items-center mt-1">
+                                                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${getPosColorClass(m.position)}`}>{m.position}</span>
+                                                    <span className={`text-[9px] font-bold ${m.gender === '남성' ? 'text-blue-500' : 'text-pink-500'}`}>{m.gender}</span>
+                                                </div>
+                                                {isSel && <div className="absolute top-2 right-2 text-green-600"><Icon.CheckCircle size={14}/></div>}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 탭 3: 기록 */}
+                        {view === 'history_list' && (
+                            <div className="max-w-4xl mx-auto">
+                                {!selectedHistoryDetail ? (
+                                    <>
+                                        <h2 className="text-2xl font-black mb-6 flex items-center gap-2 px-2 text-slate-700 text-left"><Icon.History className="text-purple-600" /> 과거 기록 보관함</h2>
+                                        <div className="space-y-3 text-left">
+                                            {history.length === 0 ? <p className="text-center py-20 text-slate-400 font-black">기록이 없습니다.</p> : history.map(h => (
+                                                <button key={h.id} onClick={() => setSelectedHistoryDetail(h)} className="w-full flex items-center justify-between p-6 bg-white rounded-[24px] border border-slate-100 shadow-sm active:bg-slate-50 transition-all">
+                                                    <div className="text-left"><p className="text-lg font-black text-slate-900">{h.date}</p><p className="text-[10px] font-bold text-slate-400 mt-1">{h.meetingTime}</p></div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="text-right"><p className="text-xl font-black text-purple-600">{h.present}/{h.total}</p><p className="text-[9px] font-bold text-slate-300 uppercase font-black">Presence</p></div>
+                                                        <Icon.ChevronRight className="text-slate-200" />
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl overflow-hidden animate-zoom-in text-left">
+                                        <div className="p-6 sm:p-8 bg-slate-900 text-white flex justify-between items-center"><button onClick={() => setSelectedHistoryDetail(null)} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all"><Icon.ArrowLeft size={20} /></button><div className="text-right"><h3 className="text-xl sm:text-2xl font-black">{selectedHistoryDetail.date}</h3><p className="text-[10px] font-bold opacity-50">{selectedHistoryDetail.meetingTime}</p></div></div>
+                                        <div className="p-5 sm:p-6 text-left">
+                                            <div className="flex gap-2 mb-6"><button onClick={() => setHistorySortKey('time')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'time' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 시간순</button><button onClick={() => setHistorySortKey('status')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'status' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 구분순</button></div>
+                                            <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar text-left">
+                                                {sortedHistoryRecords.map((r, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-[20px]">
+                                                        <div className="flex items-center gap-3"><span className="font-black text-base text-slate-700">{r.name}</span><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${getGenderPastelClass(r.gender)}`}>{r.gender}</span></div>
+                                                        <div className="flex items-center gap-3 text-right"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${r.status === '정상' ? 'bg-green-100 text-green-600' : r.status === '지각' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}>{r.status}</span><span className="text-[10px] font-black text-slate-400 min-w-[55px] text-right">{r.checkInTime}</span></div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <button onClick={() => showConfirm("기록 삭제", "이 기록을 영구 삭제하시겠습니까?", async () => { await getHistoryCol().doc(selectedHistoryDetail.id).delete(); setSelectedHistoryDetail(null); })} className="w-full mt-6 py-4 text-red-400 text-xs font-bold border-t border-slate-100 hover:text-red-600 transition-colors text-center">데이터 영구 삭제</button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 탭 4: 전체 명단 */}
+                        {view === 'members_list' && (
+                            <div className="max-w-6xl mx-auto pb-24 text-left">
+                                <div className="bg-white p-6 sm:p-10 rounded-[48px] shadow-sm border border-slate-100 mb-10 text-left">
+                                    <div className="flex justify-between items-start mb-8 text-left">
+                                        <h2 className="text-3xl font-black text-blue-600 tracking-tighter">마스터 회원 관리</h2>
+                                        <button onClick={() => setIsBulkMode(!isBulkMode)} className={`px-6 py-2.5 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${isBulkMode ? 'bg-slate-900 text-white' : 'bg-blue-50 text-blue-600'}`}><Icon.FileSpreadsheet size={18}/>{isBulkMode ? '개별 등록' : '대량 등록'}</button>
+                                    </div>
+
+                                    {isBulkMode ? (
+                                        <div className="animate-zoom-in text-left">
+                                            <div className="bg-blue-50/50 p-4 rounded-2xl mb-4 border border-blue-100 text-xs font-bold text-blue-700 text-left">💡 데이터 순서: 이름, 생년월일, 성별, 포지션, 실력단계, 직책</div>
+                                            <textarea className="w-full h-64 p-6 bg-slate-50 rounded-3xl font-bold text-sm border-2 border-transparent focus:border-blue-300 resize-none transition-all custom-scrollbar" placeholder="시트 내용을 붙여넣으세요..." value={bulkPasteText} onChange={e => setBulkPasteText(e.target.value)} />
+                                            <div className="flex justify-end gap-3 mt-6"><button onClick={() => setBulkPasteText('')} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">초기화</button><button onClick={handleBulkAdd} className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all">등록 실행</button></div>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 animate-zoom-in text-left">
+                                            <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">이름</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black" value={newMember.name} onChange={e=>setNewMember({...newMember, name: e.target.value})} placeholder="성함" /></div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[10px] font-black text-slate-400 ml-1 flex justify-between"><span>생년월일(YYYYMMDD)</span><label className="flex items-center gap-1 cursor-pointer select-none"><input type="checkbox" checked={newMember.isEarlyBirth} onChange={e=>setNewMember({...newMember, isEarlyBirth: e.target.checked})} className="scale-75" /><span className="text-[9px] text-blue-600 font-black">빠른</span></label></label>
+                                                <input type="text" maxLength="8" className="p-4 bg-slate-50 rounded-2xl font-black text-sm" value={newMember.birth} onChange={e=>setNewMember({...newMember, birth: e.target.value.replace(/[^0-9]/g, '')})} placeholder="19900101" />
+                                            </div>
+                                            <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">성별</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={newMember.gender} onChange={e=>setNewMember({...newMember, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
+                                            <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-slate-400 ml-1 text-blue-500 font-black text-left font-black">직책</label><select className="p-4 bg-slate-50 rounded-2xl font-black border border-blue-100" value={newMember.role} onChange={e=>setNewMember({...newMember, role: e.target.value})}>{roles.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
+                                            <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">포지션</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={newMember.position} onChange={e=>setNewMember({...newMember, position: e.target.value})}><option value="all">ALL</option><option value="피보">피보</option><option value="아라">아라</option><option value="픽소">픽소</option></select></div>
+                                            <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">실력 점수</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={newMember.level} onChange={e=>setNewMember({...newMember, level: e.target.value})}>{newMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
+                                            <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">커플 대상</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={newMember.coupleId} onChange={e=>setNewMember({...newMember, coupleId: e.target.value})}><option value="">대상 없음</option>{members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                            <div className="sm:col-span-1 flex items-end"><button onClick={handleAddMember} className="w-full h-14 bg-blue-600 text-white rounded-[20px] font-black shadow-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2"><Icon.Plus /> 등록</button></div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-left">
+                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                        <div key={m.id} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative group hover:shadow-md transition-all text-left">
+                                            <div className="flex items-start justify-between mb-4 text-left">
+                                                <div className="flex items-center gap-4 text-left">
+                                                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-black shadow-lg ${getGenderPastelClass(m.gender)}`}>{m.level}</div>
+                                                    <div className="text-left">
+                                                        <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 text-left">
+                                                            {m.name}
+                                                            {m.role && m.role !== '회원' && <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black ${getRoleBadgeClass(m.role)}`}>{m.role}</span>}
+                                                            {m.isEarlyBirth && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-lg border border-blue-100 font-black">빠른</span>}
+                                                        </h3>
+                                                        <div className="flex gap-1.5 mt-1 text-left"><span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${getPosColorClass(m.position)}`}>{m.position}</span><span className="text-[11px] font-bold text-slate-300">{formatBirth(m.birth)}</span></div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2 text-right">
+                                                    <button onClick={() => setEditingMember({...m, role: m.role || '회원'})} className="text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all p-1"><Icon.Edit size={20}/></button>
+                                                    <button onClick={() => showConfirm("회원 삭제", `${m.name} 님을 삭제하시겠습니까?`, async () => { await getMemberCol().doc(m.id).delete(); })} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"><Icon.Trash size={20}/></button>
+                                                </div>
+                                            </div>
+                                            {m.coupleId && <div className="inline-flex items-center gap-2 bg-pink-50 text-pink-600 px-4 py-2 rounded-full text-xs font-black border border-pink-100"><Icon.Heart size={14} className="animate-pulse"/> {getCoupleName(m.coupleId)}</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         )}
                     </main>
 
+                    {/* 잠금 해제 버튼 */}
                     {isAppLocked && (
-                        <button onClick={handleLockClick} className="fixed bottom-6 right-6 w-14 h-14 bg-white text-slate-400 rounded-full shadow-2xl flex items-center justify-center border-2 border-slate-100 z-[150] active:scale-90 transition-all">
-                            <Icon.Unlock size={24} />
+                        <button onClick={handleLockToggle} className="fixed bottom-10 right-10 w-16 h-16 bg-white text-slate-400 rounded-full shadow-2xl flex items-center justify-center border-2 border-slate-100 z-[150] active:scale-90 transition-all">
+                            <Icon.Unlock size={28} />
                         </button>
                     )}
 
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-2xl border border-white shadow-2xl rounded-full px-8 py-3.5 flex gap-8 items-center z-40 border-t border-slate-50 scale-90 sm:scale-100">
-                        <div className="text-center"><p className="text-[9px] text-slate-400 font-black uppercase tracking-tight">Scheduled</p><p className="text-xl font-black text-slate-900">{activeParticipants.length}</p></div>
-                        <div className="w-px h-8 bg-slate-100" />
-                        <div className="text-center"><p className="text-[8px] text-slate-400 font-black uppercase tracking-tight">Present</p><p className="text-xl font-black text-green-600">{activeParticipants.filter(p=>p.checkedIn).length}</p></div>
-                    </div>
+                    {/* 게스트 추가 모달 */}
+                    {isGuestModalOpen && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[48px] w-full max-w-md p-10 shadow-2xl animate-zoom-in text-left">
+                                <h2 className="text-2xl font-black mb-8 text-blue-600 tracking-tighter text-left">게스트 직접 추가</h2>
+                                <div className="space-y-5 mb-8 text-left">
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">게스트 이름</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500" value={newGuest.name} onChange={e=>setNewGuest({...newGuest, name: e.target.value})} placeholder="이름 입력" /></div>
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">성별</label><select className="p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500" value={newGuest.gender} onChange={e=>setNewGuest({...newGuest, gender: e.target.value})}><option>남성</option><option>여성</option></select></div>
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">초대한 회원 (선택사항)</label><select className="p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500" value={newGuest.inviterId} onChange={e=>setNewGuest({...newGuest, inviterId: e.target.value})}><option value="">없음</option>{members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                </div>
+                                <div className="flex gap-3"><button onClick={() => setIsGuestModalOpen(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black">취소</button><button onClick={handleAddGuest} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl shadow-blue-100">추가하기</button></div>
+                            </div>
+                        </div>
+                    )}
 
+                    {/* 회원 정보 수정 모달 */}
+                    {editingMember && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[48px] w-full max-w-lg p-10 shadow-2xl animate-zoom-in text-left">
+                                <h2 className="text-2xl font-black mb-8 text-blue-600 tracking-tighter text-left">회원 정보 수정</h2>
+                                <div className="grid grid-cols-2 gap-4 mb-8 text-left">
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">이름</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black" value={editingMember.name} onChange={e=>setEditingMember({...editingMember, name: e.target.value})} /></div>
+                                    <div className="flex flex-col gap-1 text-left">
+                                        <label className="text-[10px] font-black text-slate-400 ml-1 flex justify-between"><span>생년월일(8자리)</span><label className="flex items-center gap-1 cursor-pointer select-none"><input type="checkbox" checked={editingMember.isEarlyBirth} onChange={e=>setEditingMember({...editingMember, isEarlyBirth: e.target.checked})} className="scale-75" /><span className="text-[9px] text-blue-600 font-black">빠른</span></label></label>
+                                        <input type="text" maxLength="8" className="p-4 bg-slate-50 rounded-2xl font-black text-sm" value={editingMember.birth} onChange={e=>setEditingMember({...editingMember, birth: e.target.value.replace(/[^0-9]/g, '')})} placeholder="19900101" />
+                                    </div>
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">성별</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={editingMember.gender} onChange={e=>setEditingMember({...editingMember, gender: e.target.value, level: editingMember.level})}><option>남성</option><option>여성</option></select></div>
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 font-black text-blue-600 text-left">직책</label><select className="p-4 bg-slate-50 rounded-2xl font-black border border-blue-100 text-left" value={editingMember.role || '회원'} onChange={e=>setEditingMember({...editingMember, role: e.target.value})}>{roles.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">포지션</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={editingMember.position} onChange={e=>setEditingMember({...editingMember, position: e.target.value})}><option value="all">ALL</option><option value="피보">피보</option><option value="아라">아라</option><option value="픽소">픽소</option></select></div>
+                                    <div className="flex flex-col gap-1 text-left">
+                                        <label className="text-[10px] font-black text-slate-400 ml-1 text-left">실력 점수</label>
+                                        <select className="p-4 bg-slate-50 rounded-2xl font-black" value={String(editingMember.level)} onChange={e=>setEditingMember({...editingMember, level: e.target.value})}>
+                                            {editingMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">커플 대상</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={editingMember.coupleId} onChange={e=>setEditingMember({...editingMember, coupleId: e.target.value})}><option value="">대상 없음</option>{members.filter(m => m.id !== editingMember.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                </div>
+                                <div className="flex gap-3"><button onClick={() => setEditingMember(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black text-center">취소</button><button onClick={handleUpdateMember} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl text-center">저장</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 잠금 모달 */}
                     {lockModalMode && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[300] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in text-center">
-                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-900">
-                                    {lockModalMode === 'set' ? <Icon.Lock size={30} /> : <Icon.Unlock size={30} />}
-                                </div>
-                                <h3 className="text-xl font-black mb-2 text-slate-900">
-                                    {lockModalMode === 'set' ? '잠금 비밀번호 설정' : '잠금 해제'}
-                                </h3>
-                                <p className="text-slate-400 text-sm mb-8 font-bold">
-                                    {lockModalMode === 'set' ? '아이패드 비치를 위해 숫자 비밀번호를 설정하세요.' : '잠금을 해제하려면 비밀번호를 입력하세요.'}
-                                </p>
-                                <input 
-                                    type="password" 
-                                    inputMode="numeric"
-                                    placeholder="비밀번호" 
-                                    className="w-full p-4 bg-slate-50 rounded-2xl font-black text-center text-2xl outline-none border-2 border-transparent focus:border-blue-500 mb-6"
-                                    value={tempPassword}
-                                    onChange={e => setTempPassword(e.target.value)}
-                                    autoFocus
-                                />
-                                <div className="flex gap-2">
-                                    <button onClick={() => setLockModalMode(null)} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm">취소</button>
-                                    <button onClick={lockModalMode === 'set' ? confirmLock : confirmUnlock} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm shadow-lg">
-                                        {lockModalMode === 'set' ? '잠금 시작' : '해제하기'}
-                                    </button>
+                            <div className="bg-white rounded-[48px] w-full max-w-sm p-10 shadow-2xl text-center">
+                                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-900">{lockModalMode === 'set' ? <Icon.Lock size={36} /> : <Icon.Unlock size={36} />}</div>
+                                <h3 className="text-2xl font-black mb-2 tracking-tighter text-center">현장 잠금 설정</h3>
+                                <p className="text-slate-400 text-sm mb-8 font-bold text-center">비밀번호를 입력하세요.</p>
+                                <input type="password" inputMode="numeric" placeholder="비밀번호" className="w-full p-5 bg-slate-50 rounded-3xl font-black text-center text-3xl mb-8 border-2 border-transparent focus:border-blue-500 outline-none transition-all" value={tempPassword} onChange={e => setTempPassword(e.target.value)} autoFocus />
+                                <div className="flex gap-3"><button onClick={() => setLockModalMode(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black">취소</button><button onClick={lockModalMode === 'set' ? confirmLock : confirmUnlock} className="flex-1 py-5 bg-slate-900 text-white rounded-3xl font-black shadow-xl">{lockModalMode === 'set' ? '잠금 시작' : '해제하기'}</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 알림 모달 (Z-INDEX 9999) */}
+                    {alertModal.show && (
+                        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[48px] w-full max-w-sm p-10 shadow-2xl text-center border-2 border-blue-50 animate-zoom-in text-slate-900">
+                                <h3 className="text-2xl font-black mb-4 tracking-tighter text-center">{alertModal.title}</h3>
+                                <p className="text-slate-500 font-bold mb-10 text-base leading-relaxed whitespace-pre-wrap text-center">{alertModal.content}</p>
+                                <div className="flex gap-3">
+                                    {alertModal.type === 'confirm' && <button onClick={() => setAlertModal(p => ({...p, show: false}))} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black">취소</button>}
+                                    <button onClick={() => { if (alertModal.onConfirm) alertModal.onConfirm(); setAlertModal(p => ({...p, show: false})); }} className={`flex-1 py-5 text-white rounded-3xl font-black shadow-xl ${alertModal.type === 'confirm' ? 'bg-blue-600' : 'bg-slate-900'}`}>확인</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {alertModal.show && (
-                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in text-center"><h3 className="text-xl sm:text-2xl font-black mb-3 text-slate-900">{alertModal.title}</h3><p className="text-slate-500 font-bold mb-8 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">{alertModal.content}</p><div className="flex gap-2">{alertModal.type === 'confirm' && <button onClick={() => setAlertModal(p => ({...p, show: false}))} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm">취소</button>}<button onClick={() => { if (alertModal.onConfirm) alertModal.onConfirm(); setAlertModal(p => ({...p, show: false})); }} className={`flex-1 py-4 text-white rounded-2xl font-black shadow-lg text-sm ${alertModal.type === 'confirm' ? 'bg-blue-600' : 'bg-slate-900'}`}>확인</button></div></div>
-                        </div>
-                    )}
-
+                    {/* 출석 확인/취소 모달 */}
                     {modal.type === 'check' && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-center justify-center p-4"><div className="bg-white rounded-[40px] sm:rounded-[48px] w-full max-w-sm p-8 sm:p-10 text-center animate-zoom-in shadow-2xl"><h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-8 sm:mb-10 tracking-tighter break-keep">{modal.data.name} 님</h2><button onClick={() => handleCheckIn(modal.data)} className="w-full bg-blue-600 text-white py-6 rounded-[30px] text-xl sm:text-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 transition-all">출석 확인</button><button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold text-sm">닫기</button></div></div>
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-center justify-center p-4"><div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center shadow-2xl animate-zoom-in"><h2 className="text-4xl font-black text-slate-900 mb-10 tracking-tighter text-center">{modal.data.name} 님</h2><button onClick={() => handleCheckIn(modal.data)} className="w-full bg-blue-600 text-white py-8 rounded-[32px] text-2xl font-black shadow-xl active:scale-95 transition-all">출석 확인</button><button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold text-sm text-center w-full">닫기</button></div></div>
+                    )}
+                    {modal.type === 'cancel' && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-end sm:items-center justify-center p-4"><div className="bg-white rounded-t-[48px] sm:rounded-[48px] w-full max-w-sm p-10 text-center animate-zoom-in shadow-2xl text-center"><h2 className="text-3xl font-black mb-4 tracking-tighter text-center">{modal.data.name} 님</h2><p className="mb-10 text-slate-400 font-bold italic text-center">출석 기록을 취소하시겠습니까?</p><button onClick={async () => { try { await getSessionCol().doc(modal.data.id).update({ checkedIn: false, checkInTime: null, status: '미출석' }); setModal({ type: null, data: null }); } catch(e) { console.error(e); } }} className="w-full bg-red-500 text-white py-6 rounded-3xl text-xl font-black shadow-xl active:scale-95 transition-all text-center">출석 취소하기</button><button onClick={() => setModal({type:null, data:null})} className="mt-3 text-slate-400 font-bold text-sm text-center w-full">돌아가기</button></div></div>
                     )}
 
-                    {modal.type === 'cancel' && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-end sm:items-center justify-center p-4"><div className="bg-white rounded-t-[40px] sm:rounded-[48px] w-full max-w-sm p-8 sm:p-10 text-center animate-zoom-in shadow-2xl"><h2 className="text-2xl sm:text-3xl font-black mb-6 text-slate-900 tracking-tighter break-keep">{modal.data.name} 님</h2><p className="mb-8 text-slate-400 font-bold italic text-sm">출석 기록을 취소하시겠습니까?</p><button onClick={async () => { try { await getSessionCol().doc(modal.data.id).update({ checkedIn: false, checkInTime: null, status: '미출석' }); setModal({ type: null, data: null }); } catch(e) { console.error(e); } }} className="w-full bg-red-500 text-white py-5 rounded-[24px] text-lg font-black shadow-xl active:scale-95 transition-all">출석 취소하기</button><button onClick={() => setModal({type:null, data:null})} className="mt-3 text-slate-400 font-bold text-sm">돌아가기</button></div></div>
+                    {/* 하단 바 */}
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-2xl border border-white shadow-2xl rounded-full px-10 py-4 flex gap-10 items-center z-40 scale-90 sm:scale-100 border-t border-slate-50">
+                        <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Members</p><p className="text-2xl font-black text-slate-900 leading-none">{members.length}</p></div>
+                        <div className="w-px h-8 bg-slate-100" />
+                        <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Selected</p><p className="text-2xl font-black text-blue-600 leading-none">{activeParticipants.length}</p></div>
+                        <div className="w-px h-8 bg-slate-100" />
+                        <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Present</p><p className="text-2xl font-black text-green-600 leading-none">{activeParticipants.filter(p=>p.checkedIn).length}</p></div>
+                    </div>
+
+                    {/* 잠금 해제 플로팅 버튼 */}
+                    {isAppLocked && (
+                        <button onClick={handleLockToggle} className="fixed bottom-10 right-10 w-16 h-16 bg-white text-slate-400 rounded-full shadow-2xl flex items-center justify-center border-2 border-slate-100 z-[150] active:scale-90 transition-all">
+                            <Icon.Unlock size={28} />
+                        </button>
                     )}
                 </div>
             );
