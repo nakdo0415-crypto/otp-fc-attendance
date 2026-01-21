@@ -159,6 +159,7 @@
         const getSettingsCol = () => getCol('settings');
 
         function App() {
+            // -- 1. State Definition --
             const [view, setView] = useState('attendance');
             const [members, setMembers] = useState([]);
             const [sessionData, setSessionData] = useState([]);
@@ -181,14 +182,13 @@
             const [modal, setModal] = useState({ type: null, data: null });
             const [alertModal, setAlertModal] = useState({ show: false, title: '', content: '', type: 'info', onConfirm: null });
 
-            // 회원 관리 State
+            // 회원 관리 & 게스트 State
             const [newMember, setNewMember] = useState({ name: '', birth: '', gender: '남성', position: 'all', level: '1', coupleId: '', isEarlyBirth: false, role: '회원' });
             const [editingMember, setEditingMember] = useState(null);
             const [isBulkMode, setIsBulkMode] = useState(false);
             const [bulkPasteText, setBulkPasteText] = useState('');
             const [isPending, setIsPending] = useState(false);
 
-            // 게스트 State
             const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
             const [newGuest, setNewGuest] = useState({ name: '', gender: '남성', inviterId: '', inviterName: '', level: '1' });
             
@@ -198,63 +198,67 @@
             const [loginForm, setLoginForm] = useState({ name: '', password: '' });
             const [isPasswordChangeModalOpen, setIsPasswordChangeModalOpen] = useState(false);
             const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' });
-            const [isManagerSelectorOpen, setIsManagerSelectorOpen] = useState(false);
+            const [showManagerModal, setShowManagerModal] = useState(false); // Renamed from isManagerSelectorOpen
 
+            // -- 2. Constants & Memoized Values --
             const staffRoles = ['회장', '매니저', '총무', '부총무'];
             const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), []);
             const minuteOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')), []);
-
-            const showAlert = (title, content, type = 'info') => setAlertModal({ show: true, title, content, type, onConfirm: null });
-            const showConfirm = (title, content, onConfirm) => setAlertModal({ show: true, title, content, type: 'confirm', onConfirm });
-
-            // 실시간 시계 (HH:MM:SS)
-            useEffect(() => {
-                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-                return () => clearInterval(timer);
-            }, []);
-
-            // Firebase Sync
-            useEffect(() => {
-                const initAuth = async () => {
-                    try { 
-                        await auth.signInAnonymously();
-                        document.getElementById('loading-screen').style.display = 'none'; 
-                    } catch (e) { 
-                        console.error(e);
-                        document.getElementById('loading-screen').innerText = "접속 오류"; 
-                    }
-                };
-                initAuth();
-                const unsubAuth = auth.onAuthStateChanged(u => {
-                    if (u) {
-                        getMemberCol().onSnapshot(snap => setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-                        getSessionCol().onSnapshot(snap => setSessionData(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-                        getHistoryCol().onSnapshot(snap => setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.date.localeCompare(a.date))));
-                        getSettingsCol().doc('meeting_time').onSnapshot(doc => { 
-                            if (doc.exists) setMeetingTimes(prev => ({...prev, ...doc.data()}));
-                        });
-                    }
-                });
-                return () => unsubAuth();
-            }, []);
-
-            // 팝업 초기화 로직
-            useEffect(() => {
-                setModal({ type: null, data: null });
-                setEditingMember(null);
-                setIsGuestModalOpen(false);
-                setLockModalMode(null);
-                setSelectedHistoryDetail(null);
-                setAlertModal(prev => ({...prev, show: false}));
-                setIsPasswordChangeModalOpen(false);
-                setIsManagerSelectorOpen(false);
-            }, [view]);
 
             const activeParticipants = useMemo(() => {
                 return sessionData.filter(p => p.date === meetingTimes.date).sort((a,b) => a.name.localeCompare(b.name));
             }, [sessionData, meetingTimes.date]);
 
-            // 로그인 처리
+            const activeParticipantsSorted = useMemo(() => [...activeParticipants].sort((a,b) => a.name.localeCompare(b.name)), [activeParticipants]);
+
+            const isMeetingOver = useMemo(() => {
+                const meetingEndTime = new Date(`${meetingTimes.date}T${meetingTimes.end}`);
+                return currentTime >= meetingEndTime;
+            }, [currentTime, meetingTimes]);
+
+            // -- 3. Helper Functions (함수 표현식으로 정의하여 호이스팅 문제 방지) --
+            const showAlert = (title, content, type = 'info') => setAlertModal({ show: true, title, content, type, onConfirm: null });
+            const showConfirm = (title, content, onConfirm) => setAlertModal({ show: true, title, content, type: 'confirm', onConfirm });
+
+            const getCoupleName = (id) => {
+                const c = members.find(m => m.id === id);
+                return c ? c.name : '';
+            };
+
+            const updateMeetingTimeSettings = (newData) => {
+                setMeetingTimes(newData);
+                getSettingsCol().doc('meeting_time').set(newData);
+            };
+
+            const toggleParticipant = async (member) => {
+                const targetDate = meetingTimes.date;
+                const existing = sessionData.find(p => p.memberId === member.id && p.date === targetDate);
+                if (existing) {
+                    await getSessionCol().doc(existing.id).delete();
+                } else {
+                    await getSessionCol().add({
+                        memberId: member.id,
+                        name: member.name,
+                        gender: member.gender,
+                        level: member.level,
+                        date: targetDate,
+                        checkedIn: false,
+                        checkInTime: null,
+                        status: '미출석',
+                        isGuest: false
+                    });
+                }
+            };
+
+            const registerCurrentAsManager = () => {
+                if (!loggedInManager) return;
+                updateMeetingTimeSettings({
+                    ...meetingTimes,
+                    managerId: loggedInManager.id,
+                    managerName: loggedInManager.name
+                });
+            };
+
             const handleLogin = () => {
                 if (!loginForm.name.trim() || !loginForm.password.trim()) return showAlert("알림", "이름과 비밀번호를 입력해주세요.");
                 const user = members.find(m => m.name === loginForm.name.trim());
@@ -295,11 +299,6 @@
                 } catch (e) { showAlert("오류", "변경 실패"); }
             };
 
-            const registerCurrentAsManager = () => {
-                if (!loggedInManager) return;
-                updateMeetingTimeSettings({ ...meetingTimes, managerId: loggedInManager.id, managerName: loggedInManager.name });
-            };
-
             const handleLockToggle = () => {
                 if (isAppLocked) setLockModalMode('unlock');
                 else setLockModalMode('set');
@@ -316,25 +315,29 @@
                 else showAlert("오류", "비밀번호가 틀렸습니다.");
             };
 
-            const isMeetingOver = useMemo(() => {
-                const meetingEndTime = new Date(`${meetingTimes.date}T${meetingTimes.end}`);
-                return currentTime >= meetingEndTime;
-            }, [currentTime, meetingTimes]);
-
-            useEffect(() => {
-                if (isMeetingOver && sessionData.length > 0) {
-                    const unchecked = sessionData.filter(p => p.date === meetingTimes.date && !p.checkedIn && p.status !== '노쇼');
-                    if (unchecked.length > 0) {
-                        const batch = db.batch();
-                        unchecked.forEach(p => batch.update(getSessionCol().doc(p.id), { status: '노쇼' }));
-                        batch.commit().catch(err => console.error(err));
-                    }
+            const handleCheckIn = async (participant) => {
+                const now = new Date();
+                const meetingStart = new Date(`${participant.date}T${meetingTimes.start}`);
+                const allowFrom = new Date(meetingStart.getTime() - 60 * 60 * 1000); 
+                if (now < allowFrom) {
+                    setModal({ type: null, data: null });
+                    return showAlert("출석 불가", `${participant.date} ${now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })} - 아직 출석 가능 시간이 아닙니다.`);
                 }
-            }, [isMeetingOver, sessionData, meetingTimes.date]);
+                const lateThreshold = new Date(meetingStart.getTime() + 60000); 
+                let finalStatus = now >= lateThreshold ? '지각' : '정상';
+                const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                try {
+                    await getSessionCol().doc(participant.id).update({ checkedIn: true, checkInTime: timeStr, status: finalStatus });
+                    setModal({ type: null, data: null });
+                } catch (e) { showAlert("오류", "출석 실패"); }
+            };
 
-            const updateMeetingTimeSettings = (newData) => {
-                setMeetingTimes(newData);
-                getSettingsCol().doc('meeting_time').set(newData);
+            const handleUpdateMember = async () => {
+                try {
+                    await getMemberCol().doc(editingMember.id).update({ ...editingMember, birth: String(editingMember.birth).replace(/[^0-9]/g, '') });
+                    setEditingMember(null);
+                    showAlert("완료", "정보가 수정되었습니다.");
+                } catch (e) { showAlert("오류", "수정 실패"); }
             };
 
             const handleAddMember = async () => {
@@ -372,14 +375,6 @@
                         showAlert("성공", "대량 등록 완료");
                     } catch (e) { showAlert("오류", "대량 등록 실패"); } finally { setIsPending(false); }
                 });
-            };
-
-            const handleUpdateMember = async () => {
-                try {
-                    await getMemberCol().doc(editingMember.id).update({ ...editingMember, birth: String(editingMember.birth).replace(/[^0-9]/g, '') });
-                    setEditingMember(null);
-                    showAlert("완료", "정보가 수정되었습니다.");
-                } catch (e) { showAlert("오류", "수정 실패"); }
             };
 
             const handleResetSelection = () => {
@@ -441,34 +436,57 @@
                 });
             };
 
-            const handleCheckIn = async (participant) => {
-                const now = new Date();
-                const meetingStart = new Date(`${participant.date}T${meetingTimes.start}`);
-                const allowFrom = new Date(meetingStart.getTime() - 60 * 60 * 1000); 
-                if (now < allowFrom) {
-                    setModal({ type: null, data: null });
-                    return showAlert("출석 불가", `${participant.date} ${now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })} - 아직 출석 가능 시간이 아닙니다.`);
+            // -- 4. Effects --
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            useEffect(() => {
+                const initAuth = async () => {
+                    try { 
+                        await auth.signInAnonymously();
+                        document.getElementById('loading-screen').style.display = 'none'; 
+                    } catch (e) { console.error(e); }
+                };
+                initAuth();
+                const unsubAuth = auth.onAuthStateChanged(u => {
+                    if (u) {
+                        getMemberCol().onSnapshot(snap => setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+                        getSessionCol().onSnapshot(snap => setSessionData(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+                        getHistoryCol().onSnapshot(snap => setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.date.localeCompare(a.date))));
+                        getSettingsCol().doc('meeting_time').onSnapshot(doc => { if (doc.exists) setMeetingTimes(prev => ({...prev, ...doc.data()})); });
+                    }
+                });
+                return () => unsubAuth();
+            }, []);
+
+            // 팝업 초기화 (수정됨: showManagerModal 사용)
+            useEffect(() => {
+                setModal({ type: null, data: null });
+                setEditingMember(null);
+                setIsGuestModalOpen(false);
+                setLockModalMode(null);
+                setSelectedHistoryDetail(null);
+                setAlertModal(prev => ({...prev, show: false}));
+                setIsPasswordChangeModalOpen(false);
+                setShowManagerModal(false); 
+            }, [view]);
+
+            // 자동 노쇼 처리 로직
+            useEffect(() => {
+                if (isMeetingOver && sessionData.length > 0) {
+                    const unchecked = sessionData.filter(p => p.date === meetingTimes.date && !p.checkedIn && p.status !== '노쇼');
+                    if (unchecked.length > 0) {
+                        const batch = db.batch();
+                        unchecked.forEach(p => batch.update(getSessionCol().doc(p.id), { status: '노쇼' }));
+                        batch.commit().catch(err => console.error(err));
+                    }
                 }
-                const lateThreshold = new Date(meetingStart.getTime() + 60000); 
-                let finalStatus = now >= lateThreshold ? '지각' : '정상';
-                const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-                try {
-                    await getSessionCol().doc(participant.id).update({ checkedIn: true, checkInTime: timeStr, status: finalStatus });
-                    setModal({ type: null, data: null });
-                } catch (e) { showAlert("오류", "출석 실패"); }
-            };
+            }, [isMeetingOver, sessionData, meetingTimes.date]);
 
-            const getCoupleName = (id) => {
-                const c = members.find(m => m.id === id);
-                return c ? c.name : '';
-            };
 
-            const staffMembers = useMemo(() => {
-                return members.filter(m => staffRoles.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
-            }, [members]);
-
-            const activeParticipantsSorted = useMemo(() => [...activeParticipants].sort((a,b) => a.name.localeCompare(b.name)), [activeParticipants]);
-
+            // -- 5. Render --
             return (
                 <div className="min-h-screen pb-40 text-slate-900">
                     {!isAppLocked && !isLoginModalOpen && (
@@ -488,8 +506,8 @@
                                             {loggedInManager.name} ({loggedInManager.role})
                                         </button>
                                     )}
-                                    <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all shadow-none"><Icon.LogOut size={18} /></button>
-                                    <button onClick={handleLockToggle} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-blue-600 border border-slate-100 transition-all shadow-none"><Icon.Lock size={18} /></button>
+                                    <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all shadow-none border-none"><Icon.LogOut size={18} /></button>
+                                    <button onClick={handleLockToggle} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-blue-600 border border-slate-100 transition-all shadow-none border-none"><Icon.Lock size={18} /></button>
                                 </div>
                             </div>
                         </nav>
@@ -501,24 +519,22 @@
                                 <h1 className="text-4xl sm:text-6xl font-black text-blue-900 italic tracking-tighter mb-4 uppercase">OTP FC</h1>
                                 {isMeetingOver && !isAppLocked && (
                                     <div className="mb-6 bg-purple-50 border-2 border-purple-200 p-6 rounded-[32px] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-zoom-in text-left">
-                                        <div><p className="text-purple-700 font-black text-lg">이번 모임이 종료되었습니다!</p><p className="text-purple-500 text-sm font-bold">기록을 확정하면 출석하지 않은 분들은 <span className="text-red-600">'노쇼'</span>로 자동 체크됩니다.</p></div>
-                                        <button onClick={saveAndResetCurrent} className="flex items-center gap-2 bg-purple-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl hover:bg-purple-700 active:scale-95 transition-all shadow-rose-100"><Icon.Save size={20}/> 한 주 기록 확정하기</button>
+                                        <div><p className="text-purple-700 font-black text-lg text-left">이번 모임이 종료되었습니다!</p><p className="text-purple-500 text-sm font-bold text-left">기록을 확정하면 출석하지 않은 분들은 <span className="text-red-600">'노쇼'</span>로 자동 체크됩니다.</p></div>
+                                        <button onClick={saveAndResetCurrent} className="flex items-center gap-2 bg-purple-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl hover:bg-purple-700 active:scale-95 transition-all shadow-rose-100 uppercase">Archive This Week</button>
                                     </div>
                                 )}
-                                <div className="flex flex-col gap-4 items-center mb-10">
+                                <div className="flex flex-col gap-4 items-center mb-10 text-center">
                                     <div className="bg-white px-10 py-6 rounded-[40px] shadow-xl border-2 border-slate-50 flex flex-col items-center">
                                         <p className="text-[11px] font-black text-blue-600 tracking-[0.3em] uppercase mb-1">Current Time</p>
-                                        <span className="font-black text-slate-900 text-4xl sm:text-6xl tracking-tighter tabular-nums leading-none">
-                                            {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-                                        </span>
+                                        <span className="font-black text-slate-900 text-4xl sm:text-6xl tracking-tighter tabular-nums leading-none">{currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</span>
                                     </div>
                                     <div className="flex flex-col gap-2 items-center">
-                                        <div className="bg-white px-8 py-3 rounded-full border border-slate-100 shadow-sm flex items-center gap-3 font-black text-slate-600 text-sm sm:text-lg">
+                                        <div className="bg-white px-8 py-3 rounded-full border border-slate-100 shadow-sm flex items-center gap-3 font-black text-slate-600 text-sm sm:text-lg transition-all">
                                             <span>{meetingTimes.date}</span><div className="w-px h-4 bg-slate-200" /><span className="text-green-600 font-black">{meetingTimes.start} ~ {meetingTimes.end}</span><div className="w-px h-4 bg-slate-200" />
                                             {meetingTimes.managerName ? (
                                                 <span className="text-blue-600 flex items-center gap-1.5 font-black"><Icon.ShieldCheck size={16} /> {meetingTimes.managerName}</span>
                                             ) : (
-                                                <button onClick={registerCurrentAsManager} className="text-[11px] text-blue-500 underline underline-offset-4 decoration-dotted font-black active:scale-95 transition-all">관리자 등록</button>
+                                                <button onClick={() => setShowManagerModal(true)} className="text-[11px] text-blue-500 underline underline-offset-4 decoration-dotted font-black active:scale-95 transition-all border-none">관리자 등록</button>
                                             )}
                                         </div>
                                         {meetingTimes.location && <div className="bg-blue-50/50 px-6 py-2 rounded-full border border-blue-100 flex items-center gap-2 text-blue-600 font-black text-sm transition-all shadow-sm"><Icon.MapPin size={16} /><span>{meetingTimes.location}</span></div>}
@@ -553,51 +569,82 @@
                                 <div className="bg-white p-6 sm:p-8 rounded-[40px] border border-slate-100 shadow-sm mb-8 text-left">
                                     <h3 className="text-sm font-black text-slate-400 mb-6 tracking-widest text-left uppercase">Next Meeting Schedule</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end text-left">
-                                        <div className="text-left"><label className="text-[10px] font-black text-slate-400 ml-2 text-left">날짜</label><input type="date" className="w-full p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500 shadow-none outline-none" value={meetingTimes.date} onChange={e => updateMeetingTimeSettings({...meetingTimes, date: e.target.value})} /></div>
+                                        <div className="text-left"><label className="text-[10px] font-black text-slate-400 ml-2 text-left uppercase">Date</label><input type="date" className="w-full p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500 shadow-none outline-none" value={meetingTimes.date} onChange={e => updateMeetingTimeSettings({...meetingTimes, date: e.target.value})} /></div>
                                         <div className="text-left">
-                                            <label className="text-[10px] font-black text-slate-400 ml-2">시작 시간</label>
-                                            <div className="flex gap-2">
+                                            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase">Start</label>
+                                            <div className="flex gap-2 text-xs">
                                                 <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black outline-none border-none" value={meetingTimes.start.split(':')[0]} onChange={e => updateMeetingTimeSettings({...meetingTimes, start: `${e.target.value}:${meetingTimes.start.split(':')[1]}`})}>{hourOptions.map(h => <option key={h} value={h}>{h}시</option>)}</select>
                                                 <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black outline-none border-none" value={meetingTimes.start.split(':')[1]} onChange={e => updateMeetingTimeSettings({...meetingTimes, start: `${meetingTimes.start.split(':')[0]}:${e.target.value}`})}>{minuteOptions.map(m => <option key={m} value={m}>{m}분</option>)}</select>
                                             </div>
                                         </div>
                                         <div className="text-left">
-                                            <label className="text-[10px] font-black text-slate-400 ml-2">종료 시간</label>
-                                            <div className="flex gap-2">
+                                            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase">End</label>
+                                            <div className="flex gap-2 text-xs">
                                                 <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black outline-none border-none" value={meetingTimes.end.split(':')[0]} onChange={e => updateMeetingTimeSettings({...meetingTimes, end: `${e.target.value}:${meetingTimes.end.split(':')[1]}`})}>{hourOptions.map(h => <option key={h} value={h}>{h}시</option>)}</select>
                                                 <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black outline-none border-none" value={meetingTimes.end.split(':')[1]} onChange={e => updateMeetingTimeSettings({...meetingTimes, end: `${meetingTimes.end.split(':')[0]}:${e.target.value}`})}>{minuteOptions.map(m => <option key={m} value={m}>{m}분</option>)}</select>
                                             </div>
                                         </div>
+                                        {/* [담당자 설정 섹션 수정] */}
                                         <div className="text-left">
-                                            <label className="text-[10px] font-black text-slate-400 ml-2 text-left">모임 관리자</label>
-                                            <div className="flex gap-2">
-                                                <div className="flex-1 p-4 bg-slate-50 rounded-2xl font-black text-slate-700 flex items-center justify-between overflow-hidden">
-                                                    <span className="truncate">{meetingTimes.managerName || "미지정"}</span>
-                                                    <button onClick={registerCurrentAsManager} className="text-[10px] font-black text-blue-600 bg-blue-100/50 px-3 py-1 rounded active:scale-95 transition-all flex-shrink-0">본인</button>
-                                                </div>
-                                                <button onClick={() => setIsManagerSelectorOpen(true)} className="p-4 bg-blue-50 text-blue-600 rounded-2xl font-black text-xs hover:bg-blue-100 transition-all flex-shrink-0">전체</button>
+                                            <label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Manager</label>
+                                            <div className="flex gap-2 text-xs">
+                                                <select 
+                                                    className="flex-1 p-4 bg-slate-50 rounded-2xl font-black text-slate-700 outline-none border-none" 
+                                                    value={meetingTimes.managerId || ""} 
+                                                    onChange={e => {
+                                                        const target = members.find(m => m.id === e.target.value);
+                                                        updateMeetingTimeSettings({...meetingTimes, managerId: e.target.value, managerName: target ? target.name : ""});
+                                                    }}
+                                                >
+                                                    <option value="">담당자 선택 (회원 전체)</option>
+                                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                                        <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
+                                                    ))}
+                                                </select>
+                                                <button 
+                                                    onClick={registerCurrentAsManager}
+                                                    className="px-6 bg-blue-600 text-white rounded-2xl font-black text-xs active:scale-95 transition-all shadow-lg shadow-blue-100 border-none"
+                                                >
+                                                    확인
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end mt-4 text-left">
                                         <div className="text-left md:col-span-2">
-                                            <label className="text-[10px] font-black text-slate-400 ml-2 text-left">장소</label>
+                                            <label className="text-[10px] font-black text-slate-400 ml-2 text-left uppercase">Location</label>
                                             <div className="relative"><input type="text" className="w-full p-4 pl-10 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500 shadow-none outline-none" placeholder="모임 장소 입력" value={meetingTimes.location || ''} onChange={e => updateMeetingTimeSettings({...meetingTimes, location: e.target.value})} /><div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><Icon.MapPin size={18} /></div></div>
                                         </div>
                                         <div className="md:col-span-2 flex justify-end gap-3 text-left">
-                                            <button onClick={() => setIsGuestModalOpen(true)} className="px-6 py-4 rounded-2xl bg-blue-50 text-blue-600 font-black flex items-center gap-2 text-sm shadow-sm active:scale-95 transition-all"><Icon.UserPlus size={18}/> 게스트 추가</button>
-                                            <button onClick={handleResetSelection} className="px-6 py-4 rounded-2xl bg-red-50 text-red-500 font-black flex items-center gap-2 text-sm shadow-sm active:scale-95 transition-all"><Icon.RotateCcw size={18}/> 명단 초기화</button>
+                                            <button onClick={() => setIsGuestModalOpen(true)} className="px-6 py-4 rounded-2xl bg-blue-50 text-blue-600 font-black flex items-center gap-2 text-sm shadow-sm active:scale-95 transition-all border-none"><Icon.UserPlus size={18}/> 게스트 추가</button>
+                                            <button onClick={handleResetSelection} className="px-6 py-4 rounded-2xl bg-red-50 text-red-500 font-black flex items-center gap-2 text-sm shadow-sm active:scale-95 transition-all border-none"><Icon.RotateCcw size={18}/> 명단 초기화</button>
                                         </div>
                                     </div>
                                 </div>
+                                {activeParticipants.some(p => p.isGuest) && (
+                                    <div className="mb-8 animate-zoom-in text-left">
+                                        <h2 className="text-xl font-black mb-4 flex items-center gap-2 px-1 text-blue-600 text-left">추가된 게스트</h2>
+                                        <div className="flex flex-wrap gap-2">
+                                            {activeParticipants.filter(p => p.isGuest).map(g => (
+                                                <div key={g.id} className={`px-4 py-2 rounded-2xl border-2 flex items-center gap-2 shadow-sm ${g.gender === '남성' ? 'bg-[#E1F0FF] border-[#2563EB] text-[#2563EB]' : 'bg-[#FFE5ED] border-[#DB2777] text-[#DB2777]'}`}>
+                                                    <span className="font-black text-xs">
+                                                        {g.name} <span className="ml-1 opacity-60">({g.level}단)</span>
+                                                        <small className="ml-2 opacity-70">초대:{g.inviterName}</small>
+                                                    </span>
+                                                    <button onClick={() => getSessionCol().doc(g.id).delete()} className="text-red-400 hover:text-red-600 p-0.5"><Icon.Trash size={14}/></button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 <h2 className="text-2xl font-black mb-6 text-slate-700 text-left"><Icon.CheckCircle size={24} className="text-green-500" /> 주간 참여자 선정</h2>
-                                <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 text-left">
+                                <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 text-left text-xs">
                                     {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => {
                                         const isSel = sessionData.some(p => p.memberId === m.id && p.date === meetingTimes.date);
                                         return (
                                             <button key={m.id} onClick={() => toggleParticipant(m)} className={`p-4 h-24 rounded-2xl border-2 transition-all flex flex-col items-center justify-center relative active:scale-95 ${isSel ? 'border-green-500 bg-green-50 shadow-md' : 'bg-white border-slate-50 opacity-60'} ${!isSel ? (m.gender === '남성' ? 'hover:border-blue-200' : 'hover:border-pink-200') : ''}`}>
                                                 <span className={`font-black text-lg ${m.gender === '남성' ? 'text-blue-700' : 'text-pink-700'}`}>{m.name}</span>
-                                                <div className="flex gap-1 items-center mt-1"><span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${getPosColorClass(m.position)} shadow-sm`}>{m.position}</span><span className={`text-[9px] font-bold ${m.gender === '남성' ? 'text-blue-500' : 'text-pink-500'}`}>{m.gender}</span></div>
+                                                <div className="flex gap-1 items-center mt-1 text-xs text-left"><span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${getPosColorClass(m.position)} shadow-sm`}>{m.position}</span><span className={`text-[9px] font-bold ${m.gender === '남성' ? 'text-blue-500' : 'text-pink-500'}`}>{m.gender}</span></div>
                                                 {isSel && <div className="absolute top-2 right-2 text-green-600 animate-zoom-in"><Icon.CheckCircle size={14}/></div>}
                                             </button>
                                         );
@@ -607,20 +654,20 @@
                         )}
 
                         {view === 'history_list' && (
-                            <div className="max-w-4xl mx-auto text-left">
+                            <div className="max-w-4xl mx-auto text-left text-xs">
                                 {!selectedHistoryDetail ? (
                                     <>
                                         <h2 className="text-2xl font-black mb-6 flex items-center gap-2 px-2 text-slate-700 text-left"><Icon.History className="text-purple-600" /> 과거 기록 보관함</h2>
                                         <div className="space-y-3 text-left">
-                                            {history.length === 0 ? <p className="text-center py-20 text-slate-400 font-black">기록이 없습니다.</p> : history.map(h => (
+                                            {history.length === 0 ? <p className="text-center py-20 text-slate-400 font-black uppercase text-sm">No records found.</p> : history.map(h => (
                                                 <button key={h.id} onClick={() => setSelectedHistoryDetail(h)} className="w-full flex items-center justify-between p-6 bg-white rounded-[24px] border border-slate-100 shadow-sm active:bg-slate-50 transition-all text-left">
-                                                    <div className="text-left">
+                                                    <div className="text-left text-xs sm:text-sm text-left">
                                                         <p className="text-lg font-black text-slate-900">{h.date}</p>
-                                                        <div className="flex flex-wrap items-center gap-2 mt-1 text-left">
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{h.meetingTime}</span><div className="w-px h-2 bg-slate-200" /><span className="text-[10px] font-bold text-blue-500">{h.location || "장소 미지정"}</span><div className="w-px h-2 bg-slate-200" /><span className="text-[10px] font-bold text-slate-900">관리: {h.managerName || "미지정"}</span>
+                                                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{h.meetingTime}</span><div className="w-px h-2 bg-slate-200" /><span className="text-[10px] font-bold text-blue-500">{h.location || "장소 미지정"}</span><div className="w-px h-2 bg-slate-200" /><span className="text-[10px] font-bold text-slate-900 uppercase">관리: {h.managerName || "미지정"}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-3"><div className="text-right"><p className="text-xl font-black text-purple-600">{h.present}/{h.total}</p><p className="text-[9px] font-bold text-slate-300 uppercase font-black">Presence</p></div><Icon.ChevronRight className="text-slate-200" /></div>
+                                                    <div className="flex items-center gap-3"><div className="text-right"><p className="text-xl font-black text-purple-600">{h.present}/{h.total}</p><p className="text-[9px] font-bold text-slate-300 uppercase font-black text-xs text-right">Presence</p></div><Icon.ChevronRight className="text-slate-200" /></div>
                                                 </button>
                                             ))}
                                         </div>
@@ -628,15 +675,15 @@
                                 ) : (
                                     <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl overflow-hidden animate-zoom-in text-left" onClick={() => setSelectedHistoryDetail(null)}>
                                         <div className="p-6 sm:p-8 bg-slate-900 text-white flex justify-between items-center" onClick={e => e.stopPropagation()}>
-                                            <button onClick={() => setSelectedHistoryDetail(null)} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all"><Icon.ArrowLeft size={20} /></button>
+                                            <button onClick={() => setSelectedHistoryDetail(null)} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all shadow-none outline-none border-none"><Icon.ArrowLeft size={20} /></button>
                                             <div className="text-right">
                                                 <h3 className="text-xl sm:text-2xl font-black">{selectedHistoryDetail.date}</h3>
                                                 <p className="text-[10px] font-bold opacity-50">{selectedHistoryDetail.meetingTime} | {selectedHistoryDetail.location || "장소 미지정"}</p>
-                                                <p className="text-[10px] font-black text-blue-300 mt-0.5 tracking-tighter">관리자: {selectedHistoryDetail.managerName || "미지정"}</p>
+                                                <p className="text-[10px] font-black text-blue-300 mt-0.5 tracking-tighter uppercase text-xs">Managed By: {selectedHistoryDetail.managerName || "미지정"}</p>
                                             </div>
                                         </div>
                                         <div className="p-5 sm:p-6 text-left" onClick={e => e.stopPropagation()}>
-                                            <div className="flex gap-2 mb-6"><button onClick={() => setHistorySortKey('time')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'time' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 시간순</button><button onClick={() => setHistorySortKey('status')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'status' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 구분순</button></div>
+                                            <div className="flex gap-2 mb-6 text-xs"><button onClick={() => setHistorySortKey('time')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'time' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 시간순</button><button onClick={() => setHistorySortKey('status')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'status' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 구분순</button></div>
                                             <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar text-left text-xs">
                                                 {selectedHistoryDetail.records.map((r, idx) => (
                                                     <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-[20px] text-left">
@@ -645,7 +692,7 @@
                                                     </div>
                                                 ))}
                                             </div>
-                                            <button onClick={() => showConfirm("기록 삭제", "이 기록을 영구 삭제하시겠습니까?", async () => { await getHistoryCol().doc(selectedHistoryDetail.id).delete(); setSelectedHistoryDetail(null); })} className="w-full mt-6 py-4 text-red-400 text-xs font-bold border-t border-slate-100 hover:text-red-600 transition-colors text-center shadow-none active:scale-95 transition-all">데이터 영구 삭제</button>
+                                            <button onClick={() => showConfirm("기록 삭제", "이 기록을 영구 삭제하시겠습니까?", async () => { await getHistoryCol().doc(selectedHistoryDetail.id).delete(); setSelectedHistoryDetail(null); })} className="w-full mt-6 py-4 text-red-400 text-xs font-bold border-t border-slate-100 hover:text-red-600 transition-colors text-center shadow-none active:scale-95 transition-all border-none outline-none">데이터 영구 삭제</button>
                                         </div>
                                     </div>
                                 )}
@@ -655,27 +702,27 @@
                         {view === 'members_list' && (
                             <div className="max-w-6xl mx-auto pb-24 text-left">
                                 <div className="bg-white p-6 sm:p-10 rounded-[48px] shadow-sm border border-slate-100 mb-10 text-left">
-                                    <div className="flex justify-between items-start mb-8 text-left"><h2 className="text-3xl font-black text-blue-600 tracking-tighter text-left uppercase">Master Directory</h2><button onClick={() => setIsBulkMode(!isBulkMode)} className={`px-6 py-2.5 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${isBulkMode ? 'bg-slate-900 text-white shadow-lg' : 'bg-blue-50 text-blue-600'}`}><Icon.FileSpreadsheet size={18}/>{isBulkMode ? '개별 등록' : '대량 등록'}</button></div>
+                                    <div className="flex justify-between items-start mb-8 text-left uppercase text-xs sm:text-sm"><h2 className="text-3xl font-black text-blue-600 tracking-tighter text-left">Master Directory</h2><button onClick={() => setIsBulkMode(!isBulkMode)} className={`px-6 py-2.5 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${isBulkMode ? 'bg-slate-900 text-white shadow-lg' : 'bg-blue-50 text-blue-600'}`}><Icon.FileSpreadsheet size={18}/>{isBulkMode ? '개별 등록' : '대량 등록'}</button></div>
                                     {isBulkMode ? (
-                                        <div className="animate-zoom-in text-left"><textarea className="w-full h-64 p-6 bg-slate-50 rounded-3xl font-bold text-sm border-2 border-transparent focus:border-blue-300 resize-none transition-all custom-scrollbar shadow-none outline-none" placeholder="이름, 생일, 성별, 포지션, 단계..." value={bulkPasteText} onChange={e => setBulkPasteText(e.target.value)} /><div className="flex justify-end gap-3 mt-6"><button onClick={() => setBulkPasteText('')} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black active:scale-95 transition-all">초기화</button><button onClick={handleBulkAdd} className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 transition-all shadow-blue-100">등록 실행</button></div></div>
+                                        <div className="animate-zoom-in text-left text-xs"><textarea className="w-full h-64 p-6 bg-slate-50 rounded-3xl font-bold text-sm border-2 border-transparent focus:border-blue-300 resize-none transition-all custom-scrollbar shadow-none outline-none border-none" placeholder="이름, 생일, 성별, 포지션, 단계..." value={bulkPasteText} onChange={e => setBulkPasteText(e.target.value)} /><div className="flex justify-end gap-3 mt-6 text-xs text-left"><button onClick={() => setBulkPasteText('')} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black active:scale-95 transition-all border-none outline-none">초기화</button><button onClick={handleBulkAdd} className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 transition-all shadow-blue-100 uppercase">Submit Bulk</button></div></div>
                                     ) : (
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 animate-zoom-in text-left text-xs">
-                                            <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase">Name</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100" value={newMember.name} onChange={e=>setNewMember({...newMember, name: e.target.value})} placeholder="성함" /></div>
-                                            <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 flex justify-between uppercase"><span>Birth</span><label className="flex items-center gap-1 cursor-pointer select-none"><input type="checkbox" checked={newMember.isEarlyBirth} onChange={e=>setNewMember({...newMember, isEarlyBirth: e.target.checked})} className="scale-75" /><span className="text-[9px] text-blue-600 font-black">빠른</span></label></label><input type="text" maxLength="8" className="p-4 bg-slate-50 rounded-2xl font-black text-sm outline-none border-2 border-transparent focus:border-blue-100" value={newMember.birth} onChange={e=>setNewMember({...newMember, birth: e.target.value.replace(/[^0-9]/g, '')})} placeholder="19900101" /></div>
-                                            <div className="flex flex-col gap-1 text-left text-xs text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase">Gender</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={newMember.gender} onChange={e=>setNewMember({...newMember, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
-                                            <div className="flex flex-col gap-1 text-left text-xs text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase">Level</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={newMember.level} onChange={e=>setNewMember({...newMember, level: e.target.value})}>{newMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
-                                            <div className="sm:col-span-1 flex items-end"><button onClick={handleAddMember} className="w-full h-14 bg-blue-600 text-white rounded-[20px] font-black shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-blue-100"><Icon.Plus /> 등록</button></div>
+                                            <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase text-xs">Name</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100" value={newMember.name} onChange={e=>setNewMember({...newMember, name: e.target.value})} placeholder="성함" /></div>
+                                            <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 flex justify-between uppercase text-left"><span>Birth</span><label className="flex items-center gap-1 cursor-pointer select-none"><input type="checkbox" checked={newMember.isEarlyBirth} onChange={e=>setNewMember({...newMember, isEarlyBirth: e.target.checked})} className="scale-75" /><span className="text-[9px] text-blue-600 font-black">빠른</span></label></label><input type="text" maxLength="8" className="p-4 bg-slate-50 rounded-2xl font-black text-sm outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={newMember.birth} onChange={e=>setNewMember({...newMember, birth: e.target.value.replace(/[^0-9]/g, '')})} placeholder="19900101" /></div>
+                                            <div className="flex flex-col gap-1 text-left text-xs text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase text-xs text-left">Gender</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left" value={newMember.gender} onChange={e=>setNewMember({...newMember, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
+                                            <div className="flex flex-col gap-1 text-left text-xs text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase text-xs text-left">Level</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left" value={newMember.level} onChange={e=>setNewMember({...newMember, level: e.target.value})}>{newMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
+                                            <div className="sm:col-span-1 flex items-end"><button onClick={handleAddMember} className="w-full h-14 bg-blue-600 text-white rounded-[20px] font-black shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-blue-100 uppercase text-xs sm:text-sm">Register</button></div>
                                         </div>
                                     )}
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-left text-xs">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-left text-xs sm:text-sm text-left">
                                     {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
                                         <div key={m.id} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative group hover:shadow-md transition-all text-left">
                                             <div className="flex items-start justify-between text-left">
-                                                <div className="flex items-center gap-4 text-left"><div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-black shadow-lg ${getGenderPastelClass(m.gender)}`}>{m.level}</div><div className="text-left"><h3 className="text-2xl font-black text-slate-900 flex items-center gap-2">{m.name}{m.role && m.role !== '회원' && <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black ${getRoleBadgeClass(m.role)} shadow-sm uppercase`}>{m.role}</span>}</h3><div className="flex gap-1.5 mt-1 text-left"><span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${getPosColorClass(m.position)} shadow-sm`}>{m.position}</span><span className="text-[11px] font-bold text-slate-300">{formatBirth(m.birth)}</span></div></div></div>
-                                                <div className="flex gap-2 text-right"><button onClick={() => setEditingMember({...m})} className="text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none"><Icon.Edit size={20}/></button><button onClick={() => showConfirm("회원 삭제", `${m.name} 님을 삭제하시겠습니까?`, async () => { await getMemberCol().doc(m.id).delete(); })} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none"><Icon.Trash size={20}/></button></div>
+                                                <div className="flex items-center gap-4 text-left"><div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-black shadow-lg ${getGenderPastelClass(m.gender)}`}>{m.level}</div><div className="text-left"><h3 className="text-2xl font-black text-slate-900 flex items-center gap-2 text-left">{m.name}{m.role && m.role !== '회원' && <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black ${getRoleBadgeClass(m.role)} shadow-sm uppercase text-xs`}>{m.role}</span>}</h3><div className="flex gap-1.5 mt-1 text-left text-xs text-left"><span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${getPosColorClass(m.position)} shadow-sm`}>{m.position}</span><span className="text-[11px] font-bold text-slate-300 text-left">{formatBirth(m.birth)}</span></div></div></div>
+                                                <div className="flex gap-2 text-right"><button onClick={() => setEditingMember({...m})} className="text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none border-none"><Icon.Edit size={20}/></button><button onClick={() => showConfirm("회원 삭제", `${m.name} 님을 삭제하시겠습니까?`, async () => { await getMemberCol().doc(m.id).delete(); })} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none border-none"><Icon.Trash size={20}/></button></div>
                                             </div>
-                                            {m.coupleId && <div className="inline-flex items-center gap-2 bg-pink-50 text-pink-600 px-4 py-2 rounded-full text-xs font-black border border-pink-100 mt-4 shadow-sm"><Icon.Heart size={14} className="animate-pulse"/> {getCoupleName(m.coupleId)}</div>}
+                                            {m.coupleId && <div className="inline-flex items-center gap-2 bg-pink-50 text-pink-600 px-4 py-2 rounded-full text-xs font-black border border-pink-100 mt-4 shadow-sm"><Icon.Heart size={14} className="animate-pulse text-left"/> {getCoupleName(m.coupleId)}</div>}
                                         </div>
                                     ))}
                                 </div>
@@ -689,12 +736,12 @@
                             <div className="bg-white rounded-[48px] w-full max-w-md p-10 shadow-2xl animate-zoom-in text-center border-2 border-blue-50">
                                 <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-blue-100 text-white"><Icon.ShieldCheck size={40} /></div>
                                 <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tighter uppercase">Admin Login</h2>
-                                <p className="text-slate-400 text-sm font-bold mb-10 tracking-widest text-xs uppercase">운영진 전용 관리 시스템</p>
+                                <p className="text-slate-400 text-sm font-bold mb-10 tracking-widest uppercase text-xs text-center">운영진 전용 관리 시스템</p>
                                 <div className="space-y-4 mb-10 text-left">
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Name</label><input type="text" className="p-5 bg-slate-50 rounded-3xl font-black border-2 border-transparent focus:border-blue-500 transition-all outline-none shadow-none" placeholder="이름 입력" value={loginForm.name} onChange={e => setLoginForm({...loginForm, name: e.target.value})} onKeyDown={e => e.key === 'Enter' && handleLogin()}/></div>
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Password (YYMMDD)</label><input type="password" className="p-5 bg-slate-50 rounded-3xl font-black border-2 border-transparent focus:border-blue-500 transition-all outline-none shadow-none" placeholder="••••••" value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} onKeyDown={e => e.key === 'Enter' && handleLogin()}/></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Name</label><input type="text" className="p-5 bg-slate-50 rounded-3xl font-black border-2 border-transparent focus:border-blue-500 transition-all outline-none shadow-none text-left" placeholder="이름 입력" value={loginForm.name} onChange={e => setLoginForm({...loginForm, name: e.target.value})} onKeyDown={e => e.key === 'Enter' && handleLogin()}/></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Password (YYMMDD)</label><input type="password" className="p-5 bg-slate-50 rounded-3xl font-black border-2 border-transparent focus:border-blue-500 transition-all outline-none shadow-none text-left" placeholder="••••••" value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} onKeyDown={e => e.key === 'Enter' && handleLogin()}/></div>
                                 </div>
-                                <button onClick={handleLogin} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-xl shadow-blue-100 active:scale-95 transition-all uppercase">Enter</button>
+                                <button onClick={handleLogin} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-xl shadow-blue-100 active:scale-95 transition-all uppercase text-center">Enter</button>
                             </div>
                         </div>
                     )}
@@ -703,28 +750,28 @@
                     {isPasswordChangeModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[6000] flex items-center justify-center p-4" onClick={() => setIsPasswordChangeModalOpen(false)}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 shadow-2xl animate-zoom-in text-left text-xs" onClick={e => e.stopPropagation()}>
-                                <h2 className="text-2xl font-black mb-8 text-blue-600 tracking-tighter">비밀번호 변경</h2>
-                                <div className="space-y-4 mb-10 text-left">
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">현재 비밀번호</label><input type="password" placeholder="현재 비밀번호" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={passwordForm.current} onChange={e => setPasswordForm({...passwordForm, current: e.target.value})} /></div>
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">새 비밀번호</label><input type="password" placeholder="새 비밀번호" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={passwordForm.next} onChange={e => setPasswordForm({...passwordForm, next: e.target.value})} /></div>
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">비밀번호 확인</label><input type="password" placeholder="확인 입력" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={passwordForm.confirm} onChange={e => setPasswordForm({...passwordForm, confirm: e.target.value})} /></div>
+                                <h2 className="text-2xl font-black mb-8 text-blue-600 tracking-tighter uppercase text-left">Change Password</h2>
+                                <div className="space-y-4 mb-10 text-left text-xs">
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Current</label><input type="password" placeholder="현재 비밀번호" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-xs" value={passwordForm.current} onChange={e => setPasswordForm({...passwordForm, current: e.target.value})} /></div>
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">New</label><input type="password" placeholder="새 비밀번호" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-xs" value={passwordForm.next} onChange={e => setPasswordForm({...passwordForm, next: e.target.value})} /></div>
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Confirm</label><input type="password" placeholder="확인 입력" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-xs" value={passwordForm.confirm} onChange={e => setPasswordForm({...passwordForm, confirm: e.target.value})} /></div>
                                 </div>
-                                <div className="flex gap-3"><button onClick={() => setIsPasswordChangeModalOpen(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={handlePasswordChange} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all shadow-blue-100">변경하기</button></div>
+                                <div className="flex gap-3 text-left text-xs"><button onClick={() => setIsPasswordChangeModalOpen(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none text-xs uppercase text-center">취소</button><button onClick={handlePasswordChange} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all uppercase text-xs text-center">Apply</button></div>
                             </div>
                         </div>
                     )}
 
                     {/* 전체 관리자 선택 모달 */}
-                    {isManagerSelectorOpen && (
-                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setIsManagerSelectorOpen(false)}>
-                            <div className="bg-white rounded-[48px] w-full max-w-2xl p-10 shadow-2xl animate-zoom-in text-left flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
-                                <h2 className="text-2xl font-black mb-6 text-blue-600 tracking-tighter">전체 회원 중 관리자 지정</h2>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 overflow-y-auto pr-2 custom-scrollbar flex-1 mb-8">
+                    {showManagerModal && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setShowManagerModal(false)}>
+                            <div className="bg-white rounded-[48px] w-full max-w-2xl p-10 shadow-2xl animate-zoom-in text-left flex flex-col max-h-[80vh] text-left" onClick={e => e.stopPropagation()}>
+                                <h2 className="text-2xl font-black mb-6 text-blue-600 tracking-tighter uppercase text-left">Pick Manager</h2>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 overflow-y-auto pr-2 custom-scrollbar flex-1 mb-8 text-left text-xs">
                                     {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
-                                        <button key={m.id} onClick={() => { updateMeetingTimeSettings({...meetingTimes, managerId: m.id, managerName: m.name}); setIsManagerSelectorOpen(false); }} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center ${meetingTimes.managerId === m.id ? 'border-blue-600 bg-blue-50' : 'bg-white border-slate-100 hover:border-blue-200 shadow-sm'}`}><span className="font-black text-slate-800">{m.name}</span><span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{m.role}</span></button>
+                                        <button key={m.id} onClick={() => { updateMeetingTimeSettings({...meetingTimes, managerId: m.id, managerName: m.name}); setShowManagerModal(false); }} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center ${meetingTimes.managerId === m.id ? 'border-blue-600 bg-blue-50' : 'bg-white border-slate-100 hover:border-blue-200 shadow-sm'}`}><span className="font-black text-slate-800 text-left">{m.name}</span><span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-xs text-left">{m.role}</span></button>
                                     ))}
                                 </div>
-                                <div className="flex gap-3 mt-auto"><button onClick={() => setIsManagerSelectorOpen(false)} className="w-full py-5 bg-slate-100 text-slate-500 rounded-3xl font-black text-center shadow-none active:scale-95 transition-all border-none outline-none">닫기</button></div>
+                                <div className="flex gap-3 mt-auto"><button onClick={() => setShowManagerModal(false)} className="w-full py-5 bg-slate-100 text-slate-500 rounded-3xl font-black text-center shadow-none active:scale-95 transition-all border-none outline-none text-xs text-center">닫기</button></div>
                             </div>
                         </div>
                     )}
@@ -732,42 +779,27 @@
                     {/* 게스트 추가 모달 */}
                     {isGuestModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setIsGuestModalOpen(false)}>
-                            <div className="bg-white rounded-[48px] w-full max-w-md p-10 shadow-2xl animate-zoom-in text-left text-xs" onClick={e => e.stopPropagation()}>
-                                <h2 className="text-2xl font-black mb-8 text-blue-600 tracking-tighter">게스트 직접 추가</h2>
+                            <div className="bg-white rounded-[48px] w-full max-w-md p-10 shadow-2xl animate-zoom-in text-left text-xs sm:text-sm" onClick={e => e.stopPropagation()}>
+                                <h2 className="text-2xl font-black mb-8 text-blue-600 tracking-tighter uppercase">Add Guest</h2>
                                 <div className="space-y-5 mb-8 text-left text-xs">
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Name</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={newGuest.name} onChange={e=>setNewGuest({...newGuest, name: e.target.value})} placeholder="이름 입력" /></div>
-                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Gender</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={newGuest.gender} onChange={e=>setNewGuest({...newGuest, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
-                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Level</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={newGuest.level} onChange={e=>setNewGuest({...newGuest, level: e.target.value})}>{newGuest.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
-                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Invited By</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={newGuest.inviterId} onChange={e=>setNewGuest({...newGuest, inviterId: e.target.value})}><option value="">없음</option>{members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Name</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={newGuest.name} onChange={e=>setNewGuest({...newGuest, name: e.target.value})} placeholder="이름 입력" /></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Gender</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={newGuest.gender} onChange={e=>setNewGuest({...newGuest, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Level</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={newGuest.level} onChange={e=>setNewGuest({...newGuest, level: e.target.value})}>{newGuest.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Inviter</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={newGuest.inviterId} onChange={e=>setNewGuest({...newGuest, inviterId: e.target.value})}><option value="">없음</option>{members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
                                 </div>
-                                <div className="flex gap-3"><button onClick={() => setIsGuestModalOpen(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={handleAddGuest} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all shadow-blue-100">추가하기</button></div>
+                                <div className="flex gap-3"><button onClick={() => setIsGuestModalOpen(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={handleAddGuest} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all shadow-blue-100 uppercase text-xs">Add</button></div>
                             </div>
                         </div>
                     )}
 
-                    {editingMember && (
-                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setEditingMember(null)}>
-                            <div className="bg-white rounded-[48px] w-full max-w-lg p-10 shadow-2xl animate-zoom-in text-left text-xs" onClick={e => e.stopPropagation()}>
-                                <h2 className="text-2xl font-black mb-8 text-blue-600 tracking-tighter">회원 정보 수정</h2>
-                                <div className="grid grid-cols-2 gap-4 mb-8 text-left text-xs">
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">이름</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={editingMember.name} onChange={e=>setEditingMember({...editingMember, name: e.target.value})} /></div>
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">성별</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-xs" value={editingMember.gender} onChange={e=>setEditingMember({...editingMember, gender: e.target.value})}><option>남성</option><option>여성</option></select></div>
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-blue-600 font-black">직책</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-blue-100 outline-none shadow-none text-left text-xs" value={editingMember.role || '회원'} onChange={e=>setEditingMember({...editingMember, role: e.target.value})}>{roles.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
-                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1">실력 점수</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left text-xs" value={String(editingMember.level)} onChange={e=>setEditingMember({...editingMember, level: e.target.value})}>{editingMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
-                                    <div className="flex flex-col gap-1 text-left text-xs sm:col-span-2"><label className="text-[10px] font-black text-slate-400 ml-1">커플 대상</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left text-xs" value={editingMember.coupleId} onChange={e=>setEditingMember({...editingMember, coupleId: e.target.value})}><option value="">없음</option>{members.filter(m => m.id !== editingMember.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
-                                </div>
-                                <div className="flex gap-3"><button onClick={() => setEditingMember(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={handleUpdateMember} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all shadow-blue-100">저장</button></div>
-                            </div>
-                        </div>
-                    )}
-
+                    {/* 잠금 모달 */}
                     {lockModalMode && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[300] flex items-center justify-center p-4" onClick={() => setLockModalMode(null)}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
                                 <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-900 shadow-inner">{lockModalMode === 'set' ? <Icon.Lock size={36} /> : <Icon.Unlock size={36} />}</div>
                                 <h3 className="text-2xl font-black mb-2 tracking-tighter text-center uppercase">System Lock</h3>
                                 <input type="password" inputMode="numeric" placeholder="비밀번호" className="w-full p-5 bg-slate-50 rounded-3xl font-black text-center text-3xl mb-8 border-2 border-transparent focus:border-blue-500 transition-all outline-none shadow-none" value={tempPassword} onChange={e => setTempPassword(e.target.value)} autoFocus />
-                                <div className="flex gap-3"><button onClick={() => setLockModalMode(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={lockModalMode === 'set' ? confirmLock : confirmUnlock} className="flex-1 py-5 bg-slate-900 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all shadow-slate-200">{lockModalMode === 'set' ? '잠금 시작' : '해제하기'}</button></div>
+                                <div className="flex gap-3"><button onClick={() => setLockModalMode(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={lockModalMode === 'set' ? confirmLock : confirmUnlock} className="flex-1 py-5 bg-slate-900 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all shadow-slate-200 uppercase">{lockModalMode === 'set' ? 'Start Lock' : 'Unlock'}</button></div>
                             </div>
                         </div>
                     )}
@@ -775,11 +807,11 @@
                     {alertModal.show && (
                         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4" onClick={() => setAlertModal(p => ({...p, show: false}))}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 shadow-2xl text-center animate-zoom-in" onClick={e => e.stopPropagation()}>
-                                <h3 className="text-2xl font-black mb-4 tracking-tighter text-center uppercase">{alertModal.title}</h3>
-                                <p className="text-slate-500 font-bold mb-10 whitespace-pre-wrap leading-relaxed text-sm">{alertModal.content}</p>
-                                <div className="flex gap-3">
-                                    {alertModal.type === 'confirm' && <button onClick={() => setAlertModal(p => ({...p, show: false}))} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black active:scale-95 transition-all shadow-none border-none outline-none">취소</button>}
-                                    <button onClick={() => { if (alertModal.onConfirm) alertModal.onConfirm(); setAlertModal(p => ({...p, show: false})); }} className={`flex-1 py-5 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all ${alertModal.type === 'confirm' ? 'bg-blue-600 shadow-blue-100' : 'bg-slate-900 shadow-slate-200'}`}>확인</button>
+                                <h3 className="text-2xl font-black mb-4 tracking-tighter text-center uppercase text-slate-900 text-center">{alertModal.title}</h3>
+                                <p className="text-slate-500 font-bold mb-10 whitespace-pre-wrap leading-relaxed text-sm text-center">{alertModal.content}</p>
+                                <div className="flex gap-3 text-center">
+                                    {alertModal.type === 'confirm' && <button onClick={() => setAlertModal(p => ({...p, show: false}))} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black active:scale-95 transition-all shadow-none border-none outline-none uppercase text-xs text-center">No</button>}
+                                    <button onClick={() => { if (alertModal.onConfirm) alertModal.onConfirm(); setAlertModal(p => ({...p, show: false})); }} className={`flex-1 py-5 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all ${alertModal.type === 'confirm' ? 'bg-blue-600 shadow-blue-100' : 'bg-slate-900 shadow-slate-200'} uppercase text-xs text-center`}>Yes</button>
                                 </div>
                             </div>
                         </div>
@@ -788,30 +820,30 @@
                     {modal.type === 'check' && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-center justify-center p-4" onClick={() => setModal({type:null, data:null})}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center shadow-2xl animate-zoom-in" onClick={e => e.stopPropagation()}>
-                                <h2 className="text-4xl font-black text-slate-900 mb-10 tracking-tighter">{modal.data.name.replace('(G)', '')} 님</h2>
-                                <button onClick={() => handleCheckIn(modal.data)} className="w-full bg-blue-600 text-white py-8 rounded-[32px] text-2xl font-black shadow-xl text-center shadow-blue-100 active:scale-95 transition-all">출석 확인</button>
-                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold text-sm w-full text-center active:scale-95 transition-all shadow-none border-none outline-none">닫기</button>
+                                <h2 className="text-4xl font-black text-slate-900 mb-10 tracking-tighter text-center">{modal.data.name.replace('(G)', '')} 님</h2>
+                                <button onClick={() => handleCheckIn(modal.data)} className="w-full bg-blue-600 text-white py-8 rounded-[32px] text-2xl font-black shadow-xl text-center shadow-blue-100 active:scale-95 transition-all uppercase text-center">Check In</button>
+                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold text-sm w-full text-center active:scale-95 transition-all shadow-none border-none outline-none uppercase text-center">Close</button>
                             </div>
                         </div>
                     )}
                     {modal.type === 'cancel' && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-center justify-center p-4" onClick={() => setModal({type:null, data:null})}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center animate-zoom-in shadow-2xl" onClick={e => e.stopPropagation()}>
-                                <h2 className="text-3xl font-black mb-4 tracking-tighter">{modal.data.name.replace('(G)', '')} 님</h2>
+                                <h2 className="text-3xl font-black mb-4 tracking-tighter text-center">{modal.data.name.replace('(G)', '')} 님</h2>
                                 <p className="mb-10 text-slate-400 font-bold italic text-center text-sm">출석 기록을 취소하시겠습니까?</p>
-                                <button onClick={async () => { try { await getSessionCol().doc(modal.data.id).update({ checkedIn: false, checkInTime: null, status: '미출석' }); setModal({ type: null, data: null }); } catch(e) { console.error(e); } }} className="w-full bg-red-500 text-white py-6 rounded-3xl text-xl font-black shadow-xl text-center active:scale-95 transition-all shadow-rose-100">출석 취소하기</button>
-                                <button onClick={() => setModal({type:null, data:null})} className="mt-3 text-slate-400 font-bold text-sm w-full text-center active:scale-95 transition-all shadow-none border-none outline-none">돌아가기</button>
+                                <button onClick={async () => { try { await getSessionCol().doc(modal.data.id).update({ checkedIn: false, checkInTime: null, status: '미출석' }); setModal({ type: null, data: null }); } catch(e) { console.error(e); } }} className="w-full bg-red-500 text-white py-6 rounded-3xl text-xl font-black shadow-xl text-center active:scale-95 transition-all shadow-rose-100 uppercase text-center">Cancel Attendance</button>
+                                <button onClick={() => setModal({type:null, data:null})} className="mt-3 text-slate-400 font-bold text-sm w-full text-center active:scale-95 transition-all shadow-none border-none outline-none uppercase text-center">Back</button>
                             </div>
                         </div>
                     )}
 
                     {!isLoginModalOpen && (
                         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-2xl border border-white shadow-2xl rounded-full px-10 py-4 flex gap-10 items-center z-40 scale-90 sm:scale-100 transition-all border-t border-slate-50 shadow-blue-50">
-                            <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest uppercase">Members</p><p className="text-2xl font-black text-slate-900 leading-none">{members.length}</p></div>
-                            <div className="w-px h-8 bg-slate-100" />
-                            <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest uppercase">Selected</p><p className="text-2xl font-black text-blue-600 leading-none">{activeParticipants.length}</p></div>
-                            <div className="w-px h-8 bg-slate-100" />
-                            <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest uppercase">Present</p><p className="text-2xl font-black text-green-600 leading-none">{activeParticipants.filter(p=>p.checkedIn).length}</p></div>
+                            <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest uppercase">Members</p><p className="text-2xl font-black text-slate-900 leading-none text-center">{members.length}</p></div>
+                            <div className="w-px h-8 bg-slate-100 text-center" />
+                            <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest uppercase">Selected</p><p className="text-2xl font-black text-blue-600 leading-none text-center">{activeParticipants.length}</p></div>
+                            <div className="w-px h-8 bg-slate-100 text-center" />
+                            <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest uppercase">Present</p><p className="text-2xl font-black text-green-600 leading-none text-center">{activeParticipants.filter(p=>p.checkedIn).length}</p></div>
                         </div>
                     )}
 
