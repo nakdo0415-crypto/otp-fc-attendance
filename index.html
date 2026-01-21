@@ -62,8 +62,15 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- 전역 변수 및 헬퍼 함수 ---
-        const todayStr = new Date().toLocaleDateString('en-CA');
+        // --- 전역 헬퍼 함수 정의 ---
+        const getThisSunday = () => {
+            const d = new Date();
+            const day = d.getDay(); 
+            const diff = (day === 0) ? 0 : 7 - day;
+            const sunday = new Date(d);
+            sunday.setDate(d.getDate() + diff);
+            return sunday.toLocaleDateString('en-CA');
+        };
 
         const getNextSunday = (fromDate = new Date()) => {
             const d = new Date(fromDate);
@@ -74,39 +81,8 @@
             return sunday.toLocaleDateString('en-CA');
         };
 
-        const getThisSunday = () => {
-            const d = new Date();
-            const day = d.getDay(); 
-            const diff = (day === 0) ? 0 : 7 - day;
-            const sunday = new Date(d);
-            sunday.setDate(d.getDate() + diff);
-            return sunday.toLocaleDateString('en-CA');
-        };
-
-        const Icon = {
-            Users: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-            Trash: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
-            Clock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-            Save: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
-            Calendar: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-            CheckCircle: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-            Lock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
-            Unlock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>,
-            Plus: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-            Heart: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>,
-            History: ({size=22, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>,
-            ChevronRight: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>,
-            ArrowLeft: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
-            Edit: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
-            FileSpreadsheet: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>,
-            RotateCcw: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>,
-            UserPlus: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>,
-            MapPin: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
-            ShieldCheck: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-        };
-
-        // --- Helper Styles ---
         const getPosColorClass = (pos) => {
+            if (!pos) return 'bg-slate-50 text-slate-400 border-slate-100';
             const p = String(pos).toLowerCase();
             if (p.includes('피보')) return 'bg-red-50 text-red-500 border-red-100';
             if (p.includes('아라')) return 'bg-green-50 text-green-600 border-green-100';
@@ -116,9 +92,7 @@
         };
 
         const getGenderPastelClass = (gender) => {
-            return gender === '남성' 
-                ? 'bg-[#E1F0FF] text-[#2563EB]' 
-                : 'bg-[#FFE5ED] text-[#DB2777]';
+            return gender === '남성' ? 'bg-[#E1F0FF] text-[#2563EB]' : 'bg-[#FFE5ED] text-[#DB2777]';
         };
 
         const getRoleBadgeClass = (role) => {
@@ -138,6 +112,29 @@
                 return `${clean.substring(0,4)}-${clean.substring(4,6)}-${clean.substring(6,8)}`;
             }
             return birth;
+        };
+
+        const Icon = {
+            Users: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+            Trash: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+            Clock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            Save: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+            Calendar: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+            CheckCircle: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            Lock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+            Unlock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>,
+            Plus: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+            Heart: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>,
+            History: ({size=22, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>,
+            ChevronRight: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>,
+            ArrowLeft: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+            Edit: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+            FileSpreadsheet: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>,
+            RotateCcw: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>,
+            UserPlus: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>,
+            MapPin: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+            ShieldCheck: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+            LogOut: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
         };
 
         // --- Firebase Configuration ---
@@ -162,7 +159,6 @@
         const getSettingsCol = () => getCol('settings');
 
         function App() {
-            // -- States --
             const [view, setView] = useState('attendance');
             const [members, setMembers] = useState([]);
             const [sessionData, setSessionData] = useState([]);
@@ -185,27 +181,33 @@
             const [modal, setModal] = useState({ type: null, data: null });
             const [alertModal, setAlertModal] = useState({ show: false, title: '', content: '', type: 'info', onConfirm: null });
 
+            // 회원 관리 State
             const [newMember, setNewMember] = useState({ name: '', birth: '', gender: '남성', position: 'all', level: '1', coupleId: '', isEarlyBirth: false, role: '회원' });
             const [editingMember, setEditingMember] = useState(null);
             const [isBulkMode, setIsBulkMode] = useState(false);
             const [bulkPasteText, setBulkPasteText] = useState('');
             const [isPending, setIsPending] = useState(false);
 
+            // 게스트 State
             const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
             const [newGuest, setNewGuest] = useState({ name: '', gender: '남성', inviterId: '', inviterName: '', level: '1' });
             
+            // 로그인 및 관리자 관련 State
+            const [loggedInManager, setLoggedInManager] = useState(null);
+            const [isLoginModalOpen, setIsLoginModalOpen] = useState(true);
+            const [loginForm, setLoginForm] = useState({ name: '', password: '' });
+            const [isPasswordChangeModalOpen, setIsPasswordChangeModalOpen] = useState(false);
+            const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' });
             const [isManagerSelectorOpen, setIsManagerSelectorOpen] = useState(false);
 
-            const roles = ['회장', '매니저', '총무', '부총무', '회원'];
             const staffRoles = ['회장', '매니저', '총무', '부총무'];
-
             const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), []);
             const minuteOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')), []);
 
             const showAlert = (title, content, type = 'info') => setAlertModal({ show: true, title, content, type, onConfirm: null });
             const showConfirm = (title, content, onConfirm) => setAlertModal({ show: true, title, content, type: 'confirm', onConfirm });
 
-            // 실시간 시계
+            // 실시간 시계 (초 단위까지 표시)
             useEffect(() => {
                 const timer = setInterval(() => setCurrentTime(new Date()), 1000);
                 return () => clearInterval(timer);
@@ -218,6 +220,7 @@
                         await auth.signInAnonymously();
                         document.getElementById('loading-screen').style.display = 'none'; 
                     } catch (e) { 
+                        console.error(e);
                         document.getElementById('loading-screen').innerText = "접속 오류"; 
                     }
                 };
@@ -228,16 +231,14 @@
                         getSessionCol().onSnapshot(snap => setSessionData(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
                         getHistoryCol().onSnapshot(snap => setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.date.localeCompare(a.date))));
                         getSettingsCol().doc('meeting_time').onSnapshot(doc => { 
-                            if (doc.exists) {
-                                setMeetingTimes(prev => ({...prev, ...doc.data()}));
-                            }
+                            if (doc.exists) setMeetingTimes(prev => ({...prev, ...doc.data()}));
                         });
                     }
                 });
                 return () => unsubAuth();
             }, []);
 
-            // 탭 전환 시 모든 모달/팝업 초기화 로직
+            // 팝업 초기화 로직
             useEffect(() => {
                 setModal({ type: null, data: null });
                 setEditingMember(null);
@@ -245,34 +246,93 @@
                 setLockModalMode(null);
                 setSelectedHistoryDetail(null);
                 setAlertModal(prev => ({...prev, show: false}));
+                setIsPasswordChangeModalOpen(false);
                 setIsManagerSelectorOpen(false);
             }, [view]);
+
+            // 이번 주 선정 인원
+            const activeParticipants = useMemo(() => {
+                return sessionData.filter(p => p.date === meetingTimes.date).sort((a,b) => a.name.localeCompare(b.name));
+            }, [sessionData, meetingTimes.date]);
+
+            // --- Functions ---
+            const handleLogin = () => {
+                if (!loginForm.name.trim() || !loginForm.password.trim()) return showAlert("알림", "이름과 비밀번호를 입력해주세요.");
+                const user = members.find(m => m.name === loginForm.name.trim());
+                if (!user) return showAlert("오류", "등록되지 않은 성함입니다.");
+                if (!staffRoles.includes(user.role)) return showAlert("오류", "운영진만 로그인이 가능합니다.");
+                
+                const defaultPassword = user.birth ? user.birth.substring(2, 8) : "000000";
+                const storedPassword = user.password || defaultPassword;
+                
+                if (loginForm.password === storedPassword) {
+                    setLoggedInManager(user);
+                    setIsLoginModalOpen(false);
+                    setLoginForm({ name: '', password: '' });
+                } else {
+                    showAlert("오류", "비밀번호가 일치하지 않습니다.");
+                }
+            };
+
+            const handleLogout = () => {
+                setLoggedInManager(null);
+                setIsLoginModalOpen(true);
+                setView('attendance');
+            };
+
+            const handlePasswordChange = async () => {
+                const { current, next, confirm } = passwordForm;
+                const defaultPassword = loggedInManager.birth ? loggedInManager.birth.substring(2, 8) : "000000";
+                const currentStored = loggedInManager.password || defaultPassword;
+                if (current !== currentStored) return showAlert("오류", "현재 비밀번호가 틀립니다.");
+                if (next.length < 4) return showAlert("알림", "비밀번호는 4자리 이상이어야 합니다.");
+                if (next !== confirm) return showAlert("오류", "새 비밀번호가 서로 일치하지 않습니다.");
+                try {
+                    await getMemberCol().doc(loggedInManager.id).update({ password: next });
+                    setLoggedInManager(prev => ({ ...prev, password: next }));
+                    setIsPasswordChangeModalOpen(false);
+                    setPasswordForm({ current: '', next: '', confirm: '' });
+                    showAlert("성공", "비밀번호가 변경되었습니다.");
+                } catch (e) { showAlert("오류", "변경 실패"); }
+            };
+
+            const registerCurrentAsManager = () => {
+                if (!loggedInManager) return;
+                updateMeetingTimeSettings({ ...meetingTimes, managerId: loggedInManager.id, managerName: loggedInManager.name });
+            };
+
+            const handleLockToggle = () => {
+                if (isAppLocked) setLockModalMode('unlock');
+                else setLockModalMode('set');
+                setTempPassword('');
+            };
+
+            const confirmLock = () => {
+                if (!tempPassword.trim()) return showAlert("알림", "비밀번호를 입력하세요.");
+                setLockPassword(tempPassword); setIsAppLocked(true); setLockModalMode(null); setView('attendance');
+            };
+
+            const confirmUnlock = () => {
+                if (tempPassword === lockPassword) { setIsAppLocked(false); setLockPassword(''); setLockModalMode(null); }
+                else showAlert("오류", "비밀번호가 틀렸습니다.");
+            };
 
             const isMeetingOver = useMemo(() => {
                 const meetingEndTime = new Date(`${meetingTimes.date}T${meetingTimes.end}`);
                 return currentTime >= meetingEndTime;
             }, [currentTime, meetingTimes]);
 
-            // 모임 종료 시 자동 노쇼 처리 로직
             useEffect(() => {
                 if (isMeetingOver && sessionData.length > 0) {
-                    const unchecked = sessionData.filter(p => 
-                        p.date === meetingTimes.date && 
-                        !p.checkedIn && 
-                        p.status !== '노쇼'
-                    );
-
+                    const unchecked = sessionData.filter(p => p.date === meetingTimes.date && !p.checkedIn && p.status !== '노쇼');
                     if (unchecked.length > 0) {
                         const batch = db.batch();
-                        unchecked.forEach(p => {
-                            batch.update(getSessionCol().doc(p.id), { status: '노쇼' });
-                        });
-                        batch.commit().catch(err => console.error("Auto no-show update failed:", err));
+                        unchecked.forEach(p => batch.update(getSessionCol().doc(p.id), { status: '노쇼' }));
+                        batch.commit().catch(err => console.error(err));
                     }
                 }
             }, [isMeetingOver, sessionData, meetingTimes.date]);
 
-            // -- Functions --
             const updateMeetingTimeSettings = (newData) => {
                 setMeetingTimes(newData);
                 getSettingsCol().doc('meeting_time').set(newData);
@@ -304,8 +364,7 @@
                                 batch.set(membersRef.doc(), {
                                     name, birth: birth ? birth.replace(/[^0-9]/g, '') : '', gender: finalGender, position: position || 'all',
                                     level: level ? level.replace(/[^0-9]/g, '') : (finalGender === '남성' ? '1' : '7'),
-                                    role: role || '회원',
-                                    coupleId: '', isEarlyBirth: false, createdAt: new Date().toISOString()
+                                    role: role || '회원', coupleId: '', isEarlyBirth: false, createdAt: new Date().toISOString()
                                 });
                             }
                         });
@@ -343,17 +402,9 @@
                 const inviter = members.find(m => m.id === newGuest.inviterId);
                 try {
                     await getSessionCol().add({
-                        memberId: 'guest_' + Date.now(),
-                        name: newGuest.name, 
-                        inviterName: inviter ? inviter.name : '없음',
-                        inviterId: newGuest.inviterId || '',
-                        gender: newGuest.gender,
-                        level: newGuest.level || (newGuest.gender === '남성' ? '1' : '7'),
-                        date: meetingTimes.date,
-                        checkedIn: false,
-                        checkInTime: null,
-                        status: '미출석',
-                        isGuest: true
+                        memberId: 'guest_' + Date.now(), name: newGuest.name, inviterName: inviter ? inviter.name : '없음',
+                        inviterId: newGuest.inviterId || '', gender: newGuest.gender, level: newGuest.level,
+                        date: meetingTimes.date, checkedIn: false, checkInTime: null, status: '미출석', isGuest: true
                     });
                     setIsGuestModalOpen(false);
                     setNewGuest({ name: '', gender: '남성', inviterId: '', inviterName: '', level: '1' });
@@ -363,123 +414,64 @@
             const saveAndResetCurrent = async () => {
                 const currentParticipants = sessionData.filter(p => p.date === meetingTimes.date);
                 if (currentParticipants.length === 0) return showAlert("확인", "현재 출석부에 인원이 없습니다.");
-                
                 showConfirm("기록 확정 및 다음 모임 준비", "기록을 저장하고 다음 주로 날짜를 넘기시겠습니까?", async () => {
                     setIsPending(true);
                     try {
                         const records = currentParticipants.map(p => ({ 
                             name: p.isGuest ? `${p.name.replace('(G)', '')} - 초대:${p.inviterName}` : p.name, 
-                            gender: p.gender, 
-                            status: p.checkedIn ? (p.status || '정상') : '노쇼', 
+                            gender: p.gender, status: p.checkedIn ? (p.status || '정상') : '노쇼', 
                             checkInTime: p.checkedIn ? (p.checkInTime || '-') : '미출석', 
-                            type: p.isGuest ? '게스트' : '정규', 
-                            level: p.level || '-',
+                            type: p.isGuest ? '게스트' : '정규', level: p.level || '-',
                             timestamp: p.checkedIn ? p.checkInTime : '99:99:99'
                         }));
-
                         await getHistoryCol().add({
-                            date: meetingTimes.date, 
-                            meetingTime: `${meetingTimes.start} ~ ${meetingTimes.end}`,
-                            location: meetingTimes.location || "장소 미지정",
-                            managerName: meetingTimes.managerName || "미지정",
-                            total: records.length, 
-                            present: records.filter(r => r.status === '정상' || r.status === '지각').length,
-                            records: records, 
-                            createdAt: new Date().toISOString()
+                            date: meetingTimes.date, meetingTime: `${meetingTimes.start} ~ ${meetingTimes.end}`,
+                            location: meetingTimes.location || "장소 미지정", managerName: meetingTimes.managerName || "미지정",
+                            total: records.length, present: records.filter(r => r.status === '정상' || r.status === '지각').length,
+                            records, createdAt: new Date().toISOString()
                         });
-
                         const batch = db.batch();
                         currentParticipants.forEach(p => batch.delete(getSessionCol().doc(p.id)));
-                        
                         const nextSun = getNextSunday(new Date(meetingTimes.date));
                         const nextSettings = { ...meetingTimes, date: nextSun, managerId: "", managerName: "" };
                         batch.set(getSettingsCol().doc('meeting_time'), nextSettings);
-
                         await batch.commit();
                         setMeetingTimes(nextSettings);
-                        showAlert("기록 완료", "데이터가 보관되었습니다. 미출석 인원은 '노쇼'로 기록되었으며, 날짜가 다음 주 일요일로 변경되었습니다.");
-                    } catch (e) { 
-                        console.error(e);
-                        showAlert("오류", "저장 중 문제가 발생했습니다."); 
-                    } finally { setIsPending(false); }
+                        showAlert("기록 완료", "데이터가 보관되었습니다.");
+                    } catch (e) { showAlert("오류", "저장 실패"); } finally { setIsPending(false); }
                 });
-            };
-
-            const toggleParticipant = async (member) => {
-                const targetDate = meetingTimes.date;
-                const existing = sessionData.find(p => p.memberId === member.id && p.date === targetDate);
-                if (existing) await getSessionCol().doc(existing.id).delete();
-                else await getSessionCol().add({ memberId: member.id, name: member.name, gender: member.gender, level: member.level, date: targetDate, checkedIn: false, checkInTime: null, status: '미출석', isGuest: false });
             };
 
             const handleCheckIn = async (participant) => {
                 const now = new Date();
                 const meetingStart = new Date(`${participant.date}T${meetingTimes.start}`);
                 const allowFrom = new Date(meetingStart.getTime() - 60 * 60 * 1000); 
-                
                 if (now < allowFrom) {
-                    const h = String(allowFrom.getHours()).padStart(2, '0');
-                    const mi = String(allowFrom.getMinutes()).padStart(2, '0');
                     setModal({ type: null, data: null });
-                    return showAlert("출석 불가", `${participant.date} ${h}:${mi}부터 가능합니다.`);
+                    return showAlert("출석 불가", `${participant.date} ${now.toLocaleTimeString('ko-KR', { hour12: false })} - 아직 출석 가능 시간이 아닙니다.`);
                 }
-                
                 const lateThreshold = new Date(meetingStart.getTime() + 60000); 
                 let finalStatus = now >= lateThreshold ? '지각' : '정상';
                 const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-                
                 try {
                     await getSessionCol().doc(participant.id).update({ checkedIn: true, checkInTime: timeStr, status: finalStatus });
                     setModal({ type: null, data: null });
                 } catch (e) { showAlert("오류", "출석 실패"); }
             };
 
-            const handleLockToggle = () => {
-                if (isAppLocked) setLockModalMode('unlock');
-                else setLockModalMode('set');
-                setTempPassword('');
-            };
-
-            const confirmLock = () => {
-                if (!tempPassword.trim()) return showAlert("알림", "비밀번호를 입력하세요.");
-                setLockPassword(tempPassword); setIsAppLocked(true); setLockModalMode(null); setView('attendance');
-            };
-
-            const confirmUnlock = () => {
-                if (tempPassword === lockPassword) { setIsAppLocked(false); setLockPassword(''); setLockModalMode(null); }
-                else showAlert("오류", "비밀번호가 틀렸습니다.");
-            };
-
-            const activeParticipants = useMemo(() => {
-                return sessionData.filter(p => p.date === meetingTimes.date).sort((a,b) => a.name.localeCompare(b.name));
-            }, [sessionData, meetingTimes.date]);
-
-            const sortedHistoryRecords = useMemo(() => {
-                if (!selectedHistoryDetail || !selectedHistoryDetail.records) return [];
-                const list = [...selectedHistoryDetail.records];
-                if (historySortKey === 'time') return list.sort((a, b) => (a.timestamp || '99').localeCompare(b.timestamp || '99'));
-                if (historySortKey === 'status') {
-                    const order = { '정상': 1, '지각': 2, '노쇼': 3, '미출석': 4 };
-                    return list.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9));
-                }
-                return list;
-            }, [selectedHistoryDetail, historySortKey]);
-
+            // --- [오류 해결] 커플 이름 찾기 함수 정의 ---
             const getCoupleName = (id) => {
                 const c = members.find(m => m.id === id);
                 return c ? c.name : '';
             };
 
-            const staffMembers = useMemo(() => {
-                return members.filter(m => staffRoles.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
-            }, [members]);
+            const activeParticipantsSorted = useMemo(() => [...activeParticipants].sort((a,b) => a.name.localeCompare(b.name)), [activeParticipants]);
 
             return (
                 <div className="min-h-screen pb-40 text-slate-900">
-                    {/* Navigation */}
-                    {!isAppLocked && (
-                        <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 sm:h-20 flex items-center px-4 shadow-sm text-slate-900">
-                            <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
+                    {!isAppLocked && !isLoginModalOpen && (
+                        <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 sm:h-20 flex items-center px-4 shadow-sm transition-all">
+                            <div className="max-w-5xl mx-auto w-full flex justify-between items-center text-left">
                                 <div className="flex gap-1 sm:gap-2">
                                     {['attendance', 'setup', 'history_list', 'members_list'].map((v) => (
                                         <button key={v} onClick={() => setView(v)} className={`px-3 sm:px-6 py-2 rounded-xl font-black text-xs sm:text-base transition-all ${view.includes(v.split('_')[0]) ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
@@ -487,206 +479,122 @@
                                         </button>
                                     ))}
                                 </div>
-                                <div className="flex gap-2">
-                                    {view === 'attendance' && (
-                                        <button onClick={handleLockToggle} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-blue-600 border border-slate-100 transition-all"><Icon.Lock /></button>
+                                <div className="flex items-center gap-3">
+                                    {loggedInManager && (
+                                        <button onClick={() => setIsPasswordChangeModalOpen(true)} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-100 transition-all">
+                                            <Icon.ShieldCheck size={14} className="text-blue-600" />
+                                            {loggedInManager.name} ({loggedInManager.role})
+                                        </button>
                                     )}
+                                    <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all shadow-none"><Icon.LogOut size={18} /></button>
+                                    <button onClick={handleLockToggle} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-blue-600 border border-slate-100 transition-all shadow-none"><Icon.Lock size={18} /></button>
                                 </div>
                             </div>
                         </nav>
                     )}
 
                     <main className={`p-4 sm:p-8 max-w-6xl mx-auto animate-zoom-in ${isAppLocked ? 'pt-16 sm:pt-20' : ''}`}>
-                        {/* 1. 출석 탭 */}
-                        {view === 'attendance' && (
+                        {view === 'attendance' && !isLoginModalOpen && (
                             <div className="max-w-5xl mx-auto text-center">
                                 <h1 className="text-4xl sm:text-6xl font-black text-blue-900 italic tracking-tighter mb-4 uppercase">OTP FC</h1>
-                                
                                 {isMeetingOver && !isAppLocked && (
-                                    <div className="mb-6 animate-zoom-in">
-                                        <div className="bg-purple-50 border-2 border-purple-200 p-6 rounded-[32px] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-                                            <div className="text-left">
-                                                <p className="text-purple-700 font-black text-lg">이번 모임이 종료되었습니다!</p>
-                                                <p className="text-purple-500 text-sm font-bold">기록을 확정하면 출석하지 않은 분들은 <span className="text-red-600">'노쇼'</span>로 자동 체크됩니다.</p>
-                                            </div>
-                                            <button onClick={saveAndResetCurrent} className="flex items-center gap-2 bg-purple-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl hover:bg-purple-700 active:scale-95 transition-all">
-                                                <Icon.Save size={20}/> 한 주 기록 확정하기
-                                            </button>
-                                        </div>
+                                    <div className="mb-6 bg-purple-50 border-2 border-purple-200 p-6 rounded-[32px] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-zoom-in text-left">
+                                        <div><p className="text-purple-700 font-black text-lg">이번 모임이 종료되었습니다!</p><p className="text-purple-500 text-sm font-bold">기록을 확정하면 출석하지 않은 분들은 <span className="text-red-600">'노쇼'</span>로 자동 체크됩니다.</p></div>
+                                        <button onClick={saveAndResetCurrent} className="flex items-center gap-2 bg-purple-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl hover:bg-purple-700 active:scale-95 transition-all"><Icon.Save size={20}/> 한 주 기록 확정하기</button>
                                     </div>
                                 )}
-
                                 <div className="flex flex-col gap-4 items-center mb-10">
                                     <div className="bg-white px-10 py-6 rounded-[40px] shadow-xl border-2 border-slate-50 flex flex-col items-center">
                                         <p className="text-[11px] font-black text-blue-600 tracking-[0.3em] uppercase mb-1">Current Time</p>
-                                        <span className="font-black text-slate-900 text-4xl sm:text-6xl tracking-tighter tabular-nums leading-none">
-                                            {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-                                        </span>
+                                        <span className="font-black text-slate-900 text-4xl sm:text-6xl tracking-tighter tabular-nums leading-none">{currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</span>
                                     </div>
                                     <div className="flex flex-col gap-2 items-center">
                                         <div className="bg-white px-8 py-3 rounded-full border border-slate-100 shadow-sm flex items-center gap-3 font-black text-slate-600 text-sm sm:text-lg">
-                                            <span>{meetingTimes.date}</span>
-                                            <div className="w-px h-4 bg-slate-200"/>
-                                            <span className="text-green-600">{meetingTimes.start} ~ {meetingTimes.end}</span>
-                                            {meetingTimes.managerName && (
-                                                <React.Fragment>
-                                                    <div className="w-px h-4 bg-slate-200"/>
-                                                    <span className="text-blue-600 flex items-center gap-1.5"><Icon.ShieldCheck size={16} /> {meetingTimes.managerName}</span>
-                                                </React.Fragment>
+                                            <span>{meetingTimes.date}</span><div className="w-px h-4 bg-slate-200" /><span className="text-green-600 font-black">{meetingTimes.start} ~ {meetingTimes.end}</span><div className="w-px h-4 bg-slate-200" />
+                                            {meetingTimes.managerName ? (
+                                                <span className="text-blue-600 flex items-center gap-1.5 font-black"><Icon.ShieldCheck size={16} /> {meetingTimes.managerName}</span>
+                                            ) : (
+                                                <button onClick={registerCurrentAsManager} className="text-[11px] text-blue-500 underline underline-offset-4 decoration-dotted font-black active:scale-95 transition-all">관리자 등록</button>
                                             )}
                                         </div>
-                                        {meetingTimes.location && (
-                                            <div className="bg-blue-50/50 px-6 py-2 rounded-full border border-blue-100 flex items-center gap-2 text-blue-600 font-black text-sm">
-                                                <Icon.MapPin size={16} />
-                                                <span>{meetingTimes.location}</span>
-                                            </div>
-                                        )}
+                                        {meetingTimes.location && <div className="bg-blue-50/50 px-6 py-2 rounded-full border border-blue-100 flex items-center gap-2 text-blue-600 font-black text-sm shadow-sm transition-all"><Icon.MapPin size={16} /><span>{meetingTimes.location}</span></div>}
                                     </div>
                                 </div>
-
                                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
-                                    {activeParticipants.map(p => {
+                                    {activeParticipantsSorted.map(p => {
                                         const memberInfo = members.find(m => m.id === p.memberId);
                                         const hasRole = memberInfo?.role && memberInfo.role !== '회원';
-                                        const displayName = p.name.replace('(G)', '');
-                                        
-                                        let cardStyle = "";
-                                        if (p.checkedIn) {
-                                            cardStyle = "bg-blue-50/50 text-slate-300 border-2 border-blue-200 shadow-none";
-                                        } else if (p.status === '노쇼') {
-                                            cardStyle = "bg-red-50 text-red-200 border-2 border-red-100 shadow-none";
-                                        } else {
-                                            cardStyle = "bg-blue-50/60 border-2 border-blue-100 text-blue-900 shadow-md hover:shadow-lg hover:border-blue-200";
-                                        }
-
+                                        let cardStyle = p.checkedIn ? "bg-blue-50/50 text-slate-300 border-2 border-blue-200 shadow-none" : p.status === '노쇼' ? "bg-red-50 text-red-200 border-2 border-red-100 shadow-none" : "bg-blue-50/60 border-2 border-blue-100 text-blue-900 shadow-md hover:shadow-lg hover:border-blue-200";
                                         return (
                                             <button key={p.id} onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})} className={`relative h-40 sm:h-56 rounded-[40px] flex flex-col items-center justify-center transition-all shadow-lg active:scale-95 ${cardStyle}`}>
-                                                <div className="absolute top-4">
-                                                    {(p.checkedIn || p.status === '노쇼') && (
-                                                        <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${p.status === '정상' ? 'bg-green-100 text-green-600' : p.status === '노쇼' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
-                                                            {p.status}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                
+                                                <div className="absolute top-4">{(p.checkedIn || p.status === '노쇼') && <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${p.status === '정상' ? 'bg-green-100 text-green-600' : p.status === '노쇼' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>{p.status}</span>}</div>
                                                 <div className="absolute top-4 right-5 flex flex-col items-end gap-1">
-                                                    {p.isGuest && <span className="text-[10px] font-black bg-blue-600 text-white px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-sm">Guest</span>}
-                                                    {p.level && !p.checkedIn && p.status !== '노쇼' && <span className="text-[9px] font-black bg-white/80 text-slate-500 px-1.5 py-0.5 rounded-full shadow-sm border border-slate-100">{p.level}단계</span>}
+                                                    {p.isGuest && <span className="text-[10px] font-black bg-blue-600 text-white px-2 py-0.5 rounded-full uppercase shadow-sm tracking-tighter">Guest</span>}
+                                                    {p.level && !p.checkedIn && p.status !== '노쇼' && <span className="text-[9px] font-black bg-white/80 text-slate-500 px-1.5 py-0.5 rounded-full border border-slate-100 shadow-sm">{p.level}단계</span>}
                                                 </div>
-
-                                                {!p.checkedIn && p.status !== '노쇼' && hasRole && (
-                                                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md mb-1 ${getRoleBadgeClass(memberInfo.role)}`}>
-                                                        {memberInfo.role}
-                                                    </span>
-                                                )}
-
-                                                <span className={`text-2xl sm:text-3xl font-black leading-tight ${p.checkedIn || p.status === '노쇼' ? 'text-slate-300' : 'text-slate-900'}`}>
-                                                    {displayName}
-                                                </span>
-                                                
-                                                {p.isGuest && <span className="text-[9px] font-bold text-slate-400 mt-1 italic uppercase text-center">초대: {p.inviterName}</span>}
-                                                
-                                                {p.checkedIn ? (
-                                                    <span className="text-xs font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-full mt-3">{p.checkInTime}</span>
-                                                ) : p.status === '노쇼' ? (
-                                                    <span className="text-[10px] font-black mt-2 text-red-300 uppercase tracking-widest">NO SHOW</span>
-                                                ) : (
-                                                    <span className={`text-[10px] font-black mt-2 tracking-widest text-center uppercase ${p.gender === '남성' ? 'text-blue-700' : 'text-pink-700'}`}>
-                                                        {p.gender}
-                                                    </span>
-                                                )}
+                                                {!p.checkedIn && p.status !== '노쇼' && hasRole && <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md mb-1 ${getRoleBadgeClass(memberInfo.role)} shadow-sm`}>{memberInfo.role}</span>}
+                                                <span className={`text-2xl sm:text-3xl font-black leading-tight ${p.checkedIn || p.status === '노쇼' ? 'text-slate-300' : 'text-slate-900'}`}>{p.name.replace('(G)', '')}</span>
+                                                {p.isGuest && <span className="text-[9px] font-bold text-slate-400 mt-1 italic uppercase text-center text-xs">초대: {p.inviterName}</span>}
+                                                {p.checkedIn ? <span className="text-xs font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-full mt-3 shadow-inner">{p.checkInTime}</span> : p.status === '노쇼' ? <span className="text-[10px] font-black mt-2 text-red-300 uppercase tracking-widest">NO SHOW</span> : <span className={`text-[10px] font-black mt-2 tracking-widest uppercase ${p.gender === '남성' ? 'text-blue-700' : 'text-pink-700'}`}>{p.gender}</span>}
                                             </button>
                                         );
                                     })}
-                                    {activeParticipants.length === 0 && <div className="col-span-full py-20 text-slate-300 font-bold text-center">선정된 인원이 없습니다.</div>}
+                                    {activeParticipantsSorted.length === 0 && <div className="col-span-full py-20 text-slate-300 font-bold text-center">선정된 인원이 없습니다.</div>}
                                 </div>
                             </div>
                         )}
 
-                        {/* 2. 선정 탭 */}
                         {view === 'setup' && (
                             <div className="max-w-5xl mx-auto text-left">
                                 <div className="bg-white p-6 sm:p-8 rounded-[40px] border border-slate-100 shadow-sm mb-8">
                                     <h3 className="text-sm font-black text-slate-400 mb-6 tracking-widest text-left uppercase">Next Meeting Schedule</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                                        <div className="text-left"><label className="text-[10px] font-black text-slate-400 ml-2">날짜</label><input type="date" className="w-full p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500" value={meetingTimes.date} onChange={e => updateMeetingTimeSettings({...meetingTimes, date: e.target.value})} /></div>
+                                        <div className="text-left"><label className="text-[10px] font-black text-slate-400 ml-2">날짜</label><input type="date" className="w-full p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500 shadow-none outline-none" value={meetingTimes.date} onChange={e => updateMeetingTimeSettings({...meetingTimes, date: e.target.value})} /></div>
                                         <div className="text-left">
                                             <label className="text-[10px] font-black text-slate-400 ml-2">시작 시간</label>
                                             <div className="flex gap-2">
-                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black" value={meetingTimes.start.split(':')[0]} onChange={e => updateMeetingTimeSettings({...meetingTimes, start: `${e.target.value}:${meetingTimes.start.split(':')[1]}`})}>{hourOptions.map(h => <option key={h} value={h}>{h}시</option>)}</select>
-                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black" value={meetingTimes.start.split(':')[1]} onChange={e => updateMeetingTimeSettings({...meetingTimes, start: `${meetingTimes.start.split(':')[0]}:${e.target.value}`})}>{minuteOptions.map(m => <option key={m} value={m}>{m}분</option>)}</select>
+                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black outline-none border-none" value={meetingTimes.start.split(':')[0]} onChange={e => updateMeetingTimeSettings({...meetingTimes, start: `${e.target.value}:${meetingTimes.start.split(':')[1]}`})}>{hourOptions.map(h => <option key={h} value={h}>{h}시</option>)}</select>
+                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black outline-none border-none" value={meetingTimes.start.split(':')[1]} onChange={e => updateMeetingTimeSettings({...meetingTimes, start: `${meetingTimes.start.split(':')[0]}:${e.target.value}`})}>{minuteOptions.map(m => <option key={m} value={m}>{m}분</option>)}</select>
                                             </div>
                                         </div>
                                         <div className="text-left">
                                             <label className="text-[10px] font-black text-slate-400 ml-2">종료 시간</label>
                                             <div className="flex gap-2">
-                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black" value={meetingTimes.end.split(':')[0]} onChange={e => updateMeetingTimeSettings({...meetingTimes, end: `${e.target.value}:${meetingTimes.end.split(':')[1]}`})}>{hourOptions.map(h => <option key={h} value={h}>{h}시</option>)}</select>
-                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black" value={meetingTimes.end.split(':')[1]} onChange={e => updateMeetingTimeSettings({...meetingTimes, end: `${meetingTimes.end.split(':')[0]}:${e.target.value}`})}>{minuteOptions.map(m => <option key={m} value={m}>{m}분</option>)}</select>
+                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black outline-none border-none" value={meetingTimes.end.split(':')[0]} onChange={e => updateMeetingTimeSettings({...meetingTimes, end: `${e.target.value}:${meetingTimes.end.split(':')[1]}`})}>{hourOptions.map(h => <option key={h} value={h}>{h}시</option>)}</select>
+                                                <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black outline-none border-none" value={meetingTimes.end.split(':')[1]} onChange={e => updateMeetingTimeSettings({...meetingTimes, end: `${meetingTimes.end.split(':')[0]}:${e.target.value}`})}>{minuteOptions.map(m => <option key={m} value={m}>{m}분</option>)}</select>
                                             </div>
                                         </div>
-                                        <div className="text-left">
-                                            <label className="text-[10px] font-black text-slate-400 ml-2">모임 관리자 (운영진)</label>
+                                        <div className="text-left text-xs">
+                                            <label className="text-[10px] font-black text-slate-400 ml-2">모임 관리자</label>
                                             <div className="flex gap-2">
-                                                <select 
-                                                    className="flex-1 p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500" 
-                                                    value={meetingTimes.managerId || ""} 
-                                                    onChange={e => {
-                                                        const target = staffMembers.find(s => s.id === e.target.value);
-                                                        updateMeetingTimeSettings({...meetingTimes, managerId: e.target.value, managerName: target ? target.name : ""});
-                                                    }}
-                                                >
-                                                    <option value="">관리자 선택</option>
-                                                    {staffMembers.map(s => <option key={s.id} value={s.id}>{s.name} ({s.role})</option>)}
-                                                </select>
-                                                <button onClick={() => setIsManagerSelectorOpen(true)} className="p-4 bg-blue-50 text-blue-600 rounded-2xl font-black text-xs hover:bg-blue-100 transition-all flex items-center justify-center">전체선택</button>
+                                                <div className="flex-1 p-4 bg-slate-50 rounded-2xl font-black text-slate-700 flex items-center justify-between overflow-hidden">
+                                                    <span className="truncate">{meetingTimes.managerName || "미지정"}</span>
+                                                    <button onClick={registerCurrentAsManager} className="text-[10px] font-black text-blue-600 bg-blue-100/50 px-3 py-1 rounded active:scale-95 transition-all flex-shrink-0">본인</button>
+                                                </div>
+                                                <button onClick={() => setIsManagerSelectorOpen(true)} className="p-4 bg-blue-50 text-blue-600 rounded-2xl font-black text-xs hover:bg-blue-100 transition-all flex-shrink-0">전체</button>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end mt-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end mt-4 text-left">
                                         <div className="text-left md:col-span-2">
                                             <label className="text-[10px] font-black text-slate-400 ml-2">장소</label>
-                                            <div className="relative">
-                                                <input type="text" className="w-full p-4 pl-10 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500" placeholder="모임 장소 입력" value={meetingTimes.location || ''} onChange={e => updateMeetingTimeSettings({...meetingTimes, location: e.target.value})} />
-                                                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><Icon.MapPin size={18} /></div>
-                                            </div>
+                                            <div className="relative"><input type="text" className="w-full p-4 pl-10 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500 shadow-none outline-none" placeholder="모임 장소 입력" value={meetingTimes.location || ''} onChange={e => updateMeetingTimeSettings({...meetingTimes, location: e.target.value})} /><div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><Icon.MapPin size={18} /></div></div>
                                         </div>
-                                        <div className="md:col-span-2 flex justify-end gap-3">
-                                            <button onClick={() => setIsGuestModalOpen(true)} className="px-6 py-4 rounded-2xl bg-blue-50 text-blue-600 font-black flex items-center gap-2 text-sm shadow-sm active:scale-95 transition-all">
-                                                <Icon.UserPlus size={18}/> 게스트 추가
-                                            </button>
-                                            <button onClick={handleResetSelection} className="px-6 py-4 rounded-2xl bg-red-50 text-red-500 font-black flex items-center gap-2 text-sm shadow-sm active:scale-95 transition-all">
-                                                <Icon.RotateCcw size={18}/> 명단 초기화
-                                            </button>
+                                        <div className="md:col-span-2 flex justify-end gap-3 text-left text-xs">
+                                            <button onClick={() => setIsGuestModalOpen(true)} className="px-6 py-4 rounded-2xl bg-blue-50 text-blue-600 font-black flex items-center gap-2 active:scale-95 transition-all"><Icon.UserPlus size={18}/> 게스트 추가</button>
+                                            <button onClick={handleResetSelection} className="px-6 py-4 rounded-2xl bg-red-50 text-red-500 font-black flex items-center gap-2 active:scale-95 transition-all"><Icon.RotateCcw size={18}/> 명단 초기화</button>
                                         </div>
                                     </div>
                                 </div>
-
-                                {activeParticipants.some(p => p.isGuest) && (
-                                    <div className="mb-8 animate-zoom-in text-left">
-                                        <h2 className="text-xl font-black mb-4 flex items-center gap-2 px-1 text-blue-600 text-left">추가된 게스트</h2>
-                                        <div className="flex flex-wrap gap-2">
-                                            {activeParticipants.filter(p => p.isGuest).map(g => (
-                                                <div key={g.id} className={`px-4 py-2 rounded-2xl border-2 shadow-md flex items-center gap-2 ${g.gender === '남성' ? 'bg-[#E1F0FF] border-[#2563EB] text-[#2563EB]' : 'bg-[#FFE5ED] border-[#DB2777] text-[#DB2777]'}`}>
-                                                    <span className="font-black">{g.name} <span className="ml-1 text-[10px] opacity-60">({g.level}단)</span><small className="ml-2 text-[9px] opacity-70">초대:{g.inviterName}</small></span>
-                                                    <button onClick={() => getSessionCol().doc(g.id).delete()} className="text-red-400 hover:text-red-600 p-0.5"><Icon.Trash size={14}/></button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <h2 className="text-2xl font-black mb-6 flex items-center gap-2 px-1 text-slate-700 text-left"><Icon.CheckCircle size={24} className="text-green-500" /> 주간 참여자 선정</h2>
-                                <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 text-left">
+                                <h2 className="text-2xl font-black mb-6 text-slate-700 text-left"><Icon.CheckCircle size={24} className="text-green-500" /> 주간 참여자 선정</h2>
+                                <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 text-left text-xs">
                                     {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => {
                                         const isSel = sessionData.some(p => p.memberId === m.id && p.date === meetingTimes.date);
                                         return (
                                             <button key={m.id} onClick={() => toggleParticipant(m)} className={`p-4 h-24 rounded-2xl border-2 transition-all flex flex-col items-center justify-center relative active:scale-95 ${isSel ? 'border-green-500 bg-green-50 shadow-md' : 'bg-white border-slate-50 opacity-60'} ${!isSel ? (m.gender === '남성' ? 'hover:border-blue-200' : 'hover:border-pink-200') : ''}`}>
                                                 <span className={`font-black text-lg ${m.gender === '남성' ? 'text-blue-700' : 'text-pink-700'}`}>{m.name}</span>
-                                                <div className="flex gap-1 items-center mt-1">
-                                                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${getPosColorClass(m.position)}`}>{m.position}</span>
-                                                    <span className={`text-[9px] font-bold ${m.gender === '남성' ? 'text-blue-500' : 'text-pink-500'}`}>{m.gender}</span>
-                                                </div>
-                                                {isSel && <div className="absolute top-2 right-2 text-green-600"><Icon.CheckCircle size={14}/></div>}
+                                                <div className="flex gap-1 items-center mt-1"><span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${getPosColorClass(m.position)} shadow-sm`}>{m.position}</span><span className={`text-[9px] font-bold ${m.gender === '남성' ? 'text-blue-500' : 'text-pink-500'}`}>{m.gender}</span></div>
+                                                {isSel && <div className="absolute top-2 right-2 text-green-600 animate-zoom-in"><Icon.CheckCircle size={14}/></div>}
                                             </button>
                                         );
                                     })}
@@ -694,7 +602,6 @@
                             </div>
                         )}
 
-                        {/* 3. 기록 */}
                         {view === 'history_list' && (
                             <div className="max-w-4xl mx-auto text-left">
                                 {!selectedHistoryDetail ? (
@@ -706,17 +613,10 @@
                                                     <div className="text-left">
                                                         <p className="text-lg font-black text-slate-900">{h.date}</p>
                                                         <div className="flex flex-wrap items-center gap-2 mt-1">
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">{h.meetingTime}</span>
-                                                            <div className="w-px h-2 bg-slate-200" />
-                                                            <span className="text-[10px] font-bold text-blue-500">{h.location || "장소 미지정"}</span>
-                                                            <div className="w-px h-2 bg-slate-200" />
-                                                            <span className="text-[10px] font-bold text-slate-900">관리: {h.managerName || "미지정"}</span>
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{h.meetingTime}</span><div className="w-px h-2 bg-slate-200" /><span className="text-[10px] font-bold text-blue-500">{h.location || "장소 미지정"}</span><div className="w-px h-2 bg-slate-200" /><span className="text-[10px] font-bold text-slate-900 uppercase">관리: {h.managerName || "미지정"}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="text-right"><p className="text-xl font-black text-purple-600">{h.present}/{h.total}</p><p className="text-[9px] font-bold text-slate-300 uppercase font-black">Presence</p></div>
-                                                        <Icon.ChevronRight className="text-slate-200" />
-                                                    </div>
+                                                    <div className="flex items-center gap-3"><div className="text-right"><p className="text-xl font-black text-purple-600">{h.present}/{h.total}</p><p className="text-[9px] font-bold text-slate-300 uppercase font-black">Presence</p></div><Icon.ChevronRight className="text-slate-200" /></div>
                                                 </button>
                                             ))}
                                         </div>
@@ -724,83 +624,54 @@
                                 ) : (
                                     <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl overflow-hidden animate-zoom-in text-left" onClick={() => setSelectedHistoryDetail(null)}>
                                         <div className="p-6 sm:p-8 bg-slate-900 text-white flex justify-between items-center" onClick={e => e.stopPropagation()}>
-                                            <button onClick={() => setSelectedHistoryDetail(null)} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all"><Icon.ArrowLeft size={20} /></button>
+                                            <button onClick={() => setSelectedHistoryDetail(null)} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all shadow-none outline-none"><Icon.ArrowLeft size={20} /></button>
                                             <div className="text-right">
                                                 <h3 className="text-xl sm:text-2xl font-black">{selectedHistoryDetail.date}</h3>
                                                 <p className="text-[10px] font-bold opacity-50">{selectedHistoryDetail.meetingTime} | {selectedHistoryDetail.location || "장소 미지정"}</p>
-                                                <p className="text-[10px] font-black text-blue-300 mt-0.5">관리자: {selectedHistoryDetail.managerName || "미지정"}</p>
+                                                <p className="text-[10px] font-black text-blue-300 mt-0.5 tracking-tighter">관리자: {selectedHistoryDetail.managerName || "미지정"}</p>
                                             </div>
                                         </div>
                                         <div className="p-5 sm:p-6 text-left" onClick={e => e.stopPropagation()}>
                                             <div className="flex gap-2 mb-6"><button onClick={() => setHistorySortKey('time')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'time' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 시간순</button><button onClick={() => setHistorySortKey('status')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'status' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 구분순</button></div>
                                             <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar text-left">
-                                                {sortedHistoryRecords.map((r, idx) => (
+                                                {selectedHistoryDetail.records.map((r, idx) => (
                                                     <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-[20px] text-left">
-                                                        <div className="flex items-center gap-3 text-left">
-                                                            <span className="font-black text-base text-slate-700">{r.name}</span>
-                                                            <span className="text-[9px] font-black text-slate-400">{r.level}단</span>
-                                                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${getGenderPastelClass(r.gender)}`}>{r.gender}</span>
-                                                        </div>
+                                                        <div className="flex items-center gap-3 text-left"><span className="font-black text-base text-slate-700">{r.name}</span><span className="text-[9px] font-black text-slate-400">{r.level}단</span><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${getGenderPastelClass(r.gender)}`}>{r.gender}</span></div>
                                                         <div className="flex items-center gap-3 text-right"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${r.status === '정상' ? 'bg-green-100 text-green-600' : r.status === '지각' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}>{r.status}</span><span className="text-[10px] font-black text-slate-400 min-w-[55px] text-right">{r.checkInTime}</span></div>
                                                     </div>
                                                 ))}
                                             </div>
-                                            <button onClick={() => showConfirm("기록 삭제", "이 기록을 영구 삭제하시겠습니까?", async () => { await getHistoryCol().doc(selectedHistoryDetail.id).delete(); setSelectedHistoryDetail(null); })} className="w-full mt-6 py-4 text-red-400 text-xs font-bold border-t border-slate-100 hover:text-red-600 transition-colors text-center">데이터 영구 삭제</button>
+                                            <button onClick={() => showConfirm("기록 삭제", "이 기록을 영구 삭제하시겠습니까?", async () => { await getHistoryCol().doc(selectedHistoryDetail.id).delete(); setSelectedHistoryDetail(null); })} className="w-full mt-6 py-4 text-red-400 text-xs font-bold border-t border-slate-100 hover:text-red-600 transition-colors text-center shadow-none active:scale-95 transition-all outline-none">데이터 영구 삭제</button>
                                         </div>
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* 4. 전체 명단 */}
                         {view === 'members_list' && (
                             <div className="max-w-6xl mx-auto pb-24 text-left">
                                 <div className="bg-white p-6 sm:p-10 rounded-[48px] shadow-sm border border-slate-100 mb-10 text-left">
-                                    <div className="flex justify-between items-start mb-8 text-left">
-                                        <h2 className="text-3xl font-black text-blue-600 tracking-tighter text-left">Master Directory</h2>
-                                        <button onClick={() => setIsBulkMode(!isBulkMode)} className={`px-6 py-2.5 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${isBulkMode ? 'bg-slate-900 text-white' : 'bg-blue-50 text-blue-600'}`}><Icon.FileSpreadsheet size={18}/>{isBulkMode ? '개별 등록' : '대량 등록'}</button>
-                                    </div>
-
+                                    <div className="flex justify-between items-start mb-8 text-left"><h2 className="text-3xl font-black text-blue-600 tracking-tighter text-left uppercase">Master Directory</h2><button onClick={() => setIsBulkMode(!isBulkMode)} className={`px-6 py-2.5 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${isBulkMode ? 'bg-slate-900 text-white shadow-lg' : 'bg-blue-50 text-blue-600'}`}><Icon.FileSpreadsheet size={18}/>{isBulkMode ? '개별 등록' : '대량 등록'}</button></div>
                                     {isBulkMode ? (
-                                        <div className="animate-zoom-in text-left">
-                                            <textarea className="w-full h-64 p-6 bg-slate-50 rounded-3xl font-bold text-sm border-2 border-transparent focus:border-blue-300 resize-none transition-all custom-scrollbar" placeholder="이름, 생일, 성별, 포지션, 단계..." value={bulkPasteText} onChange={e => setBulkPasteText(e.target.value)} />
-                                            <div className="flex justify-end gap-3 mt-6"><button onClick={() => setBulkPasteText('')} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">초기화</button><button onClick={handleBulkAdd} className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all">등록 실행</button></div>
-                                        </div>
+                                        <div className="animate-zoom-in text-left"><textarea className="w-full h-64 p-6 bg-slate-50 rounded-3xl font-bold text-sm border-2 border-transparent focus:border-blue-300 resize-none transition-all custom-scrollbar shadow-none outline-none" placeholder="이름, 생일, 성별, 포지션, 단계..." value={bulkPasteText} onChange={e => setBulkPasteText(e.target.value)} /><div className="flex justify-end gap-3 mt-6"><button onClick={() => setBulkPasteText('')} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black active:scale-95 transition-all outline-none border-none">초기화</button><button onClick={handleBulkAdd} className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 transition-all">등록 실행</button></div></div>
                                     ) : (
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 animate-zoom-in text-left">
-                                            <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">이름</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black" value={newMember.name} onChange={e=>setNewMember({...newMember, name: e.target.value})} placeholder="성함" /></div>
-                                            <div className="flex flex-col gap-1 text-left">
-                                                <label className="text-[10px] font-black text-slate-400 ml-1 flex justify-between"><span>생년월일(YYYYMMDD)</span><label className="flex items-center gap-1 cursor-pointer select-none"><input type="checkbox" checked={newMember.isEarlyBirth} onChange={e=>setNewMember({...newMember, isEarlyBirth: e.target.checked})} className="scale-75" /><span className="text-[9px] text-blue-600 font-black">빠른</span></label></label>
-                                                <input type="text" maxLength="8" className="p-4 bg-slate-50 rounded-2xl font-black text-sm" value={newMember.birth} onChange={e=>setNewMember({...newMember, birth: e.target.value.replace(/[^0-9]/g, '')})} placeholder="19900101" />
-                                            </div>
-                                            <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">성별</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={newMember.gender} onChange={e=>setNewMember({...newMember, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
-                                            <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left">실력 점수</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={newMember.level} onChange={e=>setNewMember({...newMember, level: e.target.value})}>{newMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
-                                            <div className="sm:col-span-1 flex items-end"><button onClick={handleAddMember} className="w-full h-14 bg-blue-600 text-white rounded-[20px] font-black shadow-xl flex items-center justify-center gap-2 transition-all"><Icon.Plus /> 등록</button></div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 animate-zoom-in text-left text-xs">
+                                            <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase">Name</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100" value={newMember.name} onChange={e=>setNewMember({...newMember, name: e.target.value})} placeholder="성함" /></div>
+                                            <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 flex justify-between uppercase"><span>Birth</span><label className="flex items-center gap-1 cursor-pointer select-none"><input type="checkbox" checked={newMember.isEarlyBirth} onChange={e=>setNewMember({...newMember, isEarlyBirth: e.target.checked})} className="scale-75" /><span className="text-[9px] text-blue-600 font-black">빠른</span></label></label><input type="text" maxLength="8" className="p-4 bg-slate-50 rounded-2xl font-black text-sm outline-none border-2 border-transparent focus:border-blue-100" value={newMember.birth} onChange={e=>setNewMember({...newMember, birth: e.target.value.replace(/[^0-9]/g, '')})} placeholder="19900101" /></div>
+                                            <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase text-xs">Gender</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100" value={newMember.gender} onChange={e=>setNewMember({...newMember, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
+                                            <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase text-xs">Level</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100" value={newMember.level} onChange={e=>setNewMember({...newMember, level: e.target.value})}>{newMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
+                                            <div className="sm:col-span-1 flex items-end"><button onClick={handleAddMember} className="w-full h-14 bg-blue-600 text-white rounded-[20px] font-black shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all"><Icon.Plus /> 등록</button></div>
                                         </div>
                                     )}
                                 </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-left">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-left text-xs">
                                     {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
                                         <div key={m.id} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative group hover:shadow-md transition-all text-left">
-                                            <div className="flex items-start justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-black shadow-lg ${getGenderPastelClass(m.gender)}`}>{m.level}</div>
-                                                    <div className="text-left">
-                                                        <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 text-left">
-                                                            {m.name}
-                                                            {m.role && m.role !== '회원' && <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black ${getRoleBadgeClass(m.role)}`}>{m.role}</span>}
-                                                            {m.isEarlyBirth && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-lg border border-blue-100 font-black">빠른</span>}
-                                                        </h3>
-                                                        <div className="flex gap-1.5 mt-1 text-left"><span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${getPosColorClass(m.position)}`}>{m.position}</span><span className="text-[11px] font-bold text-slate-300">{formatBirth(m.birth)}</span></div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-2 text-right">
-                                                    <button onClick={() => setEditingMember({...m})} className="text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all p-1"><Icon.Edit size={20}/></button>
-                                                    <button onClick={() => showConfirm("회원 삭제", `${m.name} 님을 삭제하시겠습니까?`, async () => { await getMemberCol().doc(m.id).delete(); })} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"><Icon.Trash size={20}/></button>
-                                                </div>
+                                            <div className="flex items-start justify-between text-left">
+                                                <div className="flex items-center gap-4 text-left"><div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-black shadow-lg ${getGenderPastelClass(m.gender)}`}>{m.level}</div><div className="text-left"><h3 className="text-2xl font-black text-slate-900 flex items-center gap-2">{m.name}{m.role && m.role !== '회원' && <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black ${getRoleBadgeClass(m.role)} shadow-sm uppercase`}>{m.role}</span>}</h3><div className="flex gap-1.5 mt-1 text-left"><span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${getPosColorClass(m.position)} shadow-sm`}>{m.position}</span><span className="text-[11px] font-bold text-slate-300">{formatBirth(m.birth)}</span></div></div></div>
+                                                <div className="flex gap-2 text-right"><button onClick={() => setEditingMember({...m})} className="text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none"><Icon.Edit size={20}/></button><button onClick={() => showConfirm("회원 삭제", `${m.name} 님을 삭제하시겠습니까?`, async () => { await getMemberCol().doc(m.id).delete(); })} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none"><Icon.Trash size={20}/></button></div>
                                             </div>
-                                            {m.coupleId && <div className="inline-flex items-center gap-2 bg-pink-50 text-pink-600 px-4 py-2 rounded-full text-xs font-black border border-pink-100 mt-4"><Icon.Heart size={14} className="animate-pulse"/> {getCoupleName(m.coupleId)}</div>}
+                                            {m.coupleId && <div className="inline-flex items-center gap-2 bg-pink-50 text-pink-600 px-4 py-2 rounded-full text-xs font-black border border-pink-100 mt-4 shadow-sm"><Icon.Heart size={14} className="animate-pulse"/> {getCoupleName(m.coupleId)}</div>}
                                         </div>
                                     ))}
                                 </div>
@@ -808,66 +679,80 @@
                         )}
                     </main>
 
-                    {/* 전체 관리자 선택 모달 */}
-                    {isManagerSelectorOpen && (
-                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setIsManagerSelectorOpen(false)}>
-                            <div className="bg-white rounded-[48px] w-full max-w-2xl p-10 shadow-2xl animate-zoom-in text-left flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
-                                <h2 className="text-2xl font-black mb-6 text-blue-600 tracking-tighter">전체 회원 중 관리자 지정</h2>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 overflow-y-auto pr-2 custom-scrollbar flex-1 mb-8">
-                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
-                                        <button 
-                                            key={m.id} 
-                                            onClick={() => {
-                                                updateMeetingTimeSettings({...meetingTimes, managerId: m.id, managerName: m.name});
-                                                setIsManagerSelectorOpen(false);
-                                            }}
-                                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center ${meetingTimes.managerId === m.id ? 'border-blue-600 bg-blue-50' : 'bg-white border-slate-100 hover:border-blue-200'}`}
-                                        >
-                                            <span className="font-black text-slate-800">{m.name}</span>
-                                            <span className="text-[10px] text-slate-400 font-bold">{m.role}</span>
-                                        </button>
-                                    ))}
+                    {/* 로그인 모달 */}
+                    {isLoginModalOpen && (
+                        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-[9000] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[48px] w-full max-w-md p-10 shadow-2xl animate-zoom-in text-center border-2 border-blue-50">
+                                <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-blue-100 text-white"><Icon.ShieldCheck size={40} /></div>
+                                <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tighter uppercase">Admin Login</h2>
+                                <p className="text-slate-400 text-sm font-bold mb-10 tracking-widest">운영진 전용 관리 시스템</p>
+                                <div className="space-y-4 mb-10 text-left">
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Name</label><input type="text" className="p-5 bg-slate-50 rounded-3xl font-black border-2 border-transparent focus:border-blue-500 transition-all outline-none shadow-none" placeholder="이름 입력" value={loginForm.name} onChange={e => setLoginForm({...loginForm, name: e.target.value})} onKeyDown={e => e.key === 'Enter' && handleLogin()}/></div>
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Password (YYMMDD)</label><input type="password" className="p-5 bg-slate-50 rounded-3xl font-black border-2 border-transparent focus:border-blue-500 transition-all outline-none shadow-none" placeholder="••••••" value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} onKeyDown={e => e.key === 'Enter' && handleLogin()}/></div>
                                 </div>
-                                <div className="flex gap-3 mt-auto">
-                                    <button onClick={() => setIsManagerSelectorOpen(false)} className="w-full py-5 bg-slate-100 text-slate-500 rounded-3xl font-black text-center">닫기</button>
-                                </div>
+                                <button onClick={handleLogin} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-xl shadow-blue-100 active:scale-95 transition-all uppercase">Enter</button>
                             </div>
                         </div>
                     )}
 
-                    {/* 모달 레이어들 (기존 코드 유지) */}
+                    {/* 비밀번호 변경 모달 */}
+                    {isPasswordChangeModalOpen && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[6000] flex items-center justify-center p-4" onClick={() => setIsPasswordChangeModalOpen(false)}>
+                            <div className="bg-white rounded-[48px] w-full max-w-sm p-10 shadow-2xl animate-zoom-in text-left text-xs" onClick={e => e.stopPropagation()}>
+                                <h2 className="text-2xl font-black mb-8 text-blue-600 tracking-tighter">비밀번호 변경</h2>
+                                <div className="space-y-4 mb-10 text-left">
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">현재 비밀번호</label><input type="password" placeholder="현재 비밀번호" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={passwordForm.current} onChange={e => setPasswordForm({...passwordForm, current: e.target.value})} /></div>
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">새 비밀번호</label><input type="password" placeholder="새 비밀번호" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={passwordForm.next} onChange={e => setPasswordForm({...passwordForm, next: e.target.value})} /></div>
+                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">비밀번호 확인</label><input type="password" placeholder="확인 입력" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={passwordForm.confirm} onChange={e => setPasswordForm({...passwordForm, confirm: e.target.value})} /></div>
+                                </div>
+                                <div className="flex gap-3"><button onClick={() => setIsPasswordChangeModalOpen(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none">취소</button><button onClick={handlePasswordChange} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all">변경하기</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 전체 관리자 선택 모달 */}
+                    {isManagerSelectorOpen && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setIsManagerSelectorOpen(false)}>
+                            <div className="bg-white rounded-[48px] w-full max-w-2xl p-10 shadow-2xl animate-zoom-in text-left flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
+                                <h2 className="text-2xl font-black mb-6 text-blue-600 tracking-tighter">관리자 지정 (회원 전체)</h2>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 overflow-y-auto pr-2 custom-scrollbar flex-1 mb-8">
+                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                        <button key={m.id} onClick={() => { updateMeetingTimeSettings({...meetingTimes, managerId: m.id, managerName: m.name}); setIsManagerSelectorOpen(false); }} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center ${meetingTimes.managerId === m.id ? 'border-blue-600 bg-blue-50' : 'bg-white border-slate-100 hover:border-blue-200 shadow-sm'}`}><span className="font-black text-slate-800">{m.name}</span><span className="text-[10px] text-slate-400 font-bold uppercase">{m.role}</span></button>
+                                    ))}
+                                </div>
+                                <div className="flex gap-3 mt-auto"><button onClick={() => setIsManagerSelectorOpen(false)} className="w-full py-5 bg-slate-100 text-slate-500 rounded-3xl font-black text-center shadow-none active:scale-95 transition-all border-none">닫기</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 게스트 추가 모달 */}
                     {isGuestModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setIsGuestModalOpen(false)}>
-                            <div className="bg-white rounded-[48px] w-full max-w-md p-10 shadow-2xl animate-zoom-in text-left" onClick={e => e.stopPropagation()}>
+                            <div className="bg-white rounded-[48px] w-full max-w-md p-10 shadow-2xl animate-zoom-in text-left text-xs" onClick={e => e.stopPropagation()}>
                                 <h2 className="text-2xl font-black mb-8 text-blue-600 tracking-tighter">게스트 직접 추가</h2>
                                 <div className="space-y-5 mb-8 text-left">
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">게스트 이름</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500" value={newGuest.name} onChange={e=>setNewGuest({...newGuest, name: e.target.value})} placeholder="이름 입력" /></div>
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">성별</label><select className="p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500" value={newGuest.gender} onChange={e=>setNewGuest({...newGuest, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
-                                    <div className="flex flex-col gap-1 text-left">
-                                        <label className="text-[10px] font-black text-slate-400 ml-1">실력 점수</label>
-                                        <select className="p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500" value={newGuest.level} onChange={e=>setNewGuest({...newGuest, level: e.target.value})}>
-                                            {newGuest.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">초대한 회원</label><select className="p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500" value={newGuest.inviterId} onChange={e=>setNewGuest({...newGuest, inviterId: e.target.value})}><option value="">없음</option>{members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Name</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={newGuest.name} onChange={e=>setNewGuest({...newGuest, name: e.target.value})} placeholder="이름 입력" /></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Gender</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={newGuest.gender} onChange={e=>setNewGuest({...newGuest, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Level</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={newGuest.level} onChange={e=>setNewGuest({...newGuest, level: e.target.value})}>{newGuest.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Invited By</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={newGuest.inviterId} onChange={e=>setNewGuest({...newGuest, inviterId: e.target.value})}><option value="">없음</option>{members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
                                 </div>
-                                <div className="flex gap-3"><button onClick={() => setIsGuestModalOpen(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black">취소</button><button onClick={handleAddGuest} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl transition-all">추가하기</button></div>
+                                <div className="flex gap-3"><button onClick={() => setIsGuestModalOpen(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none">취소</button><button onClick={handleAddGuest} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all">추가하기</button></div>
                             </div>
                         </div>
                     )}
 
                     {editingMember && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setEditingMember(null)}>
-                            <div className="bg-white rounded-[48px] w-full max-w-lg p-10 shadow-2xl animate-zoom-in text-left" onClick={e => e.stopPropagation()}>
+                            <div className="bg-white rounded-[48px] w-full max-w-lg p-10 shadow-2xl animate-zoom-in text-left text-xs" onClick={e => e.stopPropagation()}>
                                 <h2 className="text-2xl font-black mb-8 text-blue-600 tracking-tighter">회원 정보 수정</h2>
                                 <div className="grid grid-cols-2 gap-4 mb-8 text-left">
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">이름</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black" value={editingMember.name} onChange={e=>setEditingMember({...editingMember, name: e.target.value})} /></div>
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">성별</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={editingMember.gender} onChange={e=>setEditingMember({...editingMember, gender: e.target.value})}><option>남성</option><option>여성</option></select></div>
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-blue-600">직책</label><select className="p-4 bg-slate-50 rounded-2xl font-black border border-blue-100" value={editingMember.role || '회원'} onChange={e=>setEditingMember({...editingMember, role: e.target.value})}>{roles.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">실력 점수</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={String(editingMember.level)} onChange={e=>setEditingMember({...editingMember, level: e.target.value})}>{editingMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
-                                    <div className="flex flex-col gap-1 text-left"><label className="text-[10px] font-black text-slate-400 ml-1">커플 대상</label><select className="p-4 bg-slate-50 rounded-2xl font-black" value={editingMember.coupleId} onChange={e=>setEditingMember({...editingMember, coupleId: e.target.value})}><option value="">없음</option>{members.filter(m => m.id !== editingMember.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1">이름</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={editingMember.name} onChange={e=>setEditingMember({...editingMember, name: e.target.value})} /></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1">성별</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={editingMember.gender} onChange={e=>setEditingMember({...editingMember, gender: e.target.value})}><option>남성</option><option>여성</option></select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 text-blue-600 font-black">직책</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-blue-100 outline-none shadow-none text-left" value={editingMember.role || '회원'} onChange={e=>setEditingMember({...editingMember, role: e.target.value})}>{roles.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1">실력 점수</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={String(editingMember.level)} onChange={e=>setEditingMember({...editingMember, level: e.target.value})}>{editingMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs sm:col-span-2"><label className="text-[10px] font-black text-slate-400 ml-1">커플 대상</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={editingMember.coupleId} onChange={e=>setEditingMember({...editingMember, coupleId: e.target.value})}><option value="">없음</option>{members.filter(m => m.id !== editingMember.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
                                 </div>
-                                <div className="flex gap-3"><button onClick={() => setEditingMember(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black">취소</button><button onClick={handleUpdateMember} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl transition-all">저장</button></div>
+                                <div className="flex gap-3"><button onClick={() => setEditingMember(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none">취소</button><button onClick={handleUpdateMember} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl shadow-blue-100 active:scale-95 transition-all">저장</button></div>
                             </div>
                         </div>
                     )}
@@ -875,10 +760,10 @@
                     {lockModalMode && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[300] flex items-center justify-center p-4" onClick={() => setLockModalMode(null)}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
-                                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-900">{lockModalMode === 'set' ? <Icon.Lock size={36} /> : <Icon.Unlock size={36} />}</div>
-                                <h3 className="text-2xl font-black mb-2 tracking-tighter text-center">현장 잠금 설정</h3>
-                                <input type="password" inputMode="numeric" placeholder="비밀번호" className="w-full p-5 bg-slate-50 rounded-3xl font-black text-center text-3xl mb-8 border-2 border-transparent focus:border-blue-500 transition-all" value={tempPassword} onChange={e => setTempPassword(e.target.value)} autoFocus />
-                                <div className="flex gap-3"><button onClick={() => setLockModalMode(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black">취소</button><button onClick={lockModalMode === 'set' ? confirmLock : confirmUnlock} className="flex-1 py-5 bg-slate-900 text-white rounded-3xl font-black shadow-xl">{lockModalMode === 'set' ? '잠금 시작' : '해제하기'}</button></div>
+                                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-900 shadow-inner">{lockModalMode === 'set' ? <Icon.Lock size={36} /> : <Icon.Unlock size={36} />}</div>
+                                <h3 className="text-2xl font-black mb-2 tracking-tighter text-center uppercase">System Lock</h3>
+                                <input type="password" inputMode="numeric" placeholder="비밀번호" className="w-full p-5 bg-slate-50 rounded-3xl font-black text-center text-3xl mb-8 border-2 border-transparent focus:border-blue-500 transition-all outline-none shadow-none" value={tempPassword} onChange={e => setTempPassword(e.target.value)} autoFocus />
+                                <div className="flex gap-3"><button onClick={() => setLockModalMode(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none">취소</button><button onClick={lockModalMode === 'set' ? confirmLock : confirmUnlock} className="flex-1 py-5 bg-slate-900 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all">{lockModalMode === 'set' ? '잠금 시작' : '해제하기'}</button></div>
                             </div>
                         </div>
                     )}
@@ -887,10 +772,10 @@
                         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4" onClick={() => setAlertModal(p => ({...p, show: false}))}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 shadow-2xl text-center animate-zoom-in" onClick={e => e.stopPropagation()}>
                                 <h3 className="text-2xl font-black mb-4 tracking-tighter text-center">{alertModal.title}</h3>
-                                <p className="text-slate-500 font-bold mb-10 whitespace-pre-wrap">{alertModal.content}</p>
+                                <p className="text-slate-500 font-bold mb-10 whitespace-pre-wrap leading-relaxed">{alertModal.content}</p>
                                 <div className="flex gap-3">
-                                    {alertModal.type === 'confirm' && <button onClick={() => setAlertModal(p => ({...p, show: false}))} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black">취소</button>}
-                                    <button onClick={() => { if (alertModal.onConfirm) alertModal.onConfirm(); setAlertModal(p => ({...p, show: false})); }} className={`flex-1 py-5 text-white rounded-3xl font-black shadow-xl ${alertModal.type === 'confirm' ? 'bg-blue-600' : 'bg-slate-900'}`}>확인</button>
+                                    {alertModal.type === 'confirm' && <button onClick={() => setAlertModal(p => ({...p, show: false}))} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black active:scale-95 transition-all shadow-none border-none">취소</button>}
+                                    <button onClick={() => { if (alertModal.onConfirm) alertModal.onConfirm(); setAlertModal(p => ({...p, show: false})); }} className={`flex-1 py-5 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all ${alertModal.type === 'confirm' ? 'bg-blue-600 shadow-blue-100' : 'bg-slate-900 shadow-slate-200'}`}>확인</button>
                                 </div>
                             </div>
                         </div>
@@ -898,10 +783,10 @@
 
                     {modal.type === 'check' && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-center justify-center p-4" onClick={() => setModal({type:null, data:null})}>
-                            <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center shadow-2xl animate-zoom-in" onClick={e => e.stopPropagation()}>
+                            <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center animate-zoom-in shadow-2xl" onClick={e => e.stopPropagation()}>
                                 <h2 className="text-4xl font-black text-slate-900 mb-10 tracking-tighter">{modal.data.name.replace('(G)', '')} 님</h2>
-                                <button onClick={() => handleCheckIn(modal.data)} className="w-full bg-blue-600 text-white py-8 rounded-[32px] text-2xl font-black shadow-xl text-center transition-all">출석 확인</button>
-                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold text-sm w-full text-center">닫기</button>
+                                <button onClick={() => handleCheckIn(modal.data)} className="w-full bg-blue-600 text-white py-8 rounded-[32px] text-2xl font-black shadow-xl text-center shadow-blue-100 active:scale-95 transition-all">출석 확인</button>
+                                <button onClick={() => setModal({type:null, data:null})} className="mt-4 text-slate-400 font-bold text-sm w-full text-center active:scale-95 transition-all shadow-none border-none">닫기</button>
                             </div>
                         </div>
                     )}
@@ -910,23 +795,24 @@
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center animate-zoom-in shadow-2xl" onClick={e => e.stopPropagation()}>
                                 <h2 className="text-3xl font-black mb-4 tracking-tighter">{modal.data.name.replace('(G)', '')} 님</h2>
                                 <p className="mb-10 text-slate-400 font-bold italic text-center">출석 기록을 취소하시겠습니까?</p>
-                                <button onClick={async () => { try { await getSessionCol().doc(modal.data.id).update({ checkedIn: false, checkInTime: null, status: '미출석' }); setModal({ type: null, data: null }); } catch(e) { console.error(e); } }} className="w-full bg-red-500 text-white py-6 rounded-3xl text-xl font-black shadow-xl text-center transition-all">출석 취소하기</button>
-                                <button onClick={() => setModal({type:null, data:null})} className="mt-3 text-slate-400 font-bold text-sm w-full text-center">돌아가기</button>
+                                <button onClick={async () => { try { await getSessionCol().doc(modal.data.id).update({ checkedIn: false, checkInTime: null, status: '미출석' }); setModal({ type: null, data: null }); } catch(e) { console.error(e); } }} className="w-full bg-red-500 text-white py-6 rounded-3xl text-xl font-black shadow-xl text-center active:scale-95 transition-all shadow-rose-100">출석 취소하기</button>
+                                <button onClick={() => setModal({type:null, data:null})} className="mt-3 text-slate-400 font-bold text-sm w-full text-center active:scale-95 transition-all shadow-none border-none">돌아가기</button>
                             </div>
                         </div>
                     )}
 
-                    {/* 하단 바 */}
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-2xl border border-white shadow-2xl rounded-full px-10 py-4 flex gap-10 items-center z-40 scale-90 sm:scale-100 transition-all">
-                        <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Members</p><p className="text-2xl font-black text-slate-900 leading-none">{members.length}</p></div>
-                        <div className="w-px h-8 bg-slate-100" />
-                        <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Selected</p><p className="text-2xl font-black text-blue-600 leading-none">{activeParticipants.length}</p></div>
-                        <div className="w-px h-8 bg-slate-100" />
-                        <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Present</p><p className="text-2xl font-black text-green-600 leading-none">{activeParticipants.filter(p=>p.checkedIn).length}</p></div>
-                    </div>
+                    {!isLoginModalOpen && (
+                        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-2xl border border-white shadow-2xl rounded-full px-10 py-4 flex gap-10 items-center z-40 scale-90 sm:scale-100 transition-all border-t border-slate-50">
+                            <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest">Members</p><p className="text-2xl font-black text-slate-900 leading-none">{members.length}</p></div>
+                            <div className="w-px h-8 bg-slate-100" />
+                            <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest">Selected</p><p className="text-2xl font-black text-blue-600 leading-none">{activeParticipants.length}</p></div>
+                            <div className="w-px h-8 bg-slate-100" />
+                            <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest">Present</p><p className="text-2xl font-black text-green-600 leading-none">{activeParticipants.filter(p=>p.checkedIn).length}</p></div>
+                        </div>
+                    )}
 
                     {isAppLocked && (
-                        <button onClick={handleLockToggle} className="fixed bottom-10 right-10 w-16 h-16 bg-white text-slate-400 rounded-full shadow-2xl flex items-center justify-center border-2 border-slate-100 z-[150] active:scale-95 transition-all">
+                        <button onClick={handleLockToggle} className="fixed bottom-10 right-10 w-16 h-16 bg-white text-slate-400 rounded-full shadow-2xl flex items-center justify-center border-2 border-slate-100 z-[150] active:scale-90 transition-all shadow-blue-50">
                             <Icon.Unlock size={28} />
                         </button>
                     )}
