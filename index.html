@@ -201,6 +201,7 @@
             const [isManagerSelectorOpen, setIsManagerSelectorOpen] = useState(false);
 
             const staffRoles = ['회장', '매니저', '총무', '부총무'];
+            const roles = ['회원', ...staffRoles]; // Added missing roles array for editing
             const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), []);
             const minuteOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')), []);
 
@@ -550,31 +551,59 @@
 
                     <main className={`p-4 sm:p-8 max-w-6xl mx-auto animate-zoom-in ${isAppLocked ? 'pt-16 sm:pt-20' : ''}`}>
                         {view === 'attendance' && !isLoginModalOpen && (
-                            <div className="max-w-5xl mx-auto text-center">
-                                <h1 className="text-4xl sm:text-6xl font-black text-blue-900 italic tracking-tighter mb-4 uppercase">OTP FC</h1>
+                            <div className="max-w-5xl mx-auto">
+                                {/* 컴팩트 헤더 영역 시작 */}
+                                <div className="flex flex-col items-center mb-8">
+                                    <h1 className="text-4xl sm:text-6xl font-black text-blue-900 italic tracking-tighter uppercase mb-2">OTP FC</h1>
+                                    <span className="text-xl sm:text-2xl font-bold text-slate-400 tabular-nums mb-6">
+                                        {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                                    </span>
+                                    
+                                    <div className="bg-white px-5 py-2.5 rounded-full border border-slate-200 shadow-sm flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs sm:text-sm">
+                                        <div className="flex items-center gap-1.5 font-bold text-slate-600">
+                                            <Icon.Calendar size={14} className="text-slate-400"/>
+                                            <span>{meetingTimes.date}</span>
+                                        </div>
+                                        <div className="w-px h-3 bg-slate-300"></div>
+                                        <div className="flex items-center gap-1.5 font-black text-green-600">
+                                            <Icon.Clock size={14} className="text-green-500"/>
+                                            <span>{meetingTimes.start}~{meetingTimes.end}</span>
+                                        </div>
+                                        
+                                        {meetingTimes.location && (
+                                            <>
+                                                <div className="w-px h-3 bg-slate-300 hidden sm:block"></div>
+                                                <div className="flex items-center gap-1.5 font-bold text-blue-600">
+                                                    <Icon.MapPin size={14} className="text-blue-500"/>
+                                                    <span>{meetingTimes.location}</span>
+                                                </div>
+                                            </>
+                                        )}
+                                        
+                                        <div className="w-px h-3 bg-slate-300 hidden sm:block"></div>
+                                        <div className="flex items-center gap-1.5">
+                                            {meetingTimes.managerName ? (
+                                                <span className="text-slate-600 flex items-center gap-1.5 font-bold">
+                                                    <Icon.ShieldCheck size={14} className="text-slate-400" /> 
+                                                    {meetingTimes.managerName}
+                                                </span>
+                                            ) : (
+                                                <button onClick={() => setIsManagerSelectorOpen(true)} className="text-[11px] text-blue-500 underline underline-offset-4 font-bold border-none">
+                                                    관리자 미정
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* 컴팩트 헤더 영역 끝 */}
+
                                 {isMeetingOver && !isAppLocked && (
                                     <div className="mb-6 bg-purple-50 border-2 border-purple-200 p-6 rounded-[32px] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-zoom-in text-left">
                                         <div><p className="text-purple-700 font-black text-lg text-left">이번 모임이 종료되었습니다!</p><p className="text-purple-500 text-sm font-bold text-left">기록을 확정하면 출석하지 않은 분들은 <span className="text-red-600">'노쇼'</span>로 자동 체크됩니다.</p></div>
                                         <button onClick={saveAndResetCurrent} className="flex items-center gap-2 bg-purple-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl hover:bg-purple-700 active:scale-95 transition-all shadow-rose-100 uppercase">Archive This Week</button>
                                     </div>
                                 )}
-                                <div className="flex flex-col gap-4 items-center mb-10 text-center">
-                                    <div className="bg-white px-10 py-6 rounded-[40px] shadow-xl border-2 border-slate-50 flex flex-col items-center">
-                                        <p className="text-[11px] font-black text-blue-600 tracking-[0.3em] uppercase mb-1">Current Time</p>
-                                        <span className="font-black text-slate-900 text-4xl sm:text-6xl tracking-tighter tabular-nums leading-none">{currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-2 items-center">
-                                        <div className="bg-white px-8 py-3 rounded-full border border-slate-100 shadow-sm flex items-center gap-3 font-black text-slate-600 text-sm sm:text-lg transition-all">
-                                            <span>{meetingTimes.date}</span><div className="w-px h-4 bg-slate-200" /><span className="text-green-600 font-black">{meetingTimes.start} ~ {meetingTimes.end}</span><div className="w-px h-4 bg-slate-200" />
-                                            {meetingTimes.managerName ? (
-                                                <span className="text-blue-600 flex items-center gap-1.5 font-black"><Icon.ShieldCheck size={16} /> {meetingTimes.managerName}</span>
-                                            ) : (
-                                                <button onClick={() => setIsManagerSelectorOpen(true)} className="text-[11px] text-blue-500 underline underline-offset-4 decoration-dotted font-black active:scale-95 transition-all border-none">관리자 등록</button>
-                                            )}
-                                        </div>
-                                        {meetingTimes.location && <div className="bg-blue-50/50 px-6 py-2 rounded-full border border-blue-100 flex items-center gap-2 text-blue-600 font-black text-sm transition-all shadow-sm"><Icon.MapPin size={16} /><span>{meetingTimes.location}</span></div>}
-                                    </div>
-                                </div>
+                                
                                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
                                     {activeParticipantsSorted.map(p => {
                                         const memberInfo = members.find(m => m.id === p.memberId);
