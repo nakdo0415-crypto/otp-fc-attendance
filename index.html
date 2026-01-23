@@ -26,9 +26,48 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap');
+        /* 기존 Pretendard 폰트 제거하고 이사만루체 로컬 폰트 설정 */
+        
+        /* Light (가늘게) - font-weight: 300 */
+        @font-face {
+            font-family: 'Esamanru';
+            src: url('esamanru Light.ttf') format('truetype');
+            font-weight: 300;
+            font-style: normal;
+        }
+
+        /* Medium (보통) - font-weight: 400, 500 */
+        /* Tailwind의 font-normal(400)과 font-medium(500)에 대응 */
+        @font-face {
+            font-family: 'Esamanru';
+            src: url('esamanru Medium.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Esamanru';
+            src: url('esamanru Medium.ttf') format('truetype');
+            font-weight: 500;
+            font-style: normal;
+        }
+
+        /* Bold (굵게) - font-weight: 700, 900 */
+        /* Tailwind의 font-bold(700)와 font-black(900)에 대응 */
+        @font-face {
+            font-family: 'Esamanru';
+            src: url('esamanru Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Esamanru';
+            src: url('esamanru Bold.ttf') format('truetype');
+            font-weight: 900;
+            font-style: normal;
+        }
+
         body { 
-            font-family: 'Pretendard', sans-serif; 
+            font-family: 'Esamanru', sans-serif; /* 폰트 적용 */
             -webkit-tap-highlight-color: transparent; 
             background-color: #f8fafc;
             user-select: none;
@@ -165,7 +204,9 @@
         function App() {
             // -- 1. State Definition --
             const [view, setView] = useState('attendance');
-            const [logoError, setLogoError] = useState(false); // 로고 로딩 에러 상태 추가
+            const [logoError, setLogoError] = useState(false); 
+            // 로컬 스토리지에서 커스텀 로고 가져오기
+            const [customLogo, setCustomLogo] = useState(() => localStorage.getItem(APP_ID + '_custom_logo') || null);
             const [members, setMembers] = useState([]);
             const [sessionData, setSessionData] = useState([]);
             const [history, setHistory] = useState([]);
@@ -206,7 +247,7 @@
             const [isManagerSelectorOpen, setIsManagerSelectorOpen] = useState(false);
 
             const staffRoles = ['회장', '매니저', '총무', '부총무'];
-            const roles = ['회원', ...staffRoles]; // Added missing roles array for editing
+            const roles = ['회원', ...staffRoles]; 
             const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), []);
             const minuteOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')), []);
 
@@ -278,6 +319,21 @@
                 });
             };
 
+            // 로고 변경 핸들러
+            const handleLogoChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const result = reader.result;
+                        setCustomLogo(result);
+                        localStorage.setItem(APP_ID + '_custom_logo', result);
+                        setLogoError(false); // 에러 상태 초기화
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
             const handleLogin = () => {
                 if (!loginForm.name.trim() || !loginForm.password.trim()) return showAlert("알림", "이름과 비밀번호를 입력해주세요.");
                 const user = members.find(m => m.name === loginForm.name.trim());
@@ -339,7 +395,7 @@
                 const meetingStart = new Date(`${participant.date}T${meetingTimes.start}`);
                 const allowFrom = new Date(meetingStart.getTime() - 60 * 60 * 1000); 
                 if (now < allowFrom) {
-                    setModal({ type: null, data: null }); // [수정] 기존 모달 닫기
+                    setModal({ type: null, data: null }); 
                     return showAlert("출석 불가", `${participant.date} ${now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })} - 아직 출석 가능 시간이 아닙니다.`);
                 }
                 const lateThreshold = new Date(meetingStart.getTime() + 60000); 
@@ -560,33 +616,42 @@
                                 {/* 컴팩트 헤더 영역 시작 */}
                                 <div className="flex flex-col items-center mb-8">
                                     
-                                    {/* 로고 영역: 이미지가 있으면 이미지를, 없으면(에러나면) SVG를 보여줌 */}
-                                    <div className="mb-4 drop-shadow-xl animate-zoom-in hover:scale-105 transition-transform duration-300">
-                                        {!logoError ? (
-                                            <img 
-                                                src="KakaoTalk_20251203_102827701.png" 
-                                                alt="OTP FC Emblem" 
-                                                className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
-                                                onError={() => setLogoError(true)} 
-                                            />
-                                        ) : (
-                                            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                {/* 방패 모양 배경 */}
-                                                <path d="M50 95C50 95 85 80 90 30H10C15 80 50 95 50 95Z" fill="#1e3a8a" stroke="#fbbf24" strokeWidth="3"/>
-                                                <path d="M50 95C50 95 15 80 10 30H50V95Z" fill="#172554"/>
-                                                {/* 상단 텍스트 배경 */}
-                                                <path d="M10 30H90V15C90 9.47715 85.5228 5 80 5H20C14.4772 5 10 9.47715 10 15V30Z" fill="white"/>
-                                                {/* 팀명 텍스트 */}
-                                                <text x="50" y="23" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="14" fill="#1e3a8a" textAnchor="middle" letterSpacing="1">OTP FC</text>
-                                                {/* 축구공 아이콘 (중앙) */}
-                                                <circle cx="50" cy="55" r="12" fill="white"/>
-                                                <path d="M50 43V47M50 63V67M38 55H42M58 55H62" stroke="#1e3a8a" strokeWidth="2" strokeLinecap="round"/>
-                                                <circle cx="50" cy="55" r="8" stroke="#1e3a8a" strokeWidth="2"/>
-                                                {/* 장식 선 */}
-                                                <path d="M20 40L35 75" stroke="#fbbf24" strokeWidth="1" opacity="0.5"/>
-                                                <path d="M80 40L65 75" stroke="#fbbf24" strokeWidth="1" opacity="0.5"/>
-                                            </svg>
-                                        )}
+                                    {/* 로고 영역: 트리플 하이브리드 (커스텀 > 파일 > SVG) */}
+                                    <div className="relative group cursor-pointer mb-4 drop-shadow-xl animate-zoom-in hover:scale-105 transition-transform duration-300" title="클릭하여 엠블럼 변경">
+                                        <input type="file" accept="image/*" className="hidden" id="logo-upload" onChange={handleLogoChange} />
+                                        <label htmlFor="logo-upload" className="cursor-pointer block">
+                                            {customLogo ? (
+                                                <img 
+                                                    src={customLogo}
+                                                    alt="Custom Emblem" 
+                                                    className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
+                                                    onError={() => setCustomLogo(null)} 
+                                                />
+                                            ) : !logoError ? (
+                                                <img 
+                                                    src="KakaoTalk_20251203_102827701.png" 
+                                                    alt="OTP FC Emblem" 
+                                                    className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
+                                                    onError={() => setLogoError(true)} 
+                                                />
+                                            ) : (
+                                                <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M50 95C50 95 85 80 90 30H10C15 80 50 95 50 95Z" fill="#1e3a8a" stroke="#fbbf24" strokeWidth="3"/>
+                                                    <path d="M50 95C50 95 15 80 10 30H50V95Z" fill="#172554"/>
+                                                    <path d="M10 30H90V15C90 9.47715 85.5228 5 80 5H20C14.4772 5 10 9.47715 10 15V30Z" fill="white"/>
+                                                    <text x="50" y="23" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="14" fill="#1e3a8a" textAnchor="middle" letterSpacing="1">OTP FC</text>
+                                                    <circle cx="50" cy="55" r="12" fill="white"/>
+                                                    <path d="M50 43V47M50 63V67M38 55H42M58 55H62" stroke="#1e3a8a" strokeWidth="2" strokeLinecap="round"/>
+                                                    <circle cx="50" cy="55" r="8" stroke="#1e3a8a" strokeWidth="2"/>
+                                                    <path d="M20 40L35 75" stroke="#fbbf24" strokeWidth="1" opacity="0.5"/>
+                                                    <path d="M80 40L65 75" stroke="#fbbf24" strokeWidth="1" opacity="0.5"/>
+                                                </svg>
+                                            )}
+                                            {/* Hover 오버레이 힌트 */}
+                                            <div className="absolute inset-0 bg-black/20 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                <Icon.Edit className="text-white drop-shadow-md" size={24} />
+                                            </div>
+                                        </label>
                                     </div>
                                     
                                     <h1 className="text-4xl sm:text-6xl font-black text-blue-900 italic tracking-tighter uppercase mb-2">OTP FC</h1>
