@@ -26,46 +26,15 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     
     <style>
-        /* 기존 Pretendard 폰트 제거하고 이사만루체 로컬 폰트 설정 */
-        
-        /* Light (가늘게) - font-weight: 300 */
+        /* 기본 폰트 설정 (초기값: 시스템 폰트 -> 이사만루체 로드 시 덮어씌워짐) */
         @font-face {
             font-family: 'Esamanru';
-            src: url('esamanru Light.ttf') format('truetype');
-            font-weight: 300;
-            font-style: normal;
-        }
-
-        /* Medium (보통) - font-weight: 400, 500 */
-        @font-face {
-            font-family: 'Esamanru';
-            src: url('esamanru Medium.ttf') format('truetype');
-            font-weight: 400;
-            font-style: normal;
-        }
-        @font-face {
-            font-family: 'Esamanru';
-            src: url('esamanru Medium.ttf') format('truetype');
-            font-weight: 500;
-            font-style: normal;
-        }
-
-        /* Bold (굵게) - font-weight: 700, 900 */
-        @font-face {
-            font-family: 'Esamanru';
-            src: url('esamanru Bold.ttf') format('truetype');
-            font-weight: 700;
-            font-style: normal;
-        }
-        @font-face {
-            font-family: 'Esamanru';
-            src: url('esamanru Bold.ttf') format('truetype');
-            font-weight: 900;
-            font-style: normal;
+            src: local('Esamanru'), local('sans-serif'); 
+            /* 초기에는 로컬에 설치된 폰트가 없으면 기본 폰트 사용하도록 설정 */
         }
 
         body { 
-            font-family: 'Esamanru', sans-serif; /* 폰트 적용 */
+            font-family: 'Esamanru', 'Pretendard', sans-serif; /* 폰트 적용 우선순위 */
             -webkit-tap-highlight-color: transparent; 
             background-color: #f8fafc;
             user-select: none;
@@ -176,6 +145,8 @@
             MapPin: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
             ShieldCheck: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
             LogOut: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+            Settings: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+            Upload: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
         };
 
         // --- Firebase Configuration ---
@@ -243,6 +214,9 @@
             const [isPasswordChangeModalOpen, setIsPasswordChangeModalOpen] = useState(false);
             const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' });
             const [isManagerSelectorOpen, setIsManagerSelectorOpen] = useState(false);
+
+            // 폰트 파일 관리 State
+            const [customFonts, setCustomFonts] = useState([]);
 
             const staffRoles = ['회장', '매니저', '총무', '부총무'];
             const roles = ['회원', ...staffRoles]; 
@@ -317,19 +291,30 @@
                 });
             };
 
-            // 로고 변경 핸들러
-            const handleLogoChange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        const result = reader.result;
-                        setCustomLogo(result);
-                        localStorage.setItem(APP_ID + '_custom_logo', result);
-                        setLogoError(false); // 에러 상태 초기화
-                    };
-                    reader.readAsDataURL(file);
-                }
+            // 폰트 파일 업로드 핸들러
+            const handleFontUpload = (e) => {
+                const files = Array.from(e.target.files);
+                files.forEach(file => {
+                    if (file.name.endsWith('.ttf') || file.name.endsWith('.otf') || file.name.endsWith('.woff') || file.name.endsWith('.woff2')) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const fontData = e.target.result;
+                            const fontFace = new FontFace('Esamanru', fontData);
+                            fontFace.load().then((loadedFont) => {
+                                document.fonts.add(loadedFont);
+                                setCustomFonts(prev => [...prev, file.name]);
+                                // 강제 리렌더링 효과를 위해 body 클래스 변경 등 고려 가능하나 FontFace API는 즉시 적용됨
+                                showAlert("성공", `'${file.name}' 폰트가 적용되었습니다.`);
+                            }).catch(err => {
+                                console.error(err);
+                                showAlert("오류", `'${file.name}' 폰트 로드 실패`);
+                            });
+                        };
+                        reader.readAsArrayBuffer(file);
+                    } else {
+                        showAlert("알림", "폰트 파일(.ttf, .otf, .woff)만 지원합니다.");
+                    }
+                });
             };
 
             const handleLogin = () => {
@@ -593,9 +578,9 @@
                         <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 sm:h-20 flex items-center px-4 shadow-sm text-slate-900 transition-all">
                             <div className="max-w-5xl mx-auto w-full flex justify-between items-center text-left">
                                 <div className="flex gap-1 sm:gap-2">
-                                    {['attendance', 'setup', 'history_list', 'members_list'].map((v) => (
+                                    {['attendance', 'setup', 'history_list', 'members_list', 'settings'].map((v) => (
                                         <button key={v} onClick={() => setView(v)} className={`px-3 sm:px-6 py-2 rounded-xl font-black text-xs sm:text-base transition-all ${view.includes(v.split('_')[0]) ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
-                                            {v === 'attendance' ? '출석' : v === 'setup' ? '선정' : v === 'history_list' ? '기록' : '전체명단'}
+                                            {v === 'attendance' ? '출석' : v === 'setup' ? '선정' : v === 'history_list' ? '기록' : v === 'members_list' ? '전체명단' : '설정'}
                                         </button>
                                     ))}
                                 </div>
@@ -887,6 +872,62 @@
                                             {m.coupleId && <div className="inline-flex items-center gap-2 bg-pink-50 text-pink-600 px-4 py-2 rounded-full text-xs font-black border border-pink-100 mt-4 shadow-sm"><Icon.Heart size={14} className="animate-pulse text-left"/> {getCoupleName(m.coupleId)}</div>}
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 5. 설정 (Settings) - 폰트 업로드 */}
+                        {view === 'settings' && (
+                            <div className="max-w-xl mx-auto pb-24 text-left animate-zoom-in">
+                                <div className="bg-white p-8 rounded-[48px] shadow-sm border border-slate-100 text-center">
+                                    <h2 className="text-3xl font-black text-slate-900 mb-8 tracking-tighter uppercase flex items-center justify-center gap-3">
+                                        <Icon.Settings size={32} className="text-slate-300" />
+                                        Settings
+                                    </h2>
+                                    
+                                    <div className="mb-10">
+                                        <h3 className="text-lg font-black text-slate-700 mb-4 flex items-center justify-center gap-2">
+                                            <span className="bg-blue-100 text-blue-600 p-2 rounded-xl"><Icon.Upload size={20}/></span>
+                                            폰트 파일 업로드
+                                        </h3>
+                                        <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+                                            .ttf, .otf, .woff 파일을 드래그하거나<br/>클릭하여 업로드하면 <b>'Esamanru'</b> 폰트로 즉시 적용됩니다.<br/>(새로고침 시 초기화됩니다)
+                                        </p>
+                                        
+                                        <div className="relative group">
+                                            <input 
+                                                type="file" 
+                                                accept=".ttf,.otf,.woff,.woff2" 
+                                                multiple 
+                                                className="hidden" 
+                                                id="font-upload"
+                                                onChange={handleFontUpload} 
+                                            />
+                                            <label 
+                                                htmlFor="font-upload" 
+                                                className="block w-full h-40 border-4 border-dashed border-slate-100 rounded-[32px] flex flex-col items-center justify-center cursor-pointer hover:border-blue-200 hover:bg-blue-50 transition-all group-hover:scale-[1.02] active:scale-95"
+                                            >
+                                                <div className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center mb-3 text-blue-500">
+                                                    <Icon.Upload size={32}/>
+                                                </div>
+                                                <span className="font-black text-slate-400 text-sm">Click to Upload Font</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {customFonts.length > 0 && (
+                                        <div className="text-left bg-slate-50 p-6 rounded-3xl">
+                                            <h4 className="font-bold text-slate-500 text-xs mb-3 uppercase tracking-wider">Applied Fonts</h4>
+                                            <ul className="space-y-2">
+                                                {customFonts.map((fontName, idx) => (
+                                                    <li key={idx} className="flex items-center gap-2 text-sm font-black text-blue-600">
+                                                        <Icon.CheckCircle size={16} className="text-green-500"/>
+                                                        {fontName}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
