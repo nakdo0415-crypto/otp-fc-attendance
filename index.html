@@ -203,6 +203,8 @@
             // -- 1. State Definition --
             const [view, setView] = useState('attendance');
             const [logoError, setLogoError] = useState(false); 
+            // 로컬 스토리지에서 커스텀 로고 가져오기
+            const [customLogo, setCustomLogo] = useState(() => localStorage.getItem(APP_ID + '_custom_logo') || null);
             const [members, setMembers] = useState([]);
             const [sessionData, setSessionData] = useState([]);
             const [history, setHistory] = useState([]);
@@ -315,6 +317,21 @@
                 });
             };
 
+            // 로고 변경 핸들러
+            const handleLogoChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const result = reader.result;
+                        setCustomLogo(result);
+                        localStorage.setItem(APP_ID + '_custom_logo', result);
+                        setLogoError(false); // 에러 상태 초기화
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
             const handleLogin = () => {
                 if (!loginForm.name.trim() || !loginForm.password.trim()) return showAlert("알림", "이름과 비밀번호를 입력해주세요.");
                 const user = members.find(m => m.name === loginForm.name.trim());
@@ -375,9 +392,14 @@
                 const now = new Date();
                 const meetingStart = new Date(`${participant.date}T${meetingTimes.start}`);
                 const allowFrom = new Date(meetingStart.getTime() - 60 * 60 * 1000); 
+                
+                // 출석 가능 시간 계산 (시작 1시간 전)
+                const allowFromStr = allowFrom.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                
                 if (now < allowFrom) {
                     setModal({ type: null, data: null }); 
-                    return showAlert("출석 불가", `${participant.date} ${now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })} - 아직 출석 가능 시간이 아닙니다.`);
+                    // 수정된 알림 메시지: 모임 날짜와 출석 가능 시간(시작 1시간 전 ~ 종료) 표시
+                    return showAlert("아직 출석 가능 시간이 아닙니다.", `출석 가능 일시 : ${participant.date} ${allowFromStr}~${meetingTimes.end}`);
                 }
                 const lateThreshold = new Date(meetingStart.getTime() + 60000); 
                 let finalStatus = now >= lateThreshold ? '지각' : '정상';
