@@ -616,45 +616,30 @@
                                 {/* 컴팩트 헤더 영역 시작 */}
                                 <div className="flex flex-col items-center mb-8">
                                     
-                                    {/* 로고 영역: 트리플 하이브리드 (커스텀 > 파일 > SVG) */}
-                                    <div className="relative group cursor-pointer flex flex-col items-center mb-6 drop-shadow-xl animate-zoom-in hover:scale-105 transition-transform duration-300" title="클릭하여 엠블럼 변경">
-                                        <input type="file" accept="image/*" className="hidden" id="logo-upload" onChange={handleLogoChange} />
-                                        <label htmlFor="logo-upload" className="cursor-pointer flex flex-col items-center">
-                                            {customLogo ? (
-                                                <img 
-                                                    src={customLogo}
-                                                    alt="Custom Emblem" 
-                                                    className="w-24 h-24 sm:w-32 sm:h-32 object-contain mb-2"
-                                                    onError={() => setCustomLogo(null)} 
-                                                />
-                                            ) : !logoError ? (
-                                                <img 
-                                                    src="KakaoTalk_20251203_102827701.png" 
-                                                    alt="OTP FC Emblem" 
-                                                    className="w-24 h-24 sm:w-32 sm:h-32 object-contain mb-2"
-                                                    onError={() => setLogoError(true)} 
-                                                />
-                                            ) : (
-                                                <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-2">
-                                                    <path d="M50 95C50 95 85 80 90 30H10C15 80 50 95 50 95Z" fill="#1e3a8a" stroke="#fbbf24" strokeWidth="3"/>
-                                                    <path d="M50 95C50 95 15 80 10 30H50V95Z" fill="#172554"/>
-                                                    <path d="M10 30H90V15C90 9.47715 85.5228 5 80 5H20C14.4772 5 10 9.47715 10 15V30Z" fill="white"/>
-                                                    {/* SVG 내부 텍스트 제거 (외부 텍스트와 중복 방지) */}
-                                                    <circle cx="50" cy="55" r="12" fill="white"/>
-                                                    <path d="M50 43V47M50 63V67M38 55H42M58 55H62" stroke="#1e3a8a" strokeWidth="2" strokeLinecap="round"/>
-                                                    <circle cx="50" cy="55" r="8" stroke="#1e3a8a" strokeWidth="2"/>
-                                                    <path d="M20 40L35 75" stroke="#fbbf24" strokeWidth="1" opacity="0.5"/>
-                                                    <path d="M80 40L65 75" stroke="#fbbf24" strokeWidth="1" opacity="0.5"/>
-                                                </svg>
-                                            )}
-                                            {/* 팀명 텍스트를 엠블럼 바로 아래 배치하여 조화롭게 구성 */}
-                                            <h1 className="text-4xl sm:text-5xl font-black text-[#1e3a8a] italic tracking-tighter uppercase leading-none mt-2 drop-shadow-sm">OTP FC</h1>
-                                            
-                                            {/* Hover 오버레이 힌트 */}
-                                            <div className="absolute inset-0 bg-black/5 rounded-3xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
-                                                <Icon.Edit className="text-white drop-shadow-md mb-8" size={24} />
-                                            </div>
-                                        </label>
+                                    {/* 로고 영역: (수정됨) 클릭 업로드 기능 삭제, 단순 표시만 함 */}
+                                    <div className="flex flex-col items-center mb-6 drop-shadow-xl animate-zoom-in hover:scale-105 transition-transform duration-300">
+                                        {!logoError ? (
+                                            <img 
+                                                src="KakaoTalk_20251203_102827701.png" 
+                                                alt="OTP FC Emblem" 
+                                                className="w-24 h-24 sm:w-32 sm:h-32 object-contain mb-2 mx-auto"
+                                                onError={() => setLogoError(true)} 
+                                            />
+                                        ) : (
+                                            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-2 mx-auto">
+                                                <path d="M50 95C50 95 85 80 90 30H10C15 80 50 95 50 95Z" fill="#db2777" stroke="#fbbf24" strokeWidth="3"/>
+                                                <path d="M50 95C50 95 15 80 10 30H50V95Z" fill="#831843"/>
+                                                <path d="M10 30H90V15C90 9.47715 85.5228 5 80 5H20C14.4772 5 10 9.47715 10 15V30Z" fill="white"/>
+                                                {/* SVG 내부 텍스트 제거 */}
+                                                <circle cx="50" cy="55" r="12" fill="white"/>
+                                                <path d="M50 43V47M50 63V67M38 55H42M58 55H62" stroke="#db2777" strokeWidth="2" strokeLinecap="round"/>
+                                                <circle cx="50" cy="55" r="8" stroke="#db2777" strokeWidth="2"/>
+                                                <path d="M20 40L35 75" stroke="#fbbf24" strokeWidth="1" opacity="0.5"/>
+                                                <path d="M80 40L65 75" stroke="#fbbf24" strokeWidth="1" opacity="0.5"/>
+                                            </svg>
+                                        )}
+                                        {/* 팀명 텍스트를 엠블럼 바로 아래 배치하여 조화롭게 구성 */}
+                                        <h1 className="text-4xl sm:text-5xl font-black text-[#db2777] italic tracking-tighter uppercase leading-none mt-2 drop-shadow-sm text-center">OTP FC</h1>
                                     </div>
                                     
                                     <span className="text-xl sm:text-2xl font-bold text-slate-400 tabular-nums mb-6">
