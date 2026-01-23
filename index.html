@@ -613,12 +613,18 @@
                                             <button key={p.id} onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})} className={`relative h-40 sm:h-56 rounded-[40px] flex flex-col items-center justify-center transition-all shadow-lg active:scale-95 ${cardStyle}`}>
                                                 <div className="absolute top-4">{(p.checkedIn || p.status === '노쇼') && <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${p.status === '정상' ? 'bg-green-100 text-green-600' : p.status === '노쇼' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>{p.status}</span>}</div>
                                                 <div className="absolute top-4 right-5 flex flex-col items-end gap-1">
-                                                    {p.isGuest && <span className="text-[10px] font-black bg-blue-600 text-white px-2 py-0.5 rounded-full uppercase shadow-sm tracking-tighter">Guest</span>}
+                                                    {/* 게스트 뱃지 위치 이동으로 인해 이곳에서는 제거됨 */}
                                                     {p.level && !p.checkedIn && p.status !== '노쇼' && <span className="text-[9px] font-black bg-white/80 text-slate-500 px-1.5 py-0.5 rounded-full border border-slate-100 shadow-sm">{p.level}단계</span>}
                                                 </div>
+                                                
+                                                {/* 기존 멤버 직책 표시 */}
                                                 {!p.checkedIn && p.status !== '노쇼' && hasRole && <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md mb-1 ${getRoleBadgeClass(memberInfo.role)} shadow-sm`}>{memberInfo.role}</span>}
+                                                
+                                                {/* 게스트 표시 (이름 위로 이동, 보라색 적용) */}
+                                                {!p.checkedIn && p.status !== '노쇼' && p.isGuest && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md mb-1 bg-purple-600 text-white shadow-sm uppercase tracking-wider">GUEST</span>}
+
                                                 <span className={`text-2xl sm:text-3xl font-black leading-tight ${p.checkedIn || p.status === '노쇼' ? 'text-slate-300' : 'text-slate-900'}`}>{p.name.replace('(G)', '')}</span>
-                                                {p.isGuest && <span className="text-[9px] font-bold text-slate-400 mt-1 italic uppercase text-center text-xs">초대: {p.inviterName}</span>}
+                                                {p.isGuest && p.inviterName !== '없음' && <span className="text-[9px] font-bold text-slate-400 mt-1 italic uppercase text-center text-xs">초대: {p.inviterName}</span>}
                                                 {p.checkedIn ? <span className="text-xs font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-full mt-3 shadow-inner">{p.checkInTime}</span> : p.status === '노쇼' ? <span className="text-[10px] font-black mt-2 text-red-300 uppercase tracking-widest text-xs">NO SHOW</span> : <span className={`text-[10px] font-black mt-2 tracking-widest uppercase ${p.gender === '남성' ? 'text-blue-700' : 'text-pink-700'}`}>{p.gender}</span>}
                                             </button>
                                         );
@@ -692,7 +698,7 @@
                                                     <div key={g.id} className={`px-4 py-2 rounded-2xl border-2 flex items-center gap-2 shadow-sm ${g.gender === '남성' ? 'bg-[#E1F0FF] border-[#2563EB] text-[#2563EB]' : 'bg-[#FFE5ED] border-[#DB2777] text-[#DB2777]'}`}>
                                                         <span className="font-black text-xs">
                                                             {g.name} <span className="ml-1 opacity-60">({g.level}단)</span>
-                                                            <small className="ml-2 opacity-70">초대:{g.inviterName}</small>
+                                                            {g.inviterName !== '없음' && <small className="ml-2 opacity-70">초대:{g.inviterName}</small>}
                                                         </span>
                                                         <button onClick={() => getSessionCol().doc(g.id).delete()} className="text-red-400 hover:text-red-600 p-0.5"><Icon.Trash size={14}/></button>
                                                     </div>
