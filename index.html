@@ -37,7 +37,6 @@
         }
 
         /* Medium (보통) - font-weight: 400, 500 */
-        /* Tailwind의 font-normal(400)과 font-medium(500)에 대응 */
         @font-face {
             font-family: 'Esamanru';
             src: url('esamanru Medium.ttf') format('truetype');
@@ -52,7 +51,6 @@
         }
 
         /* Bold (굵게) - font-weight: 700, 900 */
-        /* Tailwind의 font-bold(700)와 font-black(900)에 대응 */
         @font-face {
             font-family: 'Esamanru';
             src: url('esamanru Bold.ttf') format('truetype');
@@ -205,8 +203,6 @@
             // -- 1. State Definition --
             const [view, setView] = useState('attendance');
             const [logoError, setLogoError] = useState(false); 
-            // 로컬 스토리지에서 커스텀 로고 가져오기
-            const [customLogo, setCustomLogo] = useState(() => localStorage.getItem(APP_ID + '_custom_logo') || null);
             const [members, setMembers] = useState([]);
             const [sessionData, setSessionData] = useState([]);
             const [history, setHistory] = useState([]);
@@ -317,21 +313,6 @@
                     managerId: loggedInManager.id,
                     managerName: loggedInManager.name
                 });
-            };
-
-            // 로고 변경 핸들러
-            const handleLogoChange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        const result = reader.result;
-                        setCustomLogo(result);
-                        localStorage.setItem(APP_ID + '_custom_logo', result);
-                        setLogoError(false); // 에러 상태 초기화
-                    };
-                    reader.readAsDataURL(file);
-                }
             };
 
             const handleLogin = () => {
@@ -639,7 +620,8 @@
                                             </svg>
                                         )}
                                         {/* 팀명 텍스트를 엠블럼 바로 아래 배치하여 조화롭게 구성 */}
-                                        <h1 className="text-4xl sm:text-5xl font-black text-[#db2777] italic tracking-tighter uppercase leading-none mt-2 drop-shadow-sm text-center">OTP FC</h1>
+                                        {/* italic 클래스 제거하여 정자체로 변경 */}
+                                        <h1 className="text-4xl sm:text-5xl font-black text-[#db2777] tracking-tighter uppercase leading-none mt-2 drop-shadow-sm text-center">OTP FC</h1>
                                     </div>
                                     
                                     <span className="text-xl sm:text-2xl font-bold text-slate-400 tabular-nums mb-6">
