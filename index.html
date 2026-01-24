@@ -1291,7 +1291,7 @@
                     )}
 
                     {modal.type === 'check' && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-center justify-center p-4" onClick={() => setModal({type:null, data:null})}>
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4" onClick={() => setModal({type:null, data:null})}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center shadow-2xl animate-zoom-in" onClick={e => e.stopPropagation()}>
                                 <h2 className="text-4xl font-black text-slate-900 mb-10 tracking-tighter text-center">{modal.data.name.replace('(G)', '')} 님</h2>
                                 <button onClick={() => handleCheckIn(modal.data)} className="w-full bg-blue-600 text-white py-8 rounded-[32px] text-2xl font-black shadow-xl text-center shadow-blue-100 active:scale-95 transition-all uppercase text-center">Check In</button>
@@ -1300,7 +1300,7 @@
                         </div>
                     )}
                     {modal.type === 'cancel' && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-center justify-center p-4" onClick={() => setModal({type:null, data:null})}>
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4" onClick={() => setModal({type:null, data:null})}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center animate-zoom-in shadow-2xl" onClick={e => e.stopPropagation()}>
                                 <h2 className="text-3xl font-black mb-4 tracking-tighter text-center">{modal.data.name.replace('(G)', '')} 님</h2>
                                 <p className="mb-10 text-slate-400 font-bold italic text-center text-sm">출석 기록을 취소하시겠습니까?</p>
