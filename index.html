@@ -869,33 +869,32 @@
                                                         let baseColorClass = getTeamColorClass(teamIndex);
                                                         
                                                         // 상태에 따른 스타일 오버라이드
+                                                        // 기본: 팀 컬러 + 그림자 + 호버 효과
                                                         let cardStyle = `border-4 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200 ${baseColorClass}`;
                                                         let nameColor = "text-slate-900";
                                                         
                                                         if (p.checkedIn) {
                                                             if (p.status === '지각') {
-                                                                cardStyle = "bg-orange-50 border-orange-200 text-orange-900 shadow-inner opacity-90";
+                                                                // 지각: 주황색 경고 느낌
+                                                                cardStyle = "bg-orange-50 border-orange-200 text-orange-900 border-4 shadow-inner opacity-90";
                                                                 nameColor = "text-orange-900";
                                                             } else {
-                                                                // 정상 출석 완료 시
-                                                                cardStyle = "bg-gray-100 border-gray-300 text-gray-400 shadow-inner grayscale opacity-80"; 
-                                                                nameColor = "text-gray-500 line-through decoration-2";
+                                                                // 정상 출석 완료 시: 팀 컬러 유지하되, 연하게 처리 + 눌린 효과
+                                                                // grayscale 제거, bg-gray 제거 -> baseColorClass 유지
+                                                                cardStyle = `border-4 shadow-inner opacity-50 scale-[0.98] ${baseColorClass}`; 
+                                                                nameColor = "text-slate-900 line-through decoration-4 decoration-slate-900/30";
                                                             }
                                                         } else if (p.status === '노쇼') {
-                                                            cardStyle = "bg-red-50 border-red-200 text-red-300 shadow-none";
+                                                            // 노쇼: 빨간색 + 취소선
+                                                            cardStyle = "bg-red-50 border-red-200 text-red-300 border-4 shadow-none";
                                                             nameColor = "text-red-300 line-through decoration-red-300/50";
-                                                        } else {
-                                                            // 미출석 상태일 때 팀 컬러 텍스트 적용 (가독성 위해)
-                                                            if (!isUnassigned) {
-                                                                // getTeamColorClass가 이미 텍스트 색상을 포함하고 있음
-                                                            }
                                                         }
 
                                                         return (
                                                             <button 
                                                                 key={p.id} 
                                                                 onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})}
-                                                                className={`relative h-40 sm:h-48 rounded-[32px] flex flex-col items-center justify-center p-4 active:scale-95 overflow-hidden ${cardStyle}`}
+                                                                className={`relative h-40 sm:h-48 rounded-[32px] flex flex-col items-center justify-center p-4 overflow-hidden ${cardStyle}`}
                                                             >
                                                                 {/* 배경 워터마크 (숫자) */}
                                                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
