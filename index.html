@@ -89,7 +89,6 @@
             return sunday.toLocaleDateString('en-CA');
         };
 
-        // [복구됨] 포지션 색상 함수
         const getPosColorClass = (pos) => {
             if (!pos) return 'bg-slate-50 text-slate-400 border-slate-100';
             const p = String(pos).toLowerCase();
@@ -100,7 +99,6 @@
             return 'bg-slate-50 text-slate-400 border-slate-100';
         };
 
-        // [복구됨] 성별 색상 함수
         const getGenderPastelClass = (gender) => {
             return gender === '남성' ? 'bg-[#E1F0FF] text-[#2563EB]' : 'bg-[#FFE5ED] text-[#DB2777]';
         };
@@ -281,13 +279,17 @@
             // 로컬스토리지 데이터 또는 서버 데이터를 우선순위에 따라 사용
             const activeTeamData = useMemo(() => {
                 // 로컬 데이터가 최신이고 날짜가 맞으면 우선 사용 (가장 빠름)
-                if (localTeamData && (!teamData || new Date(localTeamData.updatedAt) > new Date(teamData.createdAt))) {
-                     // 로컬 데이터에는 meetingDate 정보가 없을 수 있으므로 날짜 체크는 생략하거나 주의
-                     // Team Maker 코드는 날짜를 저장하지 않는 것으로 보임, 따라서 로컬은 날짜 무시하고 적용
+                // 서버 데이터가 있다면 그 시간과 비교
+                const serverTime = teamData ? new Date(teamData.createdAt).getTime() : 0;
+                const localTime = localTeamData ? new Date(localTeamData.updatedAt).getTime() : 0;
+
+                if (localTeamData && localTime > serverTime) {
                      return localTeamData;
                 }
-                // 서버 데이터가 있고 날짜가 맞으면 사용
-                if (teamData && teamData.meetingDate === meetingTimes.date) {
+                
+                // 서버 데이터 사용 (날짜 체크)
+                if (teamData) {
+                    // 서버 데이터의 날짜가 현재 미팅 날짜와 일치하는지 확인 권장되지만, 강제 동기화이므로 일단 사용
                     return teamData;
                 }
                 return null;
@@ -330,7 +332,7 @@
                 }
 
                 return groups;
-            }, [activeParticipants, activeTeamData, meetingTimes.date]);
+            }, [activeParticipants, activeTeamData]);
 
             // 정렬된 팀 키 배열 (렌더링 순서용)
             const sortedTeamKeys = useMemo(() => {
@@ -693,7 +695,12 @@
                         // 최근 1개의 팀 편성 데이터만 가져오되, 날짜가 변경될 때마다 갱신
                         getTeamDraftsCol().orderBy('createdAt', 'desc').limit(1).onSnapshot(snap => {
                              if (!snap.empty) {
-                                 setTeamData(snap.docs[0].data());
+                                 const data = snap.docs[0].data();
+                                 setTeamData(data);
+                                 // 강제 날짜 동기화: 팀 편성이 확정되면 그 날짜로 앱 상태를 업데이트
+                                 if (data.meetingDate) {
+                                     setMeetingTimes(prev => ({ ...prev, date: data.meetingDate }));
+                                 }
                              } else {
                                  setTeamData(null);
                              }
@@ -827,6 +834,14 @@
                                             )}
                                         </div>
                                     </div>
+                                    
+                                    {/* 실시간 연동 상태 표시 (상단에 작게) */}
+                                    {activeTeamData && activeTeamData.meetingDate === meetingTimes.date && (
+                                        <div className="mt-3 animate-fade-in flex items-center gap-1.5 text-[10px] text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                                            실시간 팀 연동됨
+                                        </div>
+                                    )}
                                 </div>
                                 {/* 컴팩트 헤더 영역 끝 */}
 
@@ -1019,6 +1034,20 @@
                                             <button onClick={handleResetSelection} className="px-6 py-4 rounded-2xl bg-red-50 text-red-500 font-black flex items-center gap-2 active:scale-95 transition-all border-none text-xs"><Icon.RotateCcw size={18}/> 명단 초기화</button>
                                         </div>
                                     </div>
+
+                                    {/* 팀 연동 상태 메시지 (자동 연동됨을 표시) */}
+                                    <div className="mt-8 pt-8 border-t border-slate-100 text-center">
+                                         {activeTeamData ? (
+                                             <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full text-xs font-black">
+                                                 <Icon.CheckCircle size={14} /> Team Maker 실시간 연동 중 ({activeTeamData.teams.length}개 팀)
+                                             </div>
+                                         ) : (
+                                             <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-400 rounded-full text-xs font-bold">
+                                                 팀 편성 대기 중 (Team Maker에서 확정해주세요)
+                                             </div>
+                                         )}
+                                    </div>
+                                    
                                     {/* 게스트 리스트 복원 및 가시성 확보 */}
                                     {activeParticipants.some(p => p.isGuest) && (
                                         <div className="mt-8 mb-4 animate-zoom-in text-left">
