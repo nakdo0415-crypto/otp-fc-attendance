@@ -37,7 +37,7 @@
             -webkit-tap-highlight-color: transparent; 
             background-color: #f8fafc;
             user-select: none;
-            /* iOS 스크롤 바운스 제어 - 당겨서 새로고침 직접 구현을 위해 none 설정 유지하되, 구현부에서 처리 */
+            /* iOS 스크롤 바운스 제어 */
             overscroll-behavior-y: none;
         }
         .animate-zoom-in { animation: zoomIn 0.2s ease-out; }
@@ -78,7 +78,6 @@
         const { useState, useEffect, useRef, useMemo } = React;
 
         // --- 전역 헬퍼 함수 정의 ---
-        
         // 다가오는 일요일 계산 (시간대 이슈 방지를 위해 낮 12시 기준 계산)
         const getThisSunday = () => {
             const now = new Date();
@@ -230,7 +229,7 @@
             MapPin: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
             ShieldCheck: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
             LogOut: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-            Settings: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+            Settings: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
             Upload: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
             Refresh: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>,
             Check: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>
@@ -304,7 +303,7 @@
             const [newGuest, setNewGuest] = useState({ name: '', gender: '남성', inviterId: '', inviterName: '', level: '1' });
             
             // 로그인 및 관리자 관련 State
-            // [수정] 로그인 상태를 LocalStorage에서 초기화
+            // 로그인 상태를 LocalStorage에서 초기화
             const [loggedInManager, setLoggedInManager] = useState(() => {
                 try {
                     const stored = localStorage.getItem('otp_attendance_manager');
@@ -313,7 +312,8 @@
                     return null;
                 }
             });
-            const [isLoginModalOpen, setIsLoginModalOpen] = useState(!loggedInManager); // 로그인 상태면 모달 닫음
+            // !loggedInManager를 isLoginModalOpen 초기값으로 사용
+            const [isLoginModalOpen, setIsLoginModalOpen] = useState(!loggedInManager);
             
             const [loginForm, setLoginForm] = useState({ name: '', password: '' });
             const [isPasswordChangeModalOpen, setIsPasswordChangeModalOpen] = useState(false);
@@ -446,6 +446,31 @@
                 }
                 return list;
             }, [selectedHistoryDetail, historySortKey]);
+
+            // [NEW] Footer Stats Logic (Dynamic based on view)
+            const footerStats = useMemo(() => {
+                let label = "TOTAL"; // Default label
+                let count = members.length;
+
+                if (view === 'setup') {
+                    const m = meetingTimes.date ? parseInt(meetingTimes.date.split('-')[1], 10) : 0;
+                    label = `MONTHLY(${m}월)`;
+                    count = setupTabMonthlyMembers.length;
+                } else if (view === 'members_list') {
+                    if (memberSubTab === 'monthly') {
+                        const m = targetMonth ? parseInt(targetMonth.split('-')[1], 10) : 0;
+                        label = `MONTHLY(${m}월)`;
+                        count = monthlyParticipants.length;
+                    } else {
+                        label = "TOTAL"; // Corrected label
+                        count = members.length;
+                    }
+                } else {
+                    label = "TOTAL"; // Default fallback
+                    count = members.length;
+                }
+                return { label, count };
+            }, [view, memberSubTab, members.length, monthlyParticipants.length, setupTabMonthlyMembers.length, meetingTimes.date, targetMonth]);
 
 
             // -- 3. Helper Functions --
@@ -1113,7 +1138,7 @@
                                                 </div>
                                                 
                                                 {/* 팀원 카드 그리드 (큼직하게) */}
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                                                     {membersInTeam.map((p) => {
                                                         const memberInfo = members.find(m => m.id === p.memberId);
                                                         const hasRole = memberInfo?.role && memberInfo.role !== '회원';
@@ -1147,12 +1172,12 @@
                                                             <button 
                                                                 key={p.id} 
                                                                 onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})}
-                                                                className={`relative h-40 sm:h-48 rounded-[32px] flex flex-col items-center justify-center p-4 overflow-hidden ${cardStyle}`}
+                                                                className={`relative h-40 sm:h-48 rounded-[32px] flex flex-col items-center justify-center p-0 overflow-hidden ${cardStyle}`}
                                                             >
-                                                                {/* 배경 워터마크 (숫자) */}
+                                                                {/* 배경 워터마크 (숫자) - 중앙 정렬 */}
                                                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
                                                                      {/* 팀 컬러와 동일한 색상 적용, 매우 크게 */}
-                                                                    <span className={`text-[8rem] font-black opacity-20 select-none ${getTeamNumberColor(teamIndex)}`}>
+                                                                    <span className={`text-[8rem] font-black opacity-20 select-none leading-none ${getTeamNumberColor(teamIndex)}`}>
                                                                         {p.teamOrder}
                                                                     </span>
                                                                 </div>
@@ -1173,8 +1198,8 @@
                                                                     </div>
                                                                 </div>
 
-                                                                {/* 중앙 정보 (z-10으로 배경 위로 올림) */}
-                                                                <div className="relative z-10 flex flex-col items-center gap-1 mt-2">
+                                                                {/* 중앙 정보 (z-10으로 배경 위로 올림) - 완벽한 중앙 정렬 */}
+                                                                <div className="relative z-10 flex flex-col items-center justify-center w-full h-full pb-2">
                                                                     {/* 뱃지 그룹 */}
                                                                     <div className="flex gap-1 mb-1">
                                                                         {hasRole && <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-sm ${getRoleBadgeClass(memberInfo.role)}`}>{memberInfo.role}</span>}
@@ -1182,7 +1207,7 @@
                                                                     </div>
 
                                                                     {/* 이름 */}
-                                                                    <span className={`text-2xl sm:text-3xl font-black leading-tight break-keep ${nameColor}`}>
+                                                                    <span className={`text-2xl sm:text-3xl font-black leading-tight break-keep text-center ${nameColor}`}>
                                                                         {p.name.replace('(G)', '')}
                                                                     </span>
                                                                     
@@ -1193,7 +1218,7 @@
 
                                                                     {/* 게스트 초대자 정보 */}
                                                                     {p.isGuest && p.inviterName !== '없음' && (
-                                                                        <span className="text-[9px] font-bold text-slate-400 mt-0.5">
+                                                                        <span className="text-[9px] font-bold text-slate-400 mt-0.5 text-center">
                                                                             by {p.inviterName}
                                                                         </span>
                                                                     )}
@@ -1770,10 +1795,9 @@
                     {!isLoginModalOpen && (
                         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-2xl border border-white shadow-2xl rounded-full px-10 py-4 flex gap-10 items-center z-40 scale-90 sm:scale-100 transition-all border-t border-slate-50 shadow-blue-50 safe-bottom">
                             <div className="text-center">
-                                {/* [수정] Members 라벨을 Monthly Pool로 변경하여 의미 명확화 (선택 사항, 여기선 사용자가 Members 문구를 언급했으므로 Members 유지하되 데이터만 변경) */}
-                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest text-xs uppercase text-center">Monthly Pool</p>
-                                {/* [수정] 전체 인원(members.length) 대신 해당 월 참여자 수(setupTabMonthlyMembers.length) 표시 */}
-                                <p className="text-2xl font-black text-slate-900 leading-none text-center">{setupTabMonthlyMembers.length}</p>
+                                {/* [수정] Footer - 동적 라벨 및 카운트 */}
+                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest text-xs uppercase text-center">{footerStats.label}</p>
+                                <p className="text-2xl font-black text-slate-900 leading-none text-center">{footerStats.count}</p>
                             </div>
                             <div className="w-px h-8 bg-slate-100 text-center" />
                             <div className="text-center"><p className="text-[10px] text-slate-400 font-black uppercase tracking-tight tracking-widest text-xs uppercase text-center">Selected</p><p className="text-2xl font-black text-blue-600 leading-none text-center">{activeParticipants.length}</p></div>
