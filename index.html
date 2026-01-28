@@ -37,7 +37,7 @@
             -webkit-tap-highlight-color: transparent; 
             background-color: #f8fafc;
             user-select: none;
-            /* iOS 스크롤 바운스 제어 */
+            /* iOS 스크롤 바운스 제어 - 당겨서 새로고침 직접 구현을 위해 none 설정 유지하되, 구현부에서 처리 */
             overscroll-behavior-y: none;
         }
         .animate-zoom-in { animation: zoomIn 0.2s ease-out; }
@@ -78,6 +78,7 @@
         const { useState, useEffect, useRef, useMemo } = React;
 
         // --- 전역 헬퍼 함수 정의 ---
+        
         // 다가오는 일요일 계산 (시간대 이슈 방지를 위해 낮 12시 기준 계산)
         const getThisSunday = () => {
             const now = new Date();
@@ -132,6 +133,7 @@
             return gender === '남성' ? 'bg-[#E1F0FF] text-[#2563EB]' : 'bg-[#FFE5ED] text-[#DB2777]';
         };
 
+        // 직책 뱃지 함수
         const getRoleBadgeClass = (role) => {
             switch(role) {
                 case '회장': return 'bg-slate-900 text-white';
@@ -144,7 +146,7 @@
 
         const getTeamName = (index) => String.fromCharCode(65 + index); // 0->A, 1->B...
 
-        // 팀 컬러 정의 (Team Maker와 일치)
+        // 팀 컬러 정의
         const getTeamColorClass = (teamIndex) => {
             switch(teamIndex) {
                 case 0: return 'bg-red-50 border-red-200 text-red-900';
@@ -170,6 +172,7 @@
             }
         }
         
+        // 팀 뱃지 컬러
         const getTeamBadgeColor = (teamIndex) => {
              switch(teamIndex) {
                 case 0: return 'bg-red-500 text-white';
@@ -322,6 +325,11 @@
             const [monthlyParticipants, setMonthlyParticipants] = useState([]);
             // [추가] 선정 탭용 월별 참여자 리스트 (meetingTimes.date 기준)
             const [setupTabMonthlyMembers, setSetupTabMonthlyMembers] = useState([]);
+
+            // Pull to Refresh State
+            const [pullDistance, setPullDistance] = useState(0);
+            const touchStartY = useRef(0);
+            const isPullingRef = useRef(false);
 
             const staffRoles = ['회장', '매니저', '총무', '부총무'];
             const roles = ['회원', ...staffRoles]; 
@@ -757,6 +765,60 @@
 
 
             // -- 4. Effects --
+            // [추가] Pull-to-Refresh 구현
+            useEffect(() => {
+                const handleTouchStart = (e) => {
+                    // 스크롤이 맨 위에 있을 때만 시작점 기록
+                    if (window.scrollY === 0) {
+                        touchStartY.current = e.touches[0].clientY;
+                        isPullingRef.current = true;
+                    } else {
+                        isPullingRef.current = false;
+                    }
+                };
+
+                const handleTouchMove = (e) => {
+                    if (!isPullingRef.current) return;
+                    
+                    const touchY = e.touches[0].clientY;
+                    const diff = touchY - touchStartY.current;
+                    
+                    // 아래로 당길 때만 (diff > 0)
+                    if (diff > 0) {
+                        // 저항감을 주기 위해 0.4 곱하기
+                        setPullDistance(diff * 0.4); 
+                        // 네이티브 스크롤 방지 (선택적)
+                        // e.preventDefault(); 
+                    } else {
+                        setPullDistance(0);
+                    }
+                };
+
+                const handleTouchEnd = () => {
+                    if (!isPullingRef.current) return;
+                    isPullingRef.current = false;
+
+                    // 임계값(100px) 이상 당겨졌으면 새로고침
+                    if (pullDistance > 100) {
+                        window.location.reload();
+                    } else {
+                        // 아니면 원위치
+                        setPullDistance(0);
+                    }
+                };
+
+                // window에 이벤트 리스너 등록
+                window.addEventListener('touchstart', handleTouchStart, { passive: false });
+                window.addEventListener('touchmove', handleTouchMove, { passive: false });
+                window.addEventListener('touchend', handleTouchEnd);
+
+                return () => {
+                    window.removeEventListener('touchstart', handleTouchStart);
+                    window.removeEventListener('touchmove', handleTouchMove);
+                    window.removeEventListener('touchend', handleTouchEnd);
+                };
+            }, [pullDistance]);
+
             useEffect(() => {
                 const timer = setInterval(() => setCurrentTime(new Date()), 1000);
                 // 1초마다 LocalStorage 체크 (다른 탭/앱에서 변경 시 즉시 반영 위함)
@@ -890,6 +952,17 @@
             // -- 5. Render --
             return (
                 <div className="min-h-screen pb-40 text-slate-900">
+                    {/* Pull-to-Refresh Indicator */}
+                    <div 
+                        style={{ height: `${pullDistance}px`, opacity: pullDistance > 0 ? 1 : 0 }} 
+                        className="fixed top-0 left-0 w-full bg-slate-100 flex items-center justify-center overflow-hidden z-[9999] transition-all duration-75 pointer-events-none"
+                    >
+                        <div className={`flex flex-col items-center gap-2 transform ${pullDistance > 100 ? 'scale-110 text-blue-600' : 'scale-100 text-slate-400'}`}>
+                            <Icon.Refresh className={`w-6 h-6 ${pullDistance > 100 ? 'animate-spin' : ''}`} />
+                            {pullDistance > 100 && <span className="text-[10px] font-black uppercase">Release to Refresh</span>}
+                        </div>
+                    </div>
+
                     {!isAppLocked && !isLoginModalOpen && (
                         <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 sm:h-20 flex items-center px-4 shadow-sm text-slate-900 transition-all">
                             <div className="max-w-5xl mx-auto w-full flex justify-between items-center text-left">
