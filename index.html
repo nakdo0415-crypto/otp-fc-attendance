@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <!-- viewport-fit=cover 추가: 노치 및 홈바 영역까지 화면 확장 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <!-- 모바일 앱 모드 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -37,9 +38,13 @@
             -webkit-tap-highlight-color: transparent; 
             background-color: #f8fafc;
             user-select: none;
-            /* iOS 스크롤 바운스 제어 */
+            /* iOS 스크롤 바운스 방지 및 폰트 최적화 */
             overscroll-behavior-y: none;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            touch-action: manipulation;
         }
+
         .animate-zoom-in { animation: zoomIn 0.2s ease-out; }
         @keyframes zoomIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         
@@ -49,12 +54,18 @@
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        /* 아이패드 하단 홈바 대응 */
-        .safe-bottom {
+        /* 아이패드/아이폰 하단 홈바 대응 유틸리티 */
+        .safe-pb {
             padding-bottom: env(safe-area-inset-bottom);
         }
+        .safe-mb-nav {
+            margin-bottom: env(safe-area-inset-bottom);
+        }
+        .safe-pt {
+            padding-top: env(safe-area-inset-top);
+        }
 
-        html, body { overscroll-behavior-y: contain; }
+        html, body { overscroll-behavior-y: contain; height: 100%; }
         select, input { outline: none; transition: border-color 0.2s; }
         select:focus, input:focus { border-color: #3b82f6 !important; }
 
@@ -64,6 +75,48 @@
             background-repeat: no-repeat;
             background-position: right 0.75rem center;
             background-size: 1rem;
+        }
+        
+        /* 체크박스 커스텀 */
+        .custom-checkbox {
+            appearance: none;
+            background-color: #fff;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.25em;
+            height: 1.25em;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.35em;
+            display: grid;
+            place-content: center;
+            transition: all 0.2s;
+        }
+        .custom-checkbox::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em white;
+            transform-origin: center;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+        .custom-checkbox:checked {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+        .custom-checkbox:checked::before {
+            transform: scale(1);
+        }
+        
+        /* Horizontal Scroll Hide */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
     </style>
 </head>
@@ -78,23 +131,18 @@
         const { useState, useEffect, useRef, useMemo } = React;
 
         // --- 전역 헬퍼 함수 정의 ---
-        // 다가오는 일요일 계산 (시간대 이슈 방지를 위해 낮 12시 기준 계산)
         const getThisSunday = () => {
             const now = new Date();
-            // 시/분/초를 12:00:00으로 고정하여 날짜 계산 시 오차 방지
             const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
             const day = d.getDay(); 
-            // 일요일(0)이면 0일 더함(오늘), 그 외에는 다가오는 일요일까지 남은 일수 더함
             const diff = (day === 0) ? 0 : 7 - day;
             d.setDate(d.getDate() + diff);
-            
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const date = String(d.getDate()).padStart(2, '0');
             return `${year}-${month}-${date}`;
         };
 
-        // 특정 날짜 기준 다음 주 일요일 계산
         const getNextSundayFromDate = (dateStr) => {
             let d;
             if (dateStr) {
@@ -104,18 +152,15 @@
                 d = new Date();
                 d.setHours(12, 0, 0, 0);
             }
-            
             const day = d.getDay(); 
             const diff = (day === 0) ? 7 : 7 - day; 
             d.setDate(d.getDate() + diff);
-            
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const date = String(d.getDate()).padStart(2, '0');
             return `${year}-${month}-${date}`;
         };
 
-        // 포지션 색상 함수
         const getPosColorClass = (pos) => {
             if (!pos) return 'bg-slate-50 text-slate-400 border-slate-100';
             const p = String(pos).toLowerCase();
@@ -127,12 +172,10 @@
             return 'bg-slate-50 text-slate-400 border-slate-100';
         };
 
-        // 성별 색상 함수
         const getGenderPastelClass = (gender) => {
             return gender === '남성' ? 'bg-[#E1F0FF] text-[#2563EB]' : 'bg-[#FFE5ED] text-[#DB2777]';
         };
 
-        // 직책 뱃지 함수
         const getRoleBadgeClass = (role) => {
             switch(role) {
                 case '회장': return 'bg-slate-900 text-white';
@@ -143,9 +186,8 @@
             }
         };
 
-        const getTeamName = (index) => String.fromCharCode(65 + index); // 0->A, 1->B...
+        const getTeamName = (index) => String.fromCharCode(65 + index);
 
-        // 팀 컬러 정의
         const getTeamColorClass = (teamIndex) => {
             switch(teamIndex) {
                 case 0: return 'bg-red-50 border-red-200 text-red-900';
@@ -158,7 +200,6 @@
             }
         };
 
-        // 배경 숫자용 텍스트 컬러 (연한 버전)
         const getTeamNumberColor = (teamIndex) => {
              switch(teamIndex) {
                 case 0: return 'text-red-500';
@@ -171,7 +212,6 @@
             }
         }
         
-        // 팀 뱃지 컬러
         const getTeamBadgeColor = (teamIndex) => {
              switch(teamIndex) {
                 case 0: return 'bg-red-500 text-white';
@@ -193,19 +233,43 @@
             return birth;
         };
 
-        // 레벨별 색상 (팀 메이커용)
-        const getLevelColor = (level) => {
-            const l = parseInt(level);
-            const n = l > 6 ? l - 6 : l; 
-            switch(n) {
-                case 1: return 'bg-rose-500 text-white';
-                case 2: return 'bg-orange-500 text-white';
-                case 3: return 'bg-amber-400 text-slate-800';
-                case 4: return 'bg-emerald-500 text-white';
-                case 5: return 'bg-blue-500 text-white';
-                case 6: return 'bg-violet-500 text-white';
-                default: return 'bg-slate-400 text-white';
-            }
+        // 장기 회원 잔여 기간 및 무료 휴식 횟수 계산 (만료일 기준)
+        const getMembershipStatus = (member, targetMonthStr) => {
+            if (!member.membershipType || member.membershipType === 'monthly' || !member.membershipEndDate) return null;
+            
+            const end = new Date(member.membershipEndDate);
+            // 만료일 기준 해당 월의 말일 또는 1일 처리
+            const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+            const [y, m] = targetMonthStr.split('-').map(Number);
+            const current = new Date(y, m - 1, 1);
+            
+            // 만료 여부 확인
+            if (current > endMonth) return { active: false, msg: '만료됨', type: member.membershipType === 'half_year' ? '반년' : '1년' };
+            
+            // 남은 개월 수 계산 (현재월 포함)
+            let monthsRemaining = (endMonth.getFullYear() - current.getFullYear()) * 12 + (endMonth.getMonth() - current.getMonth()) + 1;
+            
+            // 무료 휴식 횟수 계산
+            const maxRest = member.membershipType === 'half_year' ? 3 : 6;
+            const usedRest = member.totalRestMonths || 0;
+            const remainingRest = maxRest - usedRest;
+            
+            // 만료일 포맷팅 (YY.MM.DD)
+            const year = end.getFullYear().toString().slice(2);
+            const month = String(end.getMonth() + 1).padStart(2, '0');
+            const day = String(end.getDate()).padStart(2, '0');
+            const endDateFormatted = `${year}.${month}.${day}`;
+
+            return { 
+                active: true, 
+                remaining: monthsRemaining, 
+                type: member.membershipType === 'half_year' ? '반년' : '1년',
+                endDate: member.membershipEndDate,
+                endDateFormatted: endDateFormatted,
+                maxRest,
+                usedRest,
+                remainingRest
+            };
         };
 
         const Icon = {
@@ -229,10 +293,13 @@
             MapPin: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
             ShieldCheck: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
             LogOut: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-            Settings: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+            Settings: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
             Upload: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
             Refresh: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>,
-            Check: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>
+            Check: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
+            Coffee: ({size=16, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>,
+            CreditCard: ({size=16, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+            Edit2: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
         };
 
         // --- Firebase Configuration ---
@@ -251,9 +318,7 @@
         const APP_ID = 'otp-fc-attendance';
 
         const getCol = (name) => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(name);
-        // **[중요] 팀 메이커 데이터 경로 (실시간 연동용)**
         const getTeamDraftsCol = () => db.collection('artifacts').doc('otp-fc-attendance').collection('public').doc('data').collection('team_drafts');
-        // **[중요] 월별 참여자 데이터 경로**
         const getMonthlyCol = () => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('monthly_checks');
         
         const getSessionCol = () => getCol('weekly_session');
@@ -287,13 +352,21 @@
             const [tempPassword, setTempPassword] = useState('');
             const [modal, setModal] = useState({ type: null, data: null });
             const [alertModal, setAlertModal] = useState({ show: false, title: '', content: '', type: 'info', onConfirm: null });
+            // 월별 상태 관리 팝업용
+            const [selectedMonthlyMember, setSelectedMonthlyMember] = useState(null); 
+            const [manualEndDate, setManualEndDate] = useState(''); // State for manual end date input
+            const [specialRestReason, setSpecialRestReason] = useState(''); // [NEW] 특별 휴식 사유 입력
+            const [filterCategory, setFilterCategory] = useState('all'); // [NEW] Member list filter state
 
             // **팀 데이터 상태 추가 (실시간 연동용 - 로컬/서버 통합)**
             const [teamData, setTeamData] = useState(null);
             const [localTeamData, setLocalTeamData] = useState(null);
 
             // 회원 관리 & 게스트 State
-            const [newMember, setNewMember] = useState({ name: '', birth: '', gender: '남성', position: 'all', level: '1', coupleId: '', isEarlyBirth: false, role: '회원' });
+            const [newMember, setNewMember] = useState({ 
+                name: '', birth: '', gender: '남성', position: 'all', level: '1', role: '회원',
+                coupleId: '', isEarlyBirth: false // 납부 관련 필드 제거됨
+            });
             const [editingMember, setEditingMember] = useState(null);
             const [isBulkMode, setIsBulkMode] = useState(false);
             const [bulkPasteText, setBulkPasteText] = useState('');
@@ -312,7 +385,6 @@
                     return null;
                 }
             });
-            // !loggedInManager를 isLoginModalOpen 초기값으로 사용
             const [isLoginModalOpen, setIsLoginModalOpen] = useState(!loggedInManager);
             
             const [loginForm, setLoginForm] = useState({ name: '', password: '' });
@@ -331,7 +403,9 @@
                 const now = new Date();
                 return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             });
-            const [monthlyParticipants, setMonthlyParticipants] = useState([]);
+            const [monthlyStatuses, setMonthlyStatuses] = useState({}); // { [uid]: 'paid' | 'rest' }
+            const [monthlyParticipants, setMonthlyParticipants] = useState([]); // legacy support + count
+            const [monthlyReasons, setMonthlyReasons] = useState({}); // [NEW] 월별 사유 데이터
             // [추가] 선정 탭용 월별 참여자 리스트 (meetingTimes.date 기준)
             const [setupTabMonthlyMembers, setSetupTabMonthlyMembers] = useState([]);
 
@@ -350,8 +424,30 @@
                 return members.filter(m => staffRoles.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
             }, [members]);
 
+            // Helper to get status type for filtering and styling
+            const getMemberStatusType = (member, statuses, reasons, targetMonthStr) => {
+                if (staffRoles.includes(member.role)) return 'staff';
+                
+                const status = statuses[member.id];
+                const reason = reasons[member.id];
+                const membershipInfo = getMembershipStatus(member, targetMonthStr);
+
+                if (membershipInfo && membershipInfo.active) {
+                    if (status === 'rest') {
+                         return reason ? 'special' : 'rest';
+                    }
+                    if (membershipInfo.type === '반년') return 'half';
+                    return 'full';
+                }
+
+                if (status === 'paid') return 'monthly';
+                if (status === 'rest') return reason ? 'special' : 'rest';
+                
+                return 'unpaid';
+            };
+
+
             // -- 2. Derived States (Memoized) --
-            // [수정] activeParticipants를 '신청 시간순(createdAt)'으로 정렬하여 선착순 로직 적용
             const activeParticipants = useMemo(() => {
                 const list = sessionData.filter(p => p.date === meetingTimes.date);
                 // createdAt이 없으면(기존 데이터) 이름순, 있으면 시간순
@@ -460,9 +556,19 @@
                     if (memberSubTab === 'monthly') {
                         const m = targetMonth ? parseInt(targetMonth.split('-')[1], 10) : 0;
                         label = `MONTHLY(${m}월)`;
-                        count = monthlyParticipants.length;
+                        // paid 상태 + active 장기회원(휴식X)
+                        count = members.filter(m => {
+                            if (staffRoles.includes(m.role)) return false; // 운영진 제외
+                            const status = monthlyStatuses[m.id];
+                            const membershipInfo = getMembershipStatus(m, targetMonth);
+                            if (status === 'paid') return true;
+                            // 휴식은 '참여'가 아니므로 카운트에서 제외
+                            if (status === 'rest') return false; 
+                            if (membershipInfo && membershipInfo.active) return true;
+                            return false;
+                        }).length;
                     } else {
-                        label = "TOTAL"; // Corrected label
+                        label = "TOTAL"; 
                         count = members.length;
                     }
                 } else {
@@ -470,7 +576,33 @@
                     count = members.length;
                 }
                 return { label, count };
-            }, [view, memberSubTab, members.length, monthlyParticipants.length, setupTabMonthlyMembers.length, meetingTimes.date, targetMonth]);
+            }, [view, memberSubTab, members, monthlyStatuses, setupTabMonthlyMembers.length, meetingTimes.date, targetMonth]);
+
+            // [NEW] Filtered members for Monthly view
+            const filteredMonthlyMembers = useMemo(() => {
+                let list = [...members].sort((a,b)=>a.name.localeCompare(b.name));
+                if (filterCategory !== 'all') {
+                    list = list.filter(m => {
+                        const type = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
+                        return type === filterCategory;
+                    });
+                }
+                return list;
+            }, [members, filterCategory, monthlyStatuses, monthlyReasons, targetMonth]);
+
+            // [NEW] Count for each filter category
+            const filterCounts = useMemo(() => {
+                const counts = { all: members.length, monthly: 0, half: 0, full: 0, rest: 0, special: 0, unpaid: 0 };
+                members.forEach(m => {
+                    const type = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
+                    if (type !== 'staff') { // Exclude staff from counts usually, or include? Let's include for accurate numbers.
+                        // Wait, 'unpaid' logic might catch staff if not careful. getMemberStatusType returns 'staff' for them.
+                        // Let's count staff in 'all' but they don't map to other categories usually.
+                        if (counts[type] !== undefined) counts[type]++;
+                    }
+                });
+                return counts;
+            }, [members, monthlyStatuses, monthlyReasons, targetMonth]);
 
 
             // -- 3. Helper Functions --
@@ -618,16 +750,17 @@
             const handleCheckIn = async (participant) => {
                 const now = new Date();
                 const meetingStart = new Date(`${participant.date}T${meetingTimes.start}`);
+                
+                // [복구] 출석 가능 시간 제한 로직 (1시간 전부터)
                 const allowFrom = new Date(meetingStart.getTime() - 60 * 60 * 1000); 
                 
-                // 출석 가능 시간 계산 (시작 1시간 전)
                 const allowFromStr = allowFrom.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
                 
                 if (now < allowFrom) {
                     setModal({ type: null, data: null }); 
-                    // 수정된 알림 메시지: 모임 날짜와 출석 가능 시간(시작 1시간 전 ~ 종료) 표시
                     return showAlert("아직 출석 가능 시간이 아닙니다.", `출석 가능 일시 : ${participant.date} ${allowFromStr}~${meetingTimes.end}`);
                 }
+                
                 const lateThreshold = new Date(meetingStart.getTime() + 60000); 
                 let finalStatus = now >= lateThreshold ? '지각' : '정상';
                 const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -650,7 +783,7 @@
                 const birthClean = String(newMember.birth).replace(/[^0-9]/g, '');
                 try {
                     await getMemberCol().add({ ...newMember, birth: birthClean, createdAt: new Date().toISOString() });
-                    setNewMember({ name: '', birth: '', gender: '남성', position: 'all', level: '1', coupleId: '', isEarlyBirth: false, role: '회원' });
+                    setNewMember({ name: '', birth: '', gender: '남성', position: 'all', level: '1', role: '회원', coupleId: '', isEarlyBirth: false });
                     showAlert("성공", "회원이 등록되었습니다.");
                 } catch (e) { showAlert("오류", "회원 등록 실패"); }
             };
@@ -711,7 +844,6 @@
                     });
                     setIsGuestModalOpen(false);
                     setNewGuest({ name: '', gender: '남성', inviterId: '', inviterName: '', level: '1' });
-                    // 게스트가 추가되면 meetingTimes가 아직 업데이트 안 됐을 경우를 대비해 로컬 상태 업데이트는 불필요 (onSnapshot이 처리)
                     showAlert("성공", "게스트가 추가되었습니다.");
                 } catch (e) { showAlert("오류", "게스트 등록 실패"); }
             };
@@ -766,36 +898,7 @@
                     }
                 });
             };
-
-            // 월별 참여 체크 토글 함수
-            const toggleMonthlyCheck = async (memberId) => {
-                if (!targetMonth) return;
-                try {
-                    const currentParticipants = monthlyParticipants || [];
-                    const isParticipating = currentParticipants.includes(memberId);
-                    
-                    let newParticipants;
-                    if (isParticipating) {
-                        newParticipants = currentParticipants.filter(id => id !== memberId);
-                    } else {
-                        newParticipants = [...currentParticipants, memberId];
-                    }
-                    
-                    // Firestore에 저장 (문서 ID: YYYY-MM)
-                    await getMonthlyCol().doc(targetMonth).set({ 
-                        memberIds: newParticipants,
-                        updatedAt: new Date().toISOString()
-                    }, { merge: true });
-                    
-                    // 로컬 상태는 onSnapshot이 처리하지만, 빠른 반응을 위해 미리 업데이트 가능
-                    // setMonthlyParticipants(newParticipants); 
-                } catch (e) {
-                    console.error("Monthly check error:", e);
-                    showAlert("오류", "참여 상태 변경에 실패했습니다.");
-                }
-            };
             
-            // 월 이동 핸들러
             const moveMonth = (offset) => {
                 const [y, m] = targetMonth.split('-').map(Number);
                 const d = new Date(y, m - 1 + offset, 1);
@@ -804,12 +907,217 @@
                 setTargetMonth(`${nextY}-${nextM}`);
             };
 
+            // Status Update Handler (from Modal)
+            const handleStatusUpdate = async (memberId, action) => {
+                if (!targetMonth) return;
+                try {
+                    const batch = db.batch();
+                    const monthRef = getMonthlyCol().doc(targetMonth);
+                    const memberRef = getMemberCol().doc(memberId);
+                    
+                    if (action === 'monthly_paid') {
+                         batch.set(monthRef, { 
+                            statuses: { [memberId]: 'paid' },
+                            updatedAt: new Date().toISOString()
+                        }, { merge: true });
+                        // Clear reasons if any
+                         batch.update(monthRef, {
+                            [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete()
+                        });
+                        // Clear membership data if switching to monthly
+                        batch.update(memberRef, {
+                            membershipType: 'monthly',
+                            membershipStartDate: '',
+                            membershipEndDate: '',
+                            totalRestMonths: 0
+                        });
+                    } else if (action === 'start_half') {
+                        // Calculate default end date: 1st of targetMonth + 6 months - 1 day
+                        const [y, m] = targetMonth.split('-').map(Number);
+                        
+                        // [수정] 6개월 후의 '말일'로 설정 (예: 2월 시작 -> 7월 31일 끝)
+                        const endDate = new Date(y, m - 1 + 6, 0); 
+                        const endDateStr = endDate.toISOString().split('T')[0];
+
+                        batch.update(memberRef, {
+                            membershipType: 'half_year',
+                            membershipStartDate: `${targetMonth}-01`,
+                            membershipEndDate: endDateStr,
+                            totalRestMonths: 0
+                        });
+                         batch.update(monthRef, {
+                            [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(),
+                            [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete()
+                        });
+                    } else if (action === 'start_full') {
+                         // Calculate default end date: 1st of targetMonth + 12 months - 1 day
+                        const [y, m] = targetMonth.split('-').map(Number);
+                        
+                        // 12 months duration.
+                        // Formula: new Date(y, m - 1 + 12, 0)
+                        const endDate = new Date(y, m - 1 + 12, 0); 
+                        const endDateStr = endDate.toISOString().split('T')[0];
+
+                        batch.update(memberRef, {
+                            membershipType: 'full_year',
+                            membershipStartDate: `${targetMonth}-01`,
+                            membershipEndDate: endDateStr,
+                            totalRestMonths: 0
+                        });
+                        batch.update(monthRef, {
+                            [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(),
+                            [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete()
+                        });
+                    } else if (action === 'rest') {
+                        // Mark as rest for this month (Available for ALL members)
+                        batch.set(monthRef, { 
+                            statuses: { [memberId]: 'rest' },
+                            updatedAt: new Date().toISOString()
+                        }, { merge: true });
+                        // Clear reason if standard rest
+                         batch.update(monthRef, {
+                            [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete()
+                        });
+
+                        // Check rest limit for half_year
+                        const member = members.find(m => m.id === memberId);
+                         if (member && member.membershipType === 'half_year' && (member.totalRestMonths || 0) >= 3) {
+                            if((member.totalRestMonths || 0) >= 3) {
+                                return showAlert("반년납 회원은 휴식을 최대 3회까지만 사용할 수 있습니다.");
+                            }
+                        }
+
+                        // Extend duration ONLY if long-term member
+                        if (member && (member.membershipType === 'half_year' || member.membershipType === 'full_year')) {
+                            const currentEnd = new Date(member.membershipEndDate);
+                            // Add 1 month to current end date, and align to last day
+                            const nextEndDate = new Date(currentEnd.getFullYear(), currentEnd.getMonth() + 1 + 1, 0);
+                            
+                            batch.update(memberRef, {
+                                membershipEndDate: nextEndDate.toISOString().split('T')[0],
+                                totalRestMonths: firebase.firestore.FieldValue.increment(1)
+                            });
+                        }
+                    } else if (action === 'special_rest') {
+                        // [NEW] Admin Special Rest
+                        batch.set(monthRef, { 
+                            statuses: { [memberId]: 'rest' },
+                            reasons: { [memberId]: specialRestReason || '관리자 휴식' },
+                            updatedAt: new Date().toISOString()
+                        }, { merge: true });
+
+                        // Extend duration if long-term member, BUT DO NOT INCREMENT totalRestMonths
+                        const member = members.find(m => m.id === memberId);
+                        if (member && (member.membershipType === 'half_year' || member.membershipType === 'full_year')) {
+                            const currentEnd = new Date(member.membershipEndDate);
+                            const nextEndDate = new Date(currentEnd.getFullYear(), currentEnd.getMonth() + 1 + 1, 0);
+                            
+                            batch.update(memberRef, {
+                                membershipEndDate: nextEndDate.toISOString().split('T')[0]
+                            });
+                        }
+                        setSpecialRestReason('');
+
+                    } else if (action === 'end_membership') {
+                         batch.update(memberRef, {
+                            membershipType: 'monthly',
+                            membershipStartDate: '',
+                            membershipEndDate: '',
+                            totalRestMonths: 0
+                        });
+                        batch.update(monthRef, {
+                            [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(),
+                            [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete()
+                        });
+                    } else if (action === 'clear') {
+                        // Just clear monthly status (unpaid)
+                         batch.update(monthRef, {
+                            [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(),
+                            [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete()
+                        });
+                    } else if (action === 'cancel_rest') {
+                        // Cancel rest (back to active)
+                        batch.update(monthRef, {
+                            [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(),
+                            [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete()
+                        });
+                        
+                        // Decrease duration extension ONLY if long-term member
+                        const member = members.find(m => m.id === memberId);
+                        const reason = monthlyReasons[memberId];
+                        
+                        if (member && (member.membershipType === 'half_year' || member.membershipType === 'full_year')) {
+                             const currentEnd = new Date(member.membershipEndDate);
+                             // Subtract 1 month, align to last day
+                             const prevEndDate = new Date(currentEnd.getFullYear(), currentEnd.getMonth(), 0);
+
+                             const updatePayload = {
+                                membershipEndDate: prevEndDate.toISOString().split('T')[0]
+                             };
+                             
+                             // Only decrease count if it wasn't a special rest
+                             if (!reason) {
+                                 updatePayload.totalRestMonths = firebase.firestore.FieldValue.increment(-1);
+                             }
+
+                             batch.update(memberRef, updatePayload);
+                        }
+                    } else if (action === 'update_end_date') {
+                        // Manual date update from input
+                        if(manualEndDate) {
+                             batch.update(memberRef, {
+                                membershipEndDate: manualEndDate
+                            });
+                        }
+                    } else if (action === 'update_rest_count') {
+                        // [NEW] Manual rest count update
+                        // 'manualEndDate' variable is reused here for count input, but UI uses a number input
+                        // Actually let's use a separate state or just increment/decrement
+                        // Implementing increment/decrement for simplicity in this function, 
+                        // but UI will call with a value. 
+                        // Let's assume 'manualEndDate' holds the new count value for simplicity of reuse, 
+                        // OR better: use arguments directly.
+                        // I'll implement direct increment/decrement logic in the UI button handler calling this function.
+                        // Wait, 'action' is string. I need a value.
+                        // Let's change this function to accept a value for 'update_rest_count'.
+                        // But I can't change signature easily without breaking other calls.
+                        // I'll use 'manualEndDate' state as the carrier for the count value.
+                         if (manualEndDate !== '') {
+                            const newCount = parseInt(manualEndDate);
+                             // Calculate new totalRestMonths = Max - NewCount
+                             const member = members.find(m => m.id === memberId);
+                             if (member) {
+                                 const max = member.membershipType === 'half_year' ? 3 : 6;
+                                 const newUsed = max - newCount;
+                                 batch.update(memberRef, {
+                                     totalRestMonths: newUsed
+                                 });
+                             }
+                         }
+                    }
+
+                    await batch.commit();
+                    if (action !== 'update_end_date' && action !== 'update_rest_count') setSelectedMonthlyMember(null); 
+                } catch(e) {
+                     console.error("Update error:", e);
+                     showAlert("오류", "상태 변경 실패");
+                }
+            };
+            
+            // Effect to update manualEndDate state when selecting a member
+            useEffect(() => {
+                if (selectedMonthlyMember && selectedMonthlyMember.membershipEndDate) {
+                    setManualEndDate(selectedMonthlyMember.membershipEndDate);
+                } else {
+                    setManualEndDate('');
+                }
+            }, [selectedMonthlyMember]);
+
 
             // -- 4. Effects --
-            // [추가] Pull-to-Refresh 구현
+            // Pull-to-Refresh 구현
             useEffect(() => {
                 const handleTouchStart = (e) => {
-                    // 스크롤이 맨 위에 있을 때만 시작점 기록
                     if (window.scrollY === 0) {
                         touchStartY.current = e.touches[0].clientY;
                         isPullingRef.current = true;
@@ -820,16 +1128,10 @@
 
                 const handleTouchMove = (e) => {
                     if (!isPullingRef.current) return;
-                    
                     const touchY = e.touches[0].clientY;
                     const diff = touchY - touchStartY.current;
-                    
-                    // 아래로 당길 때만 (diff > 0)
                     if (diff > 0) {
-                        // 저항감을 주기 위해 0.4 곱하기
                         setPullDistance(diff * 0.4); 
-                        // 네이티브 스크롤 방지 (선택적)
-                        // e.preventDefault(); 
                     } else {
                         setPullDistance(0);
                     }
@@ -838,17 +1140,13 @@
                 const handleTouchEnd = () => {
                     if (!isPullingRef.current) return;
                     isPullingRef.current = false;
-
-                    // 임계값(100px) 이상 당겨졌으면 새로고침
                     if (pullDistance > 100) {
                         window.location.reload();
                     } else {
-                        // 아니면 원위치
                         setPullDistance(0);
                     }
                 };
 
-                // window에 이벤트 리스너 등록
                 window.addEventListener('touchstart', handleTouchStart, { passive: false });
                 window.addEventListener('touchmove', handleTouchMove, { passive: false });
                 window.addEventListener('touchend', handleTouchEnd);
@@ -862,7 +1160,6 @@
 
             useEffect(() => {
                 const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-                // 1초마다 LocalStorage 체크 (다른 탭/앱에서 변경 시 즉시 반영 위함)
                 const storageCheck = setInterval(() => {
                     const saved = localStorage.getItem('otp_confirmed_teams');
                     if (saved) {
@@ -872,7 +1169,6 @@
                         } catch(e) {}
                     }
                 }, 1000);
-                
                 return () => {
                     clearInterval(timer);
                     clearInterval(storageCheck);
@@ -895,17 +1191,11 @@
                         getSettingsCol().doc('meeting_time').onSnapshot(doc => { 
                             if (doc.exists) {
                                 const data = doc.data();
-                                const today = new Date();
-                                // 시간대 영향 없애기 위해 문자열 비교
-                                const todayStr = getThisSunday().split('-').join(''); // 오늘 기준 일요일
                                 const dataDate = new Date(data.date);
                                 const yesterday = new Date();
                                 yesterday.setDate(yesterday.getDate() - 1);
-                                
-                                // 저장된 날짜가 어제보다 과거라면 자동으로 이번주/다음주 일요일로 업데이트
                                 if (dataDate < yesterday) {
                                     const nextSunday = getThisSunday();
-                                    // 무한 루프 방지: DB 업데이트는 한번만
                                     if (data.date !== nextSunday) {
                                         const newData = { ...data, date: nextSunday, managerId: "", managerName: "" };
                                         getSettingsCol().doc('meeting_time').set(newData);
@@ -919,7 +1209,6 @@
                             }
                         });
                         
-                        // **실시간 팀 데이터 연동: team_drafts 리스너 추가**
                         getTeamDraftsCol().orderBy('createdAt', 'desc').limit(1).onSnapshot(snap => {
                              if (!snap.empty) {
                                  const data = snap.docs[0].data();
@@ -933,39 +1222,86 @@
                 return () => unsubAuth();
             }, []);
             
-            // [추가] 월별 참여 데이터 리스너 (실시간)
-            // 1. Members List 탭에서 선택된 달
             useEffect(() => {
                 if (view === 'members_list' && targetMonth) {
                     const unsubMonthly = getMonthlyCol().doc(targetMonth).onSnapshot(doc => {
                         if (doc.exists) {
-                            setMonthlyParticipants(doc.data().memberIds || []);
+                            const data = doc.data();
+                            if (data.statuses) {
+                                setMonthlyStatuses(data.statuses);
+                                setMonthlyParticipants(Object.keys(data.statuses).filter(id => data.statuses[id] === 'paid'));
+                            } else if (data.memberIds) {
+                                const newStatuses = {};
+                                data.memberIds.forEach(id => newStatuses[id] = 'paid');
+                                setMonthlyStatuses(newStatuses);
+                                setMonthlyParticipants(data.memberIds);
+                            } else {
+                                setMonthlyStatuses({});
+                                setMonthlyParticipants([]);
+                            }
+
+                            // [NEW] Load reasons
+                            if (data.reasons) {
+                                setMonthlyReasons(data.reasons);
+                            } else {
+                                setMonthlyReasons({});
+                            }
                         } else {
+                            setMonthlyStatuses({});
                             setMonthlyParticipants([]);
+                            setMonthlyReasons({});
                         }
                     });
                     return () => unsubMonthly();
                 }
             }, [view, targetMonth]);
             
-            // 2. Setup 탭에서 선택된 날짜에 해당하는 달
             useEffect(() => {
                 if (meetingTimes.date) {
                     const [y, m] = meetingTimes.date.split('-');
                     const docKey = `${y}-${m}`;
                     const unsubSetupMonthly = getMonthlyCol().doc(docKey).onSnapshot(doc => {
                         if (doc.exists) {
-                            setSetupTabMonthlyMembers(doc.data().memberIds || []);
+                            const data = doc.data();
+                            let validMembers = [];
+                            if (data.statuses) {
+                                validMembers = Object.keys(data.statuses).filter(id => data.statuses[id] === 'paid');
+                            } else if (data.memberIds) {
+                                validMembers = data.memberIds;
+                            }
+                            
+                            members.forEach(member => {
+                                const membershipInfo = getMembershipStatus(member, docKey);
+                                // [수정] 운영진 자동 포함
+                                if (staffRoles.includes(member.role)) {
+                                     if (!validMembers.includes(member.id)) validMembers.push(member.id);
+                                } 
+                                // 장기 회원 자동 포함
+                                else if (membershipInfo && membershipInfo.active) {
+                                    if (!validMembers.includes(member.id)) {
+                                        const status = data.statuses ? data.statuses[member.id] : null;
+                                        if (status !== 'rest') {
+                                            validMembers.push(member.id);
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            setSetupTabMonthlyMembers(validMembers);
                         } else {
-                            setSetupTabMonthlyMembers([]);
+                            const autoMembers = members.filter(m => {
+                                // [수정] 운영진 자동 포함
+                                if (staffRoles.includes(m.role)) return true;
+                                const info = getMembershipStatus(m, docKey);
+                                return info && info.active;
+                            }).map(m => m.id);
+                            setSetupTabMonthlyMembers(autoMembers);
                         }
                     });
                     return () => unsubSetupMonthly();
                 }
-            }, [meetingTimes.date]);
+            }, [meetingTimes.date, members]);
 
-
-            // 팝업 초기화 (수정됨: isManagerSelectorOpen 사용)
             useEffect(() => {
                 setModal({ type: null, data: null });
                 setEditingMember(null);
@@ -975,9 +1311,10 @@
                 setAlertModal(prev => ({...prev, show: false}));
                 setIsPasswordChangeModalOpen(false);
                 setIsManagerSelectorOpen(false); 
+                setSelectedMonthlyMember(null);
+                setSpecialRestReason('');
             }, [view]);
 
-            // 자동 노쇼 처리 로직
             useEffect(() => {
                 if (isMeetingOver && sessionData.length > 0) {
                     const unchecked = sessionData.filter(p => p.date === meetingTimes.date && !p.checkedIn && p.status !== '노쇼');
@@ -993,7 +1330,6 @@
             // -- 5. Render --
             return (
                 <div className="min-h-screen pb-40 text-slate-900">
-                    {/* Pull-to-Refresh Indicator */}
                     <div 
                         style={{ height: `${pullDistance}px`, opacity: pullDistance > 0 ? 1 : 0 }} 
                         className="fixed top-0 left-0 w-full bg-slate-100 flex items-center justify-center overflow-hidden z-[9999] transition-all duration-75 pointer-events-none"
@@ -1031,10 +1367,7 @@
                     <main className={`p-4 sm:p-8 max-w-6xl mx-auto animate-zoom-in ${isAppLocked ? 'pt-16 sm:pt-20' : ''}`}>
                         {view === 'attendance' && !isLoginModalOpen && (
                             <div className="max-w-5xl mx-auto">
-                                {/* 컴팩트 헤더 영역 시작 */}
                                 <div className="flex flex-col items-center mb-8">
-                                    
-                                    {/* 로고 영역 */}
                                     <div className="flex flex-col items-center mb-6 drop-shadow-xl animate-zoom-in hover:scale-105 transition-transform duration-300">
                                         {!logoError ? (
                                             <img 
@@ -1048,7 +1381,6 @@
                                                 <path d="M50 95C50 95 85 80 90 30H10C15 80 50 95 50 95Z" fill="#db2777" stroke="#fbbf24" strokeWidth="3"/>
                                                 <path d="M50 95C50 95 15 80 10 30H50V95Z" fill="#831843"/>
                                                 <path d="M10 30H90V15C90 9.47715 85.5228 5 80 5H20C14.4772 5 10 9.47715 10 15V30Z" fill="white"/>
-                                                {/* SVG 내부 텍스트 제거 */}
                                                 <circle cx="50" cy="55" r="12" fill="white"/>
                                                 <path d="M50 43V47M50 63V67M38 55H42M58 55H62" stroke="#db2777" strokeWidth="2" strokeLinecap="round"/>
                                                 <circle cx="50" cy="55" r="8" stroke="#db2777" strokeWidth="2"/>
@@ -1099,7 +1431,6 @@
                                         </div>
                                     </div>
                                     
-                                    {/* 실시간 연동 상태 표시 (상단에 작게) */}
                                     {activeTeamData && activeTeamData.meetingDate === meetingTimes.date && (
                                         <div className="mt-3 animate-fade-in flex items-center gap-1.5 text-[10px] text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
                                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
@@ -1107,7 +1438,6 @@
                                         </div>
                                     )}
                                 </div>
-                                {/* 컴팩트 헤더 영역 끝 */}
 
                                 {isMeetingOver && !isAppLocked && (
                                     <div className="mb-6 bg-purple-50 border-2 border-purple-200 p-6 rounded-[32px] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-zoom-in text-left">
@@ -1116,19 +1446,16 @@
                                     </div>
                                 )}
                                 
-                                {/* 팀별로 그룹핑하여 표시 */}
                                 <div className="space-y-8">
                                     {sortedTeamKeys.map(teamKey => {
                                         const membersInTeam = groupedParticipants[teamKey];
                                         if (!membersInTeam || membersInTeam.length === 0) return null;
                                         
-                                        // 팀 인덱스 추정 (A=0, B=1...)
                                         const teamIndex = teamKey.charCodeAt(0) - 65;
                                         const teamBadgeColor = getTeamBadgeColor(teamIndex);
 
                                         return (
                                             <div key={teamKey} className="animate-fade-in">
-                                                {/* 팀 헤더 */}
                                                 <div className="flex items-center gap-3 mb-4 px-2">
                                                     <span className={`px-5 py-2 rounded-2xl text-lg font-black shadow-md ${teamBadgeColor}`}>
                                                         {`TEAM ${teamKey}`}
@@ -1137,33 +1464,23 @@
                                                     <span className="text-sm font-bold text-slate-400">{membersInTeam.length}명</span>
                                                 </div>
                                                 
-                                                {/* 팀원 카드 그리드 (큼직하게) */}
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                                                     {membersInTeam.map((p) => {
                                                         const memberInfo = members.find(m => m.id === p.memberId);
                                                         const hasRole = memberInfo?.role && memberInfo.role !== '회원';
-                                                        
-                                                        // 기본 카드 스타일 (팀 컬러 적용)
                                                         let baseColorClass = getTeamColorClass(teamIndex);
-                                                        
-                                                        // 상태에 따른 스타일 오버라이드
-                                                        // 기본: 팀 컬러 + 그림자 + 호버 효과
                                                         let cardStyle = `border-4 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200 ${baseColorClass}`;
                                                         let nameColor = "text-slate-900";
                                                         
                                                         if (p.checkedIn) {
                                                             if (p.status === '지각') {
-                                                                // 지각: 주황색 경고 느낌
                                                                 cardStyle = "bg-orange-50 border-orange-200 text-orange-900 border-4 shadow-inner opacity-90";
                                                                 nameColor = "text-orange-900";
                                                             } else {
-                                                                // 정상 출석 완료 시: 팀 컬러 유지하되, 연하게 처리 + 눌린 효과
-                                                                // grayscale 제거, bg-gray 제거 -> baseColorClass 유지
                                                                 cardStyle = `border-4 shadow-inner opacity-50 scale-[0.98] ${baseColorClass}`; 
                                                                 nameColor = "text-slate-900 line-through decoration-4 decoration-slate-900/30";
                                                             }
                                                         } else if (p.status === '노쇼') {
-                                                            // 노쇼: 빨간색 + 취소선
                                                             cardStyle = "bg-red-50 border-red-200 text-red-300 border-4 shadow-none";
                                                             nameColor = "text-red-300 line-through decoration-red-300/50";
                                                         }
@@ -1172,19 +1489,16 @@
                                                             <button 
                                                                 key={p.id} 
                                                                 onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})}
-                                                                className={`relative h-40 sm:h-48 rounded-[32px] flex flex-col items-center justify-center p-0 overflow-hidden ${cardStyle}`}
+                                                                className={`cursor-pointer relative h-40 sm:h-48 rounded-[32px] flex flex-col items-center justify-center p-0 overflow-hidden ${cardStyle} active:scale-95`}
                                                             >
-                                                                {/* 배경 워터마크 (숫자) - 중앙 정렬 */}
                                                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-                                                                     {/* 팀 컬러와 동일한 색상 적용, 매우 크게 */}
                                                                     <span className={`text-[8rem] font-black opacity-20 select-none leading-none ${getTeamNumberColor(teamIndex)}`}>
                                                                         {p.teamOrder}
                                                                     </span>
                                                                 </div>
 
-                                                                {/* 상단 상태 뱃지 */}
+                                                                {/* [수정] pointer-events-none 추가하여 클릭이 버튼으로 전달되도록 개선 */}
                                                                 <div className="absolute top-3 w-full flex justify-between px-3 items-start pointer-events-none z-10">
-                                                                    {/* 왼쪽: 상태 */}
                                                                     <div>
                                                                         {(p.checkedIn || p.status === '노쇼') && (
                                                                             <span className={`text-[10px] font-black px-2 py-1 rounded-full shadow-sm ${
@@ -1198,35 +1512,26 @@
                                                                     </div>
                                                                 </div>
 
-                                                                {/* 중앙 정보 (z-10으로 배경 위로 올림) - 완벽한 중앙 정렬 */}
-                                                                <div className="relative z-10 flex flex-col items-center justify-center w-full h-full pb-2">
-                                                                    {/* 뱃지 그룹 */}
+                                                                {/* [수정] pointer-events-none 추가 */}
+                                                                <div className="relative z-10 flex flex-col items-center justify-center w-full h-full pb-2 pointer-events-none">
                                                                     <div className="flex gap-1 mb-1">
                                                                         {hasRole && <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-sm ${getRoleBadgeClass(memberInfo.role)}`}>{memberInfo.role}</span>}
                                                                         {p.isGuest && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-purple-600 text-white shadow-sm uppercase">GUEST</span>}
                                                                     </div>
-
-                                                                    {/* 이름 */}
                                                                     <span className={`text-2xl sm:text-3xl font-black leading-tight break-keep text-center ${nameColor}`}>
                                                                         {p.name.replace('(G)', '')}
                                                                     </span>
-                                                                    
-                                                                    {/* 성별 표시 (이름 아래 작게) */}
                                                                     <span className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${p.gender === '여성' ? 'text-pink-500' : 'text-blue-500/60'}`}>
                                                                         {p.gender}
                                                                     </span>
-
-                                                                    {/* 게스트 초대자 정보 */}
                                                                     {p.isGuest && p.inviterName !== '없음' && (
                                                                         <span className="text-[9px] font-bold text-slate-400 mt-0.5 text-center">
                                                                             by {p.inviterName}
                                                                         </span>
                                                                     )}
                                                                 </div>
-
-                                                                {/* 하단 체크인 시간 (z-10) */}
                                                                 {p.checkedIn && (
-                                                                    <div className="absolute bottom-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full shadow-sm z-10">
+                                                                    <div className="absolute bottom-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full shadow-sm z-10 pointer-events-none">
                                                                         <span className="text-xs font-black text-slate-600">{p.checkInTime}</span>
                                                                     </div>
                                                                 )}
@@ -1448,7 +1753,6 @@
                             </div>
                         )}
 
-                        {/* 4. 전체 명단 */}
                         {view === 'members_list' && (
                             <div className="max-w-6xl mx-auto pb-24 text-left">
                                 <div className="bg-white p-6 sm:p-10 rounded-[48px] shadow-sm border border-slate-100 mb-10 text-left">
@@ -1517,47 +1821,154 @@
                                         </div>
                                     )}
 
-                                    {/* 4-2. 월별 참여 관리 (신규) */}
+                                    {/* 4-2. 월별 참여 관리 (신규 - 회비 납부 현황 및 설정) */}
                                     {memberSubTab === 'monthly' && (
                                         <div className="animate-fade-in">
                                             {/* 월 선택기 */}
-                                            <div className="flex justify-center items-center gap-4 mb-8">
+                                            <div className="flex justify-center items-center gap-4 mb-4">
                                                 <button onClick={() => moveMonth(-1)} className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"><Icon.ChevronRight className="rotate-180" /></button>
                                                 <div className="text-center">
-                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Selected Month</p>
+                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Fee Status</p>
                                                     <h2 className="text-2xl font-black text-slate-900">{targetMonth}</h2>
                                                 </div>
                                                 <button onClick={() => moveMonth(1)} className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"><Icon.ChevronRight /></button>
                                             </div>
-
-                                            {/* 통계 */}
-                                            <div className="bg-green-50 rounded-2xl p-4 mb-6 border border-green-100 flex justify-between items-center px-6">
-                                                <span className="font-black text-green-700 text-sm">참여 예정 인원</span>
-                                                <span className="font-black text-2xl text-green-700">{monthlyParticipants.length} <span className="text-sm opacity-60">/ {members.length}</span></span>
-                                            </div>
-
-                                            {/* 멤버 리스트 */}
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                                                {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => {
-                                                    const isChecked = monthlyParticipants.includes(m.id);
+                                            
+                                            {/* [NEW] Filter Bar */}
+                                            <div className="flex gap-2 overflow-x-auto pb-4 mb-4 no-scrollbar">
+                                                {['all', 'monthly', 'half', 'full', 'rest', 'special', 'unpaid'].map(cat => {
+                                                    const label = { all: '전체', monthly: '월납', half: '반년', full: '1년', rest: '휴식', special: '특별', unpaid: '미납' }[cat];
+                                                    const count = filterCounts[cat];
+                                                    const isActive = filterCategory === cat;
+                                                    let colorClass = 'bg-slate-100 text-slate-500';
+                                                    if (isActive) {
+                                                        if (cat === 'all') colorClass = 'bg-slate-800 text-white';
+                                                        else if (cat === 'monthly') colorClass = 'bg-green-500 text-white';
+                                                        else if (cat === 'half') colorClass = 'bg-blue-500 text-white';
+                                                        else if (cat === 'full') colorClass = 'bg-purple-500 text-white';
+                                                        else if (cat === 'rest') colorClass = 'bg-yellow-400 text-white';
+                                                        else if (cat === 'special') colorClass = 'bg-indigo-500 text-white';
+                                                        else if (cat === 'unpaid') colorClass = 'bg-red-500 text-white';
+                                                    }
                                                     return (
                                                         <button 
-                                                            key={m.id}
-                                                            onClick={() => toggleMonthlyCheck(m.id)}
-                                                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center min-h-[100px] active:scale-95 ${
-                                                                isChecked 
-                                                                ? 'border-green-500 bg-green-50 shadow-md ring-2 ring-green-200 ring-offset-1' 
-                                                                : 'border-slate-100 bg-white text-slate-400 opacity-70 hover:opacity-100 hover:border-slate-200'
-                                                            }`}
+                                                            key={cat} 
+                                                            onClick={() => setFilterCategory(cat)}
+                                                            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${colorClass}`}
                                                         >
-                                                            <div className="relative">
-                                                                <span className={`text-lg font-black ${isChecked ? 'text-green-700' : 'text-slate-600'}`}>{m.name}</span>
-                                                                {isChecked && <div className="absolute -top-1 -right-3 text-green-500"><Icon.CheckCircle size={12}/></div>}
-                                                            </div>
-                                                            <span className={`text-[10px] font-bold mt-1 ${isChecked ? 'text-green-600' : 'text-slate-400'}`}>
-                                                                {m.level}단 / {m.position}
-                                                            </span>
+                                                            {label} <span className="opacity-70 ml-0.5">({count})</span>
                                                         </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* 리스트 뷰 */}
+                                            <div className="flex flex-col space-y-2">
+                                                {/* 헤더 */}
+                                                <div className="flex items-center px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                    <div className="w-10 text-center">No.</div>
+                                                    <div className="flex-1 pl-2">Name / Info</div>
+                                                    <div className="w-24 text-center">Status / Edit</div>
+                                                </div>
+
+                                                {filteredMonthlyMembers.map((m, idx) => {
+                                                    const status = monthlyStatuses[m.id]; 
+                                                    const reason = monthlyReasons[m.id]; 
+                                                    const membershipInfo = getMembershipStatus(m, targetMonth);
+                                                    const isStaff = staffRoles.includes(m.role);
+                                                    
+                                                    let styleType = 'none';
+                                                    let label = '미납';
+
+                                                    if (isStaff) {
+                                                        styleType = 'staff';
+                                                        label = '운영진';
+                                                    } else if (membershipInfo && membershipInfo.active) {
+                                                        if (status === 'rest') {
+                                                            styleType = 'rest';
+                                                            label = reason ? '특별휴식' : '휴식중';
+                                                        } else {
+                                                            if (membershipInfo.type === '반년') styleType = 'half';
+                                                            else styleType = 'full';
+                                                            label = membershipInfo.type;
+                                                        }
+                                                    } else {
+                                                        if (status === 'paid') {
+                                                            styleType = 'monthly';
+                                                            label = '월납';
+                                                        } else if (status === 'rest') { 
+                                                            styleType = 'rest';
+                                                            label = reason ? '특별휴식' : '휴식비';
+                                                        }
+                                                    }
+
+                                                    // Determine styles based on styleType
+                                                    let containerClass = 'bg-slate-50 border-transparent opacity-60 hover:opacity-80';
+                                                    let indexColor = 'text-slate-400';
+                                                    let nameColor = 'text-slate-500';
+                                                    let badgeClass = 'border-2 border-slate-200 bg-white text-slate-300'; // Default gray badge
+
+                                                    if (styleType === 'monthly') {
+                                                        containerClass = 'bg-white border-green-200 shadow-sm';
+                                                        indexColor = 'text-green-600';
+                                                        nameColor = 'text-slate-800';
+                                                        badgeClass = 'bg-green-500 text-white shadow-md';
+                                                    } else if (styleType === 'half') {
+                                                        containerClass = 'bg-white border-blue-200 shadow-sm';
+                                                        indexColor = 'text-blue-600';
+                                                        nameColor = 'text-slate-800';
+                                                        badgeClass = 'bg-blue-500 text-white shadow-md';
+                                                    } else if (styleType === 'full') {
+                                                        containerClass = 'bg-white border-purple-200 shadow-sm';
+                                                        indexColor = 'text-purple-600';
+                                                        nameColor = 'text-slate-800';
+                                                        badgeClass = 'bg-purple-500 text-white shadow-md';
+                                                    } else if (styleType === 'rest') {
+                                                        containerClass = 'bg-yellow-50 border-yellow-200 shadow-sm';
+                                                        indexColor = 'text-yellow-600';
+                                                        nameColor = 'text-yellow-800';
+                                                        badgeClass = 'bg-yellow-400 text-white shadow-md';
+                                                    } else if (styleType === 'staff') {
+                                                        // 운영진 스타일
+                                                        containerClass = 'bg-white border-orange-200 shadow-sm';
+                                                        indexColor = 'text-orange-500';
+                                                        nameColor = 'text-slate-900';
+                                                        badgeClass = 'bg-orange-500 text-white shadow-md';
+                                                    } else {
+                                                        // 미납 빨간색 처리
+                                                        containerClass = 'bg-red-50 border-red-100 shadow-sm';
+                                                        indexColor = 'text-red-400';
+                                                        nameColor = 'text-slate-800';
+                                                        badgeClass = 'bg-red-500 text-white shadow-md';
+                                                    }
+
+
+                                                    return (
+                                                        <div key={m.id} className={`w-full flex items-center px-4 py-3 rounded-2xl border transition-all ${containerClass}`}>
+                                                            <div className={`w-10 text-center text-sm font-bold ${indexColor}`}>{idx + 1}</div>
+                                                            <button onClick={() => !isStaff && setSelectedMonthlyMember(m)} className="flex-1 flex flex-col items-start pl-2 text-left" disabled={isStaff}>
+                                                                <span className={`text-base font-black flex flex-wrap items-center gap-1.5 ${nameColor}`}>
+                                                                    {m.name}
+                                                                    {/* 장기 회원 정보 표시 */}
+                                                                    {membershipInfo && membershipInfo.active && (
+                                                                        <span className={`text-[9px] font-normal px-1.5 py-0.5 rounded-md border ${
+                                                                            styleType === 'half' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'
+                                                                        }`}>
+                                                                            <b className="font-bold">{membershipInfo.endDateFormatted} 만료</b> <span className="opacity-50">|</span> 잔여휴식 <b className="font-bold">{membershipInfo.remainingRest}회</b>
+                                                                        </span>
+                                                                    )}
+                                                                    {reason && <span className="text-[9px] font-normal px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 border border-purple-200">📝 {reason}</span>}
+                                                                </span>
+                                                                <span className="text-[10px] text-slate-400 font-bold">{m.level}단 / {m.position} / {m.gender === '남성' ? 'M' : 'F'}</span>
+                                                            </button>
+                                                            <button onClick={() => !isStaff && setSelectedMonthlyMember(m)} className="w-24 flex justify-center" disabled={isStaff}>
+                                                                {styleType !== 'none' ? (
+                                                                    <div className={`w-16 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${badgeClass}`}>{label}</div>
+                                                                ) : (
+                                                                    <div className="w-16 h-8 rounded-lg border-2 border-red-100 bg-red-50 text-red-500 flex items-center justify-center text-[10px] font-black shadow-sm">미납</div>
+                                                                )}
+                                                            </button>
+                                                        </div>
                                                     );
                                                 })}
                                             </div>
@@ -1567,7 +1978,6 @@
                             </div>
                         )}
 
-                        {/* 5. 설정 (Settings) - 폰트 업로드 */}
                         {view === 'settings' && (
                             <div className="max-w-xl mx-auto pb-24 text-left animate-zoom-in">
                                 <div className="bg-white p-8 rounded-[48px] shadow-sm border border-slate-100 text-center">
@@ -1810,6 +2220,124 @@
                         <button onClick={handleLockToggle} className="fixed bottom-10 right-10 w-16 h-16 bg-white text-slate-400 rounded-full shadow-2xl flex items-center justify-center border-2 border-slate-100 z-[150] active:scale-90 transition-all shadow-blue-50">
                             <Icon.Unlock size={28} />
                         </button>
+                    )}
+
+                    {/* 월별 상태 관리 모달 (New) */}
+                    {selectedMonthlyMember && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[8000] flex items-center justify-center p-4" onClick={() => setSelectedMonthlyMember(null)}>
+                            <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in" onClick={e => e.stopPropagation()}>
+                                <h3 className="text-2xl font-black text-slate-900 mb-2 text-center">{selectedMonthlyMember.name} 님</h3>
+                                <p className="text-xs font-bold text-slate-400 text-center mb-8 uppercase tracking-widest">{targetMonth} 납부 상태 관리</p>
+                                
+                                {/* 만료일 수동 설정 (장기 회원 전용) */}
+                                {(selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year') && (
+                                    <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                                        <label className="text-[10px] font-black text-slate-400 mb-1 block uppercase">Membership Expiration</label>
+                                        <div className="flex gap-2">
+                                            <input 
+                                                type="date" 
+                                                className="flex-1 p-3 rounded-xl border border-slate-200 text-sm font-black outline-none"
+                                                value={manualEndDate || ''}
+                                                onChange={(e) => setManualEndDate(e.target.value)}
+                                            />
+                                            <button 
+                                                onClick={() => handleStatusUpdate(selectedMonthlyMember.id, 'update_end_date')}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all"
+                                            >
+                                                수정
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {/* 잔여 휴식 횟수 수정 (장기 회원 전용) */}
+                                {(selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year') && (
+                                    <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                                        <label className="text-[10px] font-black text-slate-400 mb-1 block uppercase">Rest Count Adjustment</label>
+                                        <div className="flex items-center justify-between">
+                                             <span className="text-xs font-bold text-slate-600">
+                                                 사용: {selectedMonthlyMember.totalRestMonths || 0}회 / 남은 횟수: {(selectedMonthlyMember.membershipType === 'half_year' ? 3 : 6) - (selectedMonthlyMember.totalRestMonths || 0)}회
+                                             </span>
+                                             <div className="flex gap-2">
+                                                 <button 
+                                                    onClick={() => handleStatusUpdate(selectedMonthlyMember.id, 'update_rest_count', (selectedMonthlyMember.totalRestMonths || 0) + 1)}
+                                                    className="w-8 h-8 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center font-bold active:scale-95"
+                                                 >
+                                                     +
+                                                 </button>
+                                                 <button 
+                                                    onClick={() => handleStatusUpdate(selectedMonthlyMember.id, 'update_rest_count', Math.max(0, (selectedMonthlyMember.totalRestMonths || 0) - 1))}
+                                                    className="w-8 h-8 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center font-bold active:scale-95"
+                                                 >
+                                                     -
+                                                 </button>
+                                             </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="space-y-3">
+                                    <button onClick={() => handleStatusUpdate(selectedMonthlyMember.id, 'monthly_paid')} className="w-full py-4 rounded-2xl bg-green-50 text-green-700 font-black hover:bg-green-100 transition-all flex items-center justify-center gap-2 border-2 border-green-200">
+                                        <Icon.CheckCircle size={18}/> 월납 (이번달 납부)
+                                    </button>
+                                    
+                                    <div className="flex gap-3">
+                                        <button onClick={() => handleStatusUpdate(selectedMonthlyMember.id, 'start_half')} className="flex-1 py-4 rounded-2xl bg-blue-50 text-blue-700 font-black hover:bg-blue-100 transition-all flex flex-col items-center gap-1 border-2 border-blue-200">
+                                            <span className="text-lg">6개월</span>
+                                            <span className="text-[9px]">반년납 시작</span>
+                                        </button>
+                                        <button onClick={() => handleStatusUpdate(selectedMonthlyMember.id, 'start_full')} className="flex-1 py-4 rounded-2xl bg-purple-50 text-purple-700 font-black hover:bg-purple-100 transition-all flex flex-col items-center gap-1 border-2 border-purple-200">
+                                            <span className="text-lg">12개월</span>
+                                            <span className="text-[9px]">1년납 시작</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="h-px bg-slate-100 my-2"></div>
+                                    
+                                    {/* 휴식 버튼 로직 분기 */}
+                                    {monthlyStatuses[selectedMonthlyMember.id] === 'rest' ? (
+                                        <button onClick={() => handleStatusUpdate(selectedMonthlyMember.id, 'cancel_rest')} className="w-full py-4 rounded-2xl bg-yellow-100 text-yellow-700 font-black hover:bg-yellow-200 transition-all flex items-center justify-center gap-2 border-2 border-yellow-200">
+                                            <Icon.RotateCcw size={18}/> 휴식 취소 (복귀)
+                                        </button>
+                                    ) : (
+                                        <button onClick={() => handleStatusUpdate(selectedMonthlyMember.id, 'rest')} className="w-full py-4 rounded-2xl bg-yellow-50 text-yellow-600 font-black hover:bg-yellow-100 transition-all flex items-center justify-center gap-2 border-2 border-yellow-200">
+                                            <Icon.Coffee size={18}/> 이번 달 휴식 (휴식비 납부)
+                                        </button>
+                                    )}
+
+                                    {/* [NEW] 특별 휴식 버튼 (사유 입력) */}
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            placeholder="특별 휴식 사유 (예: 육아)" 
+                                            className="flex-1 p-3 rounded-xl border border-slate-200 text-xs font-bold outline-none"
+                                            value={specialRestReason}
+                                            onChange={(e) => setSpecialRestReason(e.target.value)}
+                                        />
+                                        <button 
+                                            onClick={() => handleStatusUpdate(selectedMonthlyMember.id, 'special_rest')} 
+                                            className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-xs shadow-sm hover:bg-indigo-100 border border-indigo-200 active:scale-95 transition-all"
+                                            disabled={!specialRestReason.trim()}
+                                        >
+                                            적용
+                                        </button>
+                                    </div>
+
+
+                                    {/* 장기 회원일 때만 보이는 멤버십 종료 옵션 */}
+                                    {(selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year') && (
+                                         <button onClick={() => handleStatusUpdate(selectedMonthlyMember.id, 'end_membership')} className="w-full py-4 rounded-2xl text-red-400 font-black hover:text-red-600 hover:bg-red-50 transition-all text-xs border-2 border-transparent">
+                                            멤버십 강제 종료
+                                        </button>
+                                    )}
+
+                                    <div className="h-px bg-slate-100 my-2"></div>
+                                    <button onClick={() => handleStatusUpdate(selectedMonthlyMember.id, 'clear')} className="w-full py-3 rounded-2xl text-slate-400 font-bold hover:text-slate-600 hover:bg-slate-50 transition-all text-xs">
+                                        미납 상태로 초기화
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </div>
             );
