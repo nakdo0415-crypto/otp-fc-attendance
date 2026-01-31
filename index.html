@@ -69,6 +69,7 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+        .safe-pt { padding-top: env(safe-area-inset-top); }
 
         select, input { outline: none; transition: border-color 0.2s; }
         select:focus, input:focus { border-color: #3b82f6 !important; }
@@ -90,9 +91,9 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // --- 1. Global Setup ---
         const { useState, useEffect, useRef, useMemo } = React;
-
-        // --- 1. 전역 설정 및 헬퍼 함수 ---
+        
         const STAFF_ROLES = ['회장', '매니저', '총무', '부총무'];
         const POSITIONS = ['ALL', '피보', '아라', '픽소'];
 
@@ -110,15 +111,16 @@
         const db = firebase.firestore();
         const APP_ID = 'otp-fc-attendance';
 
+        // Collection Helpers
         const getCol = (name) => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(name);
         const getTeamDraftsCol = () => db.collection('artifacts').doc('otp-fc-attendance').collection('public').doc('data').collection('team_drafts');
         const getMonthlyCol = () => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('monthly_checks');
-        
         const getSessionCol = () => getCol('weekly_session');
         const getHistoryCol = () => getCol('history');
         const getMemberCol = () => getCol('members');
         const getSettingsCol = () => getCol('settings');
 
+        // Helper Functions
         const getThisSunday = () => {
             const now = new Date();
             const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
@@ -222,6 +224,7 @@
             return 'unpaid';
         };
 
+        // Icons
         const Icon = {
             Users: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
             Trash: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
@@ -252,7 +255,6 @@
             Edit2: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
         };
 
-        // --- 2. 컴포넌트: CurrentTimeClock (시계 전용) ---
         const CurrentTimeClock = () => {
             const [time, setTime] = useState(new Date());
             useEffect(() => {
@@ -269,7 +271,6 @@
             );
         };
 
-        // --- 3. 메인 App 컴포넌트 ---
         function App() {
             const [view, setView] = useState('attendance');
             const [logoError, setLogoError] = useState(false); 
@@ -351,7 +352,6 @@
                 return members.filter(m => STAFF_ROLES.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
             }, [members]);
 
-            // -- Derived States --
             const activeParticipants = useMemo(() => {
                 const list = sessionData.filter(p => p.date === meetingTimes.date);
                 return list.sort((a,b) => {
@@ -366,12 +366,8 @@
                 const serverTime = teamData ? new Date(teamData.createdAt).getTime() : 0;
                 const localTime = localTeamData ? new Date(localTeamData.updatedAt).getTime() : 0;
 
-                if (localTeamData && localTime > serverTime) {
-                     return localTeamData;
-                }
-                if (teamData) {
-                    return teamData;
-                }
+                if (localTeamData && localTime > serverTime) { return localTeamData; }
+                if (teamData) { return teamData; }
                 return null;
             }, [localTeamData, teamData, meetingTimes.date]);
 
@@ -411,8 +407,6 @@
 
             const activeParticipantsSorted = useMemo(() => [...activeParticipants].sort((a,b) => a.name.localeCompare(b.name)), [activeParticipants]);
 
-            // [수정] 1초마다 재렌더링되지 않도록 isMeetingOver를 독립적인 Timer나 Memo로 처리하거나, 필요할 때만 계산하도록 변경
-            // 여기서는 단순화를 위해 현재 시간을 쓰지 않고, 렌더링 시점의 Date 객체를 사용
             const isMeetingOver = useMemo(() => {
                 const now = new Date();
                 const meetingEndTime = new Date(`${meetingTimes.date}T${meetingTimes.end}`);
@@ -620,8 +614,6 @@
             const handleCheckIn = async (participant) => {
                 const now = new Date();
                 const meetingStart = new Date(`${participant.date}T${meetingTimes.start}`);
-                
-                // [복구] 출석 가능 시간 제한 로직 (1시간 전부터)
                 const allowFrom = new Date(meetingStart.getTime() - 60 * 60 * 1000); 
                 const allowFromStr = allowFrom.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
                 
@@ -1758,10 +1750,10 @@
                                                             <button onClick={() => !isStaff && setSelectedMonthlyMember(m)} className="flex-1 flex flex-col items-start pl-2 text-left" disabled={isStaff}>
                                                                 <span className={`text-base font-black flex flex-wrap items-center gap-1.5 ${nameColor}`}>
                                                                     {m.name}
-                                                                    {/* 장기 회원 정보 표시 */}
+                                                                    {/* 장기 회원 정보 표시: 휴식 상태여도 표시되도록 조건 수정 */}
                                                                     {membershipInfo && membershipInfo.active && (
                                                                         <span className={`text-[9px] font-normal px-1.5 py-0.5 rounded-md border ${
-                                                                            styleType === 'half' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'
+                                                                            membershipInfo.type === '반년' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'
                                                                         }`}>
                                                                             <b className="font-bold">{membershipInfo.endDateFormatted} 만료</b> <span className="opacity-50">|</span> 잔여휴식 <b className="font-bold">{membershipInfo.remainingRest}회</b>
                                                                         </span>
@@ -1961,7 +1953,7 @@
                                             value={editingMember.position || 'ALL'} 
                                             onChange={e => setEditingMember({...editingMember, position: e.target.value})}
                                         >
-                                            {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                                            {positions.map(p => <option key={p} value={p}>{p}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1">실력 점수</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left text-xs" value={String(editingMember.level)} onChange={e=>setEditingMember({...editingMember, level: e.target.value})}>{editingMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
@@ -2044,7 +2036,7 @@
                                     </div>
                                 )}
                                 
-                                {/* 잔여 휴식 횟수 수정 (장기 회원 전용) */}
+                                {/* 잔여 휴식 횟수 수정 (장기 회원 전용) - FIX APPLIED */}
                                 {(selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year') && (
                                     <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
                                         <label className="text-[10px] font-black text-slate-400 mb-1 block uppercase">Rest Count Adjustment</label>
