@@ -9,17 +9,10 @@
     
     <title>OTP FC Attendance Master</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React & ReactDOM -->
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -246,7 +239,7 @@
             MapPin: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
             ShieldCheck: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
             LogOut: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-            Settings: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+            Settings: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2 2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
             Upload: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
             Refresh: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>,
             Check: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
@@ -280,7 +273,7 @@
             const [history, setHistory] = useState([]);
             const [selectedHistoryDetail, setSelectedHistoryDetail] = useState(null); 
             const [historySortKey, setHistorySortKey] = useState('time'); 
-            const [historySortOrder, setHistorySortOrder] = useState('asc'); // [NEW] Sort Order State
+            const [historySortOrder, setHistorySortOrder] = useState('asc'); 
             const [meetingTimes, setMeetingTimes] = useState({ 
                 date: getThisSunday(), 
                 start: "08:00", 
@@ -300,6 +293,7 @@
             const [manualEndDate, setManualEndDate] = useState(''); 
             const [specialRestReason, setSpecialRestReason] = useState(''); 
             const [filterCategory, setFilterCategory] = useState('all'); 
+            const [historyEditTarget, setHistoryEditTarget] = useState(null); 
 
             const [teamData, setTeamData] = useState(null);
             const [localTeamData, setLocalTeamData] = useState(null);
@@ -354,7 +348,6 @@
                 return members.filter(m => STAFF_ROLES.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
             }, [members]);
 
-            // -- Derived States --
             const activeParticipants = useMemo(() => {
                 const list = sessionData.filter(p => p.date === meetingTimes.date);
                 return list.sort((a,b) => {
@@ -368,7 +361,6 @@
             const activeTeamData = useMemo(() => {
                 const serverTime = teamData ? new Date(teamData.createdAt).getTime() : 0;
                 const localTime = localTeamData ? new Date(localTeamData.updatedAt).getTime() : 0;
-
                 if (localTeamData && localTime > serverTime) { return localTeamData; }
                 if (teamData) { return teamData; }
                 return null;
@@ -416,33 +408,25 @@
                 return now >= meetingEndTime;
             }, [meetingTimes]);
 
-            // [MODIFIED] Sorted History Records with Toggle
+            // [MODIFIED] Sorted History Records with Original Index preservation for accurate editing
             const sortedHistoryRecords = useMemo(() => {
                 if (!selectedHistoryDetail || !selectedHistoryDetail.records) return [];
-                const list = [...selectedHistoryDetail.records];
                 
-                // Time Sort
+                // Attach original index to handle sorting correctly
+                const list = selectedHistoryDetail.records.map((r, index) => ({ ...r, originalIndex: index }));
+                
                 if (historySortKey === 'time') {
-                    // Always ascending for time for simplicity, or could toggle too.
-                    // For now keeping time as 'earliest first'.
                     return list.sort((a, b) => (a.timestamp || '99:99:99').localeCompare(b.timestamp || '99:99:99'));
                 }
                 
-                // Status Sort (Toggleable)
                 if (historySortKey === 'status') {
                     const order = { '정상': 1, '지각': 2, '노쇼': 3, '미출석': 4 };
                     return list.sort((a, b) => {
                         const statusA = order[a.status] || 9;
                         const statusB = order[b.status] || 9;
-                        
                         let diff = statusA - statusB;
-                        if (historySortOrder === 'desc') {
-                            diff = statusB - statusA;
-                        }
-
+                        if (historySortOrder === 'desc') diff = statusB - statusA;
                         if (diff !== 0) return diff;
-                        
-                        // Secondary sort: Time (always asc)
                         return (a.timestamp || '99:99:99').localeCompare(b.timestamp || '99:99:99');
                     });
                 }
@@ -637,15 +621,18 @@
             };
 
             const handleCheckIn = async (participant) => {
+                const rank = activeParticipants.findIndex(p => p.id === participant.id) + 1;
+                if (rank > 18) {
+                     return showAlert("대기자 안내", "대기 명단에 있는 분은 직접 출석 체크를 할 수 없습니다.");
+                }
+
                 const now = new Date();
                 const meetingStart = new Date(`${participant.date}T${meetingTimes.start}`);
-                
-                // [복구] 출석 가능 시간 제한 로직 (1시간 전부터)
                 const allowFrom = new Date(meetingStart.getTime() - 60 * 60 * 1000); 
-                const allowFromStr = allowFrom.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
                 
                 if (now < allowFrom) {
                     setModal({ type: null, data: null }); 
+                    const allowFromStr = allowFrom.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
                     return showAlert("아직 출석 가능 시간이 아닙니다.", `출석 가능 일시 : ${participant.date} ${allowFromStr}~${meetingTimes.end}`);
                 }
                 
@@ -738,21 +725,44 @@
             const saveAndResetCurrent = async () => {
                 const currentParticipants = sessionData.filter(p => p.date === meetingTimes.date);
                 if (currentParticipants.length === 0) return showAlert("확인", "현재 출석부에 인원이 없습니다.");
+                
                 showConfirm("기록 확정 및 다음 모임 준비", "기록을 저장하고 다음 주로 날짜를 넘기시겠습니까?", async () => {
                     setIsPending(true);
                     try {
-                        const records = currentParticipants.map(p => ({ 
-                            name: p.isGuest ? `${p.name.replace('(G)', '')} - 초대:${p.inviterName}` : p.name, 
-                            gender: p.gender, status: p.checkedIn ? (p.status || '정상') : '노쇼', 
-                            checkInTime: p.checkedIn ? (p.checkInTime || '-') : '미출석', 
-                            type: p.isGuest ? '게스트' : '정규', level: p.level || '-',
-                            team: p.team || '-',
-                            timestamp: p.checkedIn ? p.checkInTime : '99:99:99'
-                        }));
+                        const sorted = currentParticipants.sort((a,b) => {
+                            const timeA = a.createdAt || '';
+                            const timeB = b.createdAt || '';
+                            if (timeA && timeB) return timeA.localeCompare(timeB);
+                            return a.name.localeCompare(b.name);
+                        });
+
+                        const records = sorted.map((p, idx) => {
+                            const rank = idx + 1;
+                            const isWaiting = rank > 18;
+                            
+                            let finalStatus = p.checkedIn ? (p.status || '정상') : '노쇼';
+                            if (isWaiting) finalStatus = '대기';
+                            else if (!p.checkedIn) finalStatus = '노쇼'; 
+
+                            return { 
+                                name: p.isGuest ? `${p.name.replace('(G)', '')} - 초대:${p.inviterName}` : p.name, 
+                                gender: p.gender, 
+                                status: finalStatus,
+                                checkInTime: p.checkedIn ? (p.checkInTime || '-') : '미출석', 
+                                type: isWaiting ? '대기자' : (p.isGuest ? '게스트' : '정규'), 
+                                level: p.level || '-',
+                                team: p.team || '-',
+                                timestamp: p.checkedIn ? p.checkInTime : '99:99:99'
+                            };
+                        });
+
+                        const presentCount = records.filter(r => (r.status === '정상' || r.status === '지각') && r.status !== '대기').length;
+
                         await getHistoryCol().add({
                             date: meetingTimes.date, meetingTime: `${meetingTimes.start} ~ ${meetingTimes.end}`,
                             location: meetingTimes.location || "장소 미지정", managerName: meetingTimes.managerName || "미지정",
-                            total: records.length, present: records.filter(r => r.status === '정상' || r.status === '지각').length,
+                            total: records.length, 
+                            present: presentCount,
                             records, createdAt: new Date().toISOString()
                         });
                         const batch = db.batch();
@@ -783,6 +793,29 @@
                     }
                 });
             };
+            
+            // [MODIFIED] Correctly update history record using preserved originalIndex
+            const handleHistoryStatusUpdate = async (newStatus) => {
+                if (!historyEditTarget || !selectedHistoryDetail) return;
+                const { docId, recordIndex } = historyEditTarget;
+
+                try {
+                    const updatedRecords = [...selectedHistoryDetail.records];
+                    // Using the stored originalIndex to update the correct item
+                    updatedRecords[recordIndex] = { ...updatedRecords[recordIndex], status: newStatus };
+
+                    await getHistoryCol().doc(docId).update({ records: updatedRecords });
+                    
+                    // Update local state to reflect change immediately
+                    setSelectedHistoryDetail(prev => ({ ...prev, records: updatedRecords }));
+                    setHistoryEditTarget(null); // Close modal
+                    showAlert("수정 완료", "출석 상태가 변경되었습니다.");
+                } catch(e) {
+                    console.error(e);
+                    showAlert("오류", "수정 중 문제가 발생했습니다.");
+                }
+            };
+
             
             const moveMonth = (offset) => {
                 const [y, m] = targetMonth.split('-').map(Number);
@@ -934,7 +967,6 @@
                 }
             };
             
-            // Effect to update manualEndDate state when selecting a member
             useEffect(() => {
                 if (selectedMonthlyMember && selectedMonthlyMember.membershipEndDate) {
                     setManualEndDate(selectedMonthlyMember.membershipEndDate);
@@ -943,7 +975,6 @@
                 }
             }, [selectedMonthlyMember]);
 
-            // [NEW] Effect to sync selectedMonthlyMember live
             useEffect(() => {
                 if (selectedMonthlyMember) {
                     const liveMember = members.find(m => m.id === selectedMonthlyMember.id);
@@ -953,7 +984,6 @@
                 }
             }, [members]);
 
-            // Re-adding the auth timeout logic
             useEffect(() => {
                 const initAuth = async () => {
                     const timeout = setTimeout(() => {
@@ -1103,6 +1133,7 @@
                 setIsManagerSelectorOpen(false); 
                 setSelectedMonthlyMember(null);
                 setSpecialRestReason('');
+                setHistoryEditTarget(null); // Reset history edit modal
             }, [view]);
 
             useEffect(() => {
@@ -1300,7 +1331,15 @@
                                                         let cardStyle = `border-4 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200 ${baseColorClass}`;
                                                         let nameColor = "text-slate-900";
                                                         
-                                                        if (p.checkedIn) {
+                                                        // [MODIFIED] Check waiting status from rank
+                                                        const rank = activeParticipants.findIndex(ap => ap.id === p.id) + 1;
+                                                        const isWaiting = rank > 18;
+
+                                                        if (isWaiting) {
+                                                            // Waiting List Style
+                                                            cardStyle = "bg-slate-50 border-4 border-dashed border-orange-300 text-slate-400";
+                                                            nameColor = "text-slate-500";
+                                                        } else if (p.checkedIn) {
                                                             if (p.status === '지각') {
                                                                 cardStyle = "bg-orange-50 border-orange-200 text-orange-900 border-4 shadow-inner opacity-90";
                                                                 nameColor = "text-orange-900";
@@ -1316,7 +1355,13 @@
                                                         return (
                                                             <button 
                                                                 key={p.id} 
-                                                                onClick={() => p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p})}
+                                                                onClick={() => {
+                                                                    // [MODIFIED] Alert for waiting list click
+                                                                    if (isWaiting) {
+                                                                        return showAlert("대기자 안내", "대기 명단에 있는 분은 출석 체크를 할 수 없습니다.");
+                                                                    }
+                                                                    p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p});
+                                                                }}
                                                                 className={`cursor-pointer relative h-40 sm:h-48 rounded-[32px] flex flex-col items-center justify-center p-0 overflow-hidden ${cardStyle} active:scale-95`}
                                                             >
                                                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
@@ -1325,10 +1370,9 @@
                                                                     </span>
                                                                 </div>
 
-                                                                {/* pointer-events-none 추가하여 클릭이 버튼으로 전달되도록 개선 */}
                                                                 <div className="absolute top-3 w-full flex justify-between px-3 items-start pointer-events-none z-10">
                                                                     <div>
-                                                                        {(p.checkedIn || p.status === '노쇼') && (
+                                                                        {(p.checkedIn || p.status === '노쇼') && !isWaiting && (
                                                                             <span className={`text-[10px] font-black px-2 py-1 rounded-full shadow-sm ${
                                                                                 p.status === '정상' ? 'bg-green-500 text-white' : 
                                                                                 p.status === '지각' ? 'bg-orange-500 text-white' : 
@@ -1337,10 +1381,15 @@
                                                                                 {p.status}
                                                                             </span>
                                                                         )}
+                                                                        {/* [NEW] Waiting Badge */}
+                                                                        {isWaiting && (
+                                                                            <span className="text-[10px] font-black px-2 py-1 rounded-full shadow-sm bg-orange-400 text-white">
+                                                                                대기
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                 </div>
 
-                                                                {/* pointer-events-none 추가 */}
                                                                 <div className="relative z-10 flex flex-col items-center justify-center w-full h-full pb-2 pointer-events-none">
                                                                     <div className="flex gap-1 mb-1">
                                                                         {hasRole && <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-sm ${getRoleBadgeClass(memberInfo.role)}`}>{memberInfo.role}</span>}
@@ -1358,7 +1407,7 @@
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                {p.checkedIn && (
+                                                                {p.checkedIn && !isWaiting && (
                                                                     <div className="absolute bottom-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full shadow-sm z-10 pointer-events-none">
                                                                         <span className="text-xs font-black text-slate-600">{p.checkInTime}</span>
                                                                     </div>
@@ -1375,7 +1424,6 @@
                             </div>
                         )}
 
-                        {/* ... (Other views like setup, history, members list, settings) ... */}
                         {view === 'setup' && (
                             <div className="max-w-5xl mx-auto text-left">
                                 <div className="bg-white p-6 sm:p-8 rounded-[40px] border border-slate-100 shadow-sm mb-8 text-left">
@@ -1444,7 +1492,7 @@
                                                 style={{ left: '100%', width: '1000px' }} // 18명 초과분 시각적 표시 (간략화)
                                             ></div>
                                         )}
-                                        <div className="absolute inset-0 flex items-center justify-between px-4 text-[10px] font-black z-10 text-white mix-blend-difference">
+                                        <div className="absolute inset-0 flex items-center justify-between px-4 text-[10px] font-black z-10 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
                                             <span>ENTRY: {Math.min(activeParticipants.length, 18)} / 18</span>
                                             {activeParticipants.length > 18 && <span>WAITING: {activeParticipants.length - 18}</span>}
                                         </div>
@@ -1572,7 +1620,20 @@
                                                 {sortedHistoryRecords.map((r, idx) => (
                                                     <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-[20px] text-left">
                                                         <div className="flex items-center gap-3 text-left"><span className="font-black text-base text-slate-700">{r.name}</span><span className="text-[9px] font-black text-slate-400">{r.level}단</span><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${getGenderPastelClass(r.gender)}`}>{r.gender}</span></div>
-                                                        <div className="flex items-center gap-3 text-right"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${r.status === '정상' ? 'bg-green-100 text-green-600' : r.status === '지각' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}>{r.status}</span><span className="text-[10px] font-black text-slate-400 min-w-[55px] text-right">{r.checkInTime}</span></div>
+                                                        <div className="flex items-center gap-3 text-right">
+                                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
+                                                                r.status === '정상' ? 'bg-green-100 text-green-600' : 
+                                                                r.status === '지각' ? 'bg-orange-100 text-orange-600' : 
+                                                                r.status === '대기' ? 'bg-slate-200 text-slate-500' :
+                                                                'bg-red-100 text-red-600'
+                                                            }`}>{r.status}</span>
+                                                            <span className="text-[10px] font-black text-slate-400 min-w-[55px] text-right">{r.checkInTime}</span>
+                                                            
+                                                            {/* [NEW] Edit Button for History Record */}
+                                                            <button onClick={(e) => { e.stopPropagation(); setHistoryEditTarget({ docId: selectedHistoryDetail.id, recordIndex: r.originalIndex, currentStatus: r.status, name: r.name }); }} className="p-1.5 ml-1 text-slate-300 hover:text-blue-500 bg-slate-100 hover:bg-blue-50 rounded-lg transition-all">
+                                                                <Icon.Edit2 size={12} />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1994,6 +2055,32 @@
                                     <div className="flex flex-col gap-1 text-left text-xs sm:col-span-2"><label className="text-[10px] font-black text-slate-400 ml-1">커플 대상</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left text-xs" value={editingMember.coupleId} onChange={e=>setEditingMember({...editingMember, coupleId: e.target.value})}><option value="">없음</option>{members.filter(m => m.id !== editingMember.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
                                 </div>
                                 <div className="flex gap-3"><button onClick={() => setEditingMember(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={handleUpdateMember} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl shadow-blue-100 active:scale-95 transition-all">저장</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* [MODIFIED] History Status Edit Modal */}
+                    {historyEditTarget && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[7000] flex items-center justify-center p-4" onClick={() => setHistoryEditTarget(null)}>
+                            <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in text-center" onClick={e => e.stopPropagation()}>
+                                <h3 className="text-xl font-black text-slate-900 mb-2">{historyEditTarget.name}</h3>
+                                <p className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-widest">Change Attendance Status</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {['정상', '지각', '노쇼', '대기', '미출석'].map(status => (
+                                        <button 
+                                            key={status} 
+                                            onClick={() => handleHistoryStatusUpdate(status)}
+                                            className={`py-3 rounded-xl font-black text-sm transition-all ${
+                                                historyEditTarget.currentStatus === status 
+                                                ? 'bg-slate-900 text-white shadow-lg' 
+                                                : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            {status}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button onClick={() => setHistoryEditTarget(null)} className="mt-4 w-full py-3 text-slate-400 font-bold text-xs">취소</button>
                             </div>
                         </div>
                     )}
