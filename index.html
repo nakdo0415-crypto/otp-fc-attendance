@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <!-- 모바일 앱 모드 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#f8fafc">
@@ -225,6 +224,7 @@
             return 'unpaid';
         };
 
+        // Icons
         const Icon = {
             Users: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
             Trash: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
@@ -255,6 +255,22 @@
             Edit2: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
         };
 
+        const CurrentTimeClock = () => {
+            const [time, setTime] = useState(new Date());
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    setTime(new Date());
+                }, 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            return (
+                <span className="text-xl sm:text-2xl font-bold text-slate-400 tabular-nums mb-6">
+                    {time.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                </span>
+            );
+        };
+
         function App() {
             const [view, setView] = useState('attendance');
             const [logoError, setLogoError] = useState(false); 
@@ -264,6 +280,7 @@
             const [history, setHistory] = useState([]);
             const [selectedHistoryDetail, setSelectedHistoryDetail] = useState(null); 
             const [historySortKey, setHistorySortKey] = useState('time'); 
+            const [historySortOrder, setHistorySortOrder] = useState('asc'); // [NEW] Sort Order State
             const [meetingTimes, setMeetingTimes] = useState({ 
                 date: getThisSunday(), 
                 start: "08:00", 
@@ -337,6 +354,7 @@
                 return members.filter(m => STAFF_ROLES.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
             }, [members]);
 
+            // -- Derived States --
             const activeParticipants = useMemo(() => {
                 const list = sessionData.filter(p => p.date === meetingTimes.date);
                 return list.sort((a,b) => {
@@ -393,20 +411,43 @@
             const activeParticipantsSorted = useMemo(() => [...activeParticipants].sort((a,b) => a.name.localeCompare(b.name)), [activeParticipants]);
 
             const isMeetingOver = useMemo(() => {
+                const now = new Date();
                 const meetingEndTime = new Date(`${meetingTimes.date}T${meetingTimes.end}`);
-                return currentTime >= meetingEndTime;
-            }, [currentTime, meetingTimes]);
+                return now >= meetingEndTime;
+            }, [meetingTimes]);
 
+            // [MODIFIED] Sorted History Records with Toggle
             const sortedHistoryRecords = useMemo(() => {
                 if (!selectedHistoryDetail || !selectedHistoryDetail.records) return [];
                 const list = [...selectedHistoryDetail.records];
-                if (historySortKey === 'time') return list.sort((a, b) => (a.timestamp || '99').localeCompare(b.timestamp || '99'));
+                
+                // Time Sort
+                if (historySortKey === 'time') {
+                    // Always ascending for time for simplicity, or could toggle too.
+                    // For now keeping time as 'earliest first'.
+                    return list.sort((a, b) => (a.timestamp || '99:99:99').localeCompare(b.timestamp || '99:99:99'));
+                }
+                
+                // Status Sort (Toggleable)
                 if (historySortKey === 'status') {
                     const order = { '정상': 1, '지각': 2, '노쇼': 3, '미출석': 4 };
-                    return list.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9));
+                    return list.sort((a, b) => {
+                        const statusA = order[a.status] || 9;
+                        const statusB = order[b.status] || 9;
+                        
+                        let diff = statusA - statusB;
+                        if (historySortOrder === 'desc') {
+                            diff = statusB - statusA;
+                        }
+
+                        if (diff !== 0) return diff;
+                        
+                        // Secondary sort: Time (always asc)
+                        return (a.timestamp || '99:99:99').localeCompare(b.timestamp || '99:99:99');
+                    });
                 }
                 return list;
-            }, [selectedHistoryDetail, historySortKey]);
+            }, [selectedHistoryDetail, historySortKey, historySortOrder]);
 
             const footerStats = useMemo(() => {
                 let label = "TOTAL"; 
@@ -975,14 +1016,6 @@
                 return () => unsubAuth();
             }, []);
             
-            // 시계용 useEffect (1초마다 업데이트)
-            useEffect(() => {
-                const timer = setInterval(() => {
-                    setCurrentTime(new Date());
-                }, 1000);
-                return () => clearInterval(timer);
-            }, []);
-            
             useEffect(() => {
                 if (view === 'members_list' && targetMonth) {
                     const unsubMonthly = getMonthlyCol().doc(targetMonth).onSnapshot(doc => {
@@ -1188,9 +1221,7 @@
                                         <h1 className="text-4xl sm:text-5xl font-black text-[#db2777] tracking-tighter uppercase leading-none mt-1 drop-shadow-sm text-center">OTP FC</h1>
                                     </div>
                                     
-                                    <span className="text-xl sm:text-2xl font-bold text-slate-400 tabular-nums mb-6">
-                                        {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-                                    </span>
+                                    <CurrentTimeClock />
                                     
                                     <div className="bg-white px-5 py-2.5 rounded-full border border-slate-200 shadow-sm flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs sm:text-sm">
                                         <div className="flex items-center gap-1.5 font-bold text-slate-600">
@@ -1294,6 +1325,7 @@
                                                                     </span>
                                                                 </div>
 
+                                                                {/* pointer-events-none 추가하여 클릭이 버튼으로 전달되도록 개선 */}
                                                                 <div className="absolute top-3 w-full flex justify-between px-3 items-start pointer-events-none z-10">
                                                                     <div>
                                                                         {(p.checkedIn || p.status === '노쇼') && (
@@ -1308,6 +1340,7 @@
                                                                     </div>
                                                                 </div>
 
+                                                                {/* pointer-events-none 추가 */}
                                                                 <div className="relative z-10 flex flex-col items-center justify-center w-full h-full pb-2 pointer-events-none">
                                                                     <div className="flex gap-1 mb-1">
                                                                         {hasRole && <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-sm ${getRoleBadgeClass(memberInfo.role)}`}>{memberInfo.role}</span>}
@@ -1533,9 +1566,10 @@
                                             </div>
                                         </div>
                                         <div className="p-5 sm:p-6 text-left" onClick={e => e.stopPropagation()}>
-                                            <div className="flex gap-2 mb-6 text-xs"><button onClick={() => setHistorySortKey('time')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'time' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 시간순</button><button onClick={() => setHistorySortKey('status')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'status' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 구분순</button></div>
+                                            <div className="flex gap-2 mb-6 text-xs"><button onClick={() => setHistorySortKey('time')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'time' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 시간순</button><button onClick={() => { if (historySortKey === 'status') { setHistorySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); } else { setHistorySortKey('status'); setHistorySortOrder('asc'); } }} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'status' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 구분순 {historySortKey === 'status' && (historySortOrder === 'asc' ? '▲' : '▼')}</button></div>
                                             <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar text-left text-xs">
-                                                {selectedHistoryDetail.records.map((r, idx) => (
+                                                {/* FIX APPLIED: Using sortedHistoryRecords instead of selectedHistoryDetail.records */}
+                                                {sortedHistoryRecords.map((r, idx) => (
                                                     <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-[20px] text-left">
                                                         <div className="flex items-center gap-3 text-left"><span className="font-black text-base text-slate-700">{r.name}</span><span className="text-[9px] font-black text-slate-400">{r.level}단</span><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${getGenderPastelClass(r.gender)}`}>{r.gender}</span></div>
                                                         <div className="flex items-center gap-3 text-right"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${r.status === '정상' ? 'bg-green-100 text-green-600' : r.status === '지각' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}>{r.status}</span><span className="text-[10px] font-black text-slate-400 min-w-[55px] text-right">{r.checkInTime}</span></div>
