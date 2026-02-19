@@ -3,16 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- 모바일 앱 모드 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#f8fafc">
     
     <title>OTP FC Attendance Master</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -280,7 +288,8 @@
                 end: "10:00", 
                 location: "", 
                 managerId: "", 
-                managerName: "" 
+                managerName: "",
+                maxLimit: 18 // Default limit
             });
             const [currentTime, setCurrentTime] = useState(new Date());
             const [isAppLocked, setIsAppLocked] = useState(false);
@@ -348,6 +357,7 @@
                 return members.filter(m => STAFF_ROLES.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
             }, [members]);
 
+            // -- Derived States --
             const activeParticipants = useMemo(() => {
                 const list = sessionData.filter(p => p.date === meetingTimes.date);
                 return list.sort((a,b) => {
@@ -408,7 +418,6 @@
                 return now >= meetingEndTime;
             }, [meetingTimes]);
 
-            // [MODIFIED] Sorted History Records with Original Index preservation for accurate editing
             const sortedHistoryRecords = useMemo(() => {
                 if (!selectedHistoryDetail || !selectedHistoryDetail.records) return [];
                 
@@ -621,18 +630,20 @@
             };
 
             const handleCheckIn = async (participant) => {
+                const limit = meetingTimes.maxLimit || 18;
                 const rank = activeParticipants.findIndex(p => p.id === participant.id) + 1;
-                if (rank > 18) {
-                     return showAlert("대기자 안내", "대기 명단에 있는 분은 직접 출석 체크를 할 수 없습니다.");
+                
+                if (rank > limit) {
+                     return showAlert("대기자 안내", `선착순(${limit}명) 마감되었습니다. 대기자는 출석 체크를 할 수 없습니다.`);
                 }
 
                 const now = new Date();
                 const meetingStart = new Date(`${participant.date}T${meetingTimes.start}`);
                 const allowFrom = new Date(meetingStart.getTime() - 60 * 60 * 1000); 
+                const allowFromStr = allowFrom.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
                 
                 if (now < allowFrom) {
                     setModal({ type: null, data: null }); 
-                    const allowFromStr = allowFrom.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
                     return showAlert("아직 출석 가능 시간이 아닙니다.", `출석 가능 일시 : ${participant.date} ${allowFromStr}~${meetingTimes.end}`);
                 }
                 
@@ -722,6 +733,7 @@
                 } catch (e) { showAlert("오류", "게스트 등록 실패"); }
             };
 
+            // [MODIFIED] Save with Waiting List Logic
             const saveAndResetCurrent = async () => {
                 const currentParticipants = sessionData.filter(p => p.date === meetingTimes.date);
                 if (currentParticipants.length === 0) return showAlert("확인", "현재 출석부에 인원이 없습니다.");
@@ -729,6 +741,7 @@
                 showConfirm("기록 확정 및 다음 모임 준비", "기록을 저장하고 다음 주로 날짜를 넘기시겠습니까?", async () => {
                     setIsPending(true);
                     try {
+                        const limit = meetingTimes.maxLimit || 18;
                         const sorted = currentParticipants.sort((a,b) => {
                             const timeA = a.createdAt || '';
                             const timeB = b.createdAt || '';
@@ -738,7 +751,7 @@
 
                         const records = sorted.map((p, idx) => {
                             const rank = idx + 1;
-                            const isWaiting = rank > 18;
+                            const isWaiting = rank > limit;
                             
                             let finalStatus = p.checkedIn ? (p.status || '정상') : '노쇼';
                             if (isWaiting) finalStatus = '대기';
@@ -794,28 +807,24 @@
                 });
             };
             
-            // [MODIFIED] Correctly update history record using preserved originalIndex
             const handleHistoryStatusUpdate = async (newStatus) => {
                 if (!historyEditTarget || !selectedHistoryDetail) return;
                 const { docId, recordIndex } = historyEditTarget;
 
                 try {
                     const updatedRecords = [...selectedHistoryDetail.records];
-                    // Using the stored originalIndex to update the correct item
                     updatedRecords[recordIndex] = { ...updatedRecords[recordIndex], status: newStatus };
 
                     await getHistoryCol().doc(docId).update({ records: updatedRecords });
                     
-                    // Update local state to reflect change immediately
                     setSelectedHistoryDetail(prev => ({ ...prev, records: updatedRecords }));
-                    setHistoryEditTarget(null); // Close modal
+                    setHistoryEditTarget(null); 
                     showAlert("수정 완료", "출석 상태가 변경되었습니다.");
                 } catch(e) {
                     console.error(e);
                     showAlert("오류", "수정 중 문제가 발생했습니다.");
                 }
             };
-
             
             const moveMonth = (offset) => {
                 const [y, m] = targetMonth.split('-').map(Number);
@@ -1133,7 +1142,7 @@
                 setIsManagerSelectorOpen(false); 
                 setSelectedMonthlyMember(null);
                 setSpecialRestReason('');
-                setHistoryEditTarget(null); // Reset history edit modal
+                setHistoryEditTarget(null); 
             }, [view]);
 
             useEffect(() => {
@@ -1331,9 +1340,10 @@
                                                         let cardStyle = `border-4 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200 ${baseColorClass}`;
                                                         let nameColor = "text-slate-900";
                                                         
-                                                        // [MODIFIED] Check waiting status from rank
+                                                        // Check waiting status from rank
                                                         const rank = activeParticipants.findIndex(ap => ap.id === p.id) + 1;
-                                                        const isWaiting = rank > 18;
+                                                        const limit = meetingTimes.maxLimit || 18;
+                                                        const isWaiting = rank > limit;
 
                                                         if (isWaiting) {
                                                             // Waiting List Style
@@ -1356,9 +1366,9 @@
                                                             <button 
                                                                 key={p.id} 
                                                                 onClick={() => {
-                                                                    // [MODIFIED] Alert for waiting list click
+                                                                    // Alert for waiting list click
                                                                     if (isWaiting) {
-                                                                        return showAlert("대기자 안내", "대기 명단에 있는 분은 출석 체크를 할 수 없습니다.");
+                                                                        return showAlert("대기자 안내", `선착순(${limit}명) 마감되었습니다. 대기자는 출석 체크를 할 수 없습니다.`);
                                                                     }
                                                                     p.checkedIn ? setModal({type:'cancel', data:p}) : setModal({type:'check', data:p});
                                                                 }}
@@ -1381,7 +1391,7 @@
                                                                                 {p.status}
                                                                             </span>
                                                                         )}
-                                                                        {/* [NEW] Waiting Badge */}
+                                                                        {/* Waiting Badge */}
                                                                         {isWaiting && (
                                                                             <span className="text-[10px] font-black px-2 py-1 rounded-full shadow-sm bg-orange-400 text-white">
                                                                                 대기
@@ -1444,6 +1454,17 @@
                                                 <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black outline-none border-none" value={meetingTimes.end.split(':')[1]} onChange={e => updateMeetingTimeSettings({...meetingTimes, end: `${meetingTimes.end.split(':')[0]}:${e.target.value}`})}>{minuteOptions.map(m => <option key={m} value={m}>{m}분</option>)}</select>
                                             </div>
                                         </div>
+                                        {/* [NEW] Max Limit Input */}
+                                        <div className="text-left">
+                                            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase">Limit</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                className="w-full p-4 bg-slate-50 rounded-2xl font-black border border-transparent focus:border-blue-500 shadow-none outline-none"
+                                                value={meetingTimes.maxLimit || 18}
+                                                onChange={e => updateMeetingTimeSettings({...meetingTimes, maxLimit: parseInt(e.target.value) || 18})}
+                                            />
+                                        </div>
                                         <div className="text-left">
                                             <label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Manager</label>
                                             <div className="flex gap-2 text-xs">
@@ -1484,17 +1505,18 @@
                                     <div className="mt-8 mb-4 bg-slate-100 rounded-full p-1 flex items-center relative h-10 overflow-hidden">
                                         <div 
                                             className="absolute top-0 bottom-0 left-0 bg-blue-500 transition-all duration-500 ease-out" 
-                                            style={{ width: `${Math.min(activeParticipants.length, 18) / 18 * 100}%` }}
+                                            style={{ width: `${Math.min(activeParticipants.length, (meetingTimes.maxLimit || 18)) / (meetingTimes.maxLimit || 18) * 100}%` }}
                                         ></div>
-                                        {activeParticipants.length > 18 && (
+                                        {activeParticipants.length > (meetingTimes.maxLimit || 18) && (
                                             <div 
                                                 className="absolute top-0 bottom-0 bg-orange-400 transition-all duration-500 ease-out"
                                                 style={{ left: '100%', width: '1000px' }} // 18명 초과분 시각적 표시 (간략화)
                                             ></div>
                                         )}
+                                        {/* [수정] 텍스트 색상 흰색 고정 및 그림자 추가 (mix-blend-difference 제거) */}
                                         <div className="absolute inset-0 flex items-center justify-between px-4 text-[10px] font-black z-10 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
-                                            <span>ENTRY: {Math.min(activeParticipants.length, 18)} / 18</span>
-                                            {activeParticipants.length > 18 && <span>WAITING: {activeParticipants.length - 18}</span>}
+                                            <span>ENTRY: {Math.min(activeParticipants.length, (meetingTimes.maxLimit || 18))} / {meetingTimes.maxLimit || 18}</span>
+                                            {activeParticipants.length > (meetingTimes.maxLimit || 18) && <span>WAITING: {activeParticipants.length - (meetingTimes.maxLimit || 18)}</span>}
                                         </div>
                                     </div>
                                     
@@ -1506,12 +1528,13 @@
                                                 {activeParticipants.filter(p => p.isGuest).map(g => {
                                                     // 선착순 계산
                                                     const rank = activeParticipants.findIndex(ap => ap.id === g.id) + 1;
-                                                    const isWaiting = rank > 18;
+                                                    const limit = meetingTimes.maxLimit || 18;
+                                                    const isWaiting = rank > limit;
                                                     return (
                                                         <div key={g.id} className={`px-4 py-2 rounded-2xl border-2 flex items-center gap-2 shadow-sm ${isWaiting ? 'bg-orange-50 border-orange-200 text-orange-600' : (g.gender === '남성' ? 'bg-[#E1F0FF] border-[#2563EB] text-[#2563EB]' : 'bg-[#FFE5ED] border-[#DB2777] text-[#DB2777]')}`}>
                                                             <span className="font-black text-xs">
                                                                 {g.name} 
-                                                                {isWaiting ? <span className="ml-1 text-[9px] bg-orange-200 text-orange-700 px-1 rounded">대기 {rank - 18}</span> : <span className="ml-1 opacity-60">({g.level}단)</span>}
+                                                                {isWaiting ? <span className="ml-1 text-[9px] bg-orange-200 text-orange-700 px-1 rounded">대기 {rank - limit}</span> : <span className="ml-1 opacity-60">({g.level}단)</span>}
                                                                 {g.inviterName !== '없음' && <small className="ml-2 opacity-70">초대:{g.inviterName}</small>}
                                                             </span>
                                                             <button onClick={() => getSessionCol().doc(g.id).delete()} className="text-red-400 hover:text-red-600 p-0.5"><Icon.Trash size={14}/></button>
@@ -1544,14 +1567,15 @@
                                             // 해당 멤버의 참여 데이터 찾기
                                             const participant = activeParticipants.find(p => p.memberId === m.id);
                                             const isSel = !!participant;
+                                            const limit = meetingTimes.maxLimit || 18;
                                             
                                             // 선착순 순위 계산
                                             let rankDisplay = null;
                                             let isWaiting = false;
                                             if (isSel) {
                                                 const rank = activeParticipants.indexOf(participant) + 1;
-                                                isWaiting = rank > 18;
-                                                rankDisplay = isWaiting ? `대기 ${rank - 18}` : `NO.${rank}`;
+                                                isWaiting = rank > limit;
+                                                rankDisplay = isWaiting ? `대기 ${rank - limit}` : `NO.${rank}`;
                                             }
 
                                             return (
