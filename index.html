@@ -276,7 +276,7 @@
         };
 
         function App() {
-            const [view, setView] = useState('attendance');
+            const [view, setView] = useState(() => sessionStorage.getItem('otp_view') || 'attendance');
             const [logoError, setLogoError] = useState(false); 
             const [customLogo, setCustomLogo] = useState(() => localStorage.getItem(APP_ID + '_custom_logo') || null);
             const [members, setMembers] = useState([]);
@@ -342,8 +342,10 @@
 
             const [customFonts, setCustomFonts] = useState([]);
 
-            const [memberSubTab, setMemberSubTab] = useState('directory'); 
+            const [memberSubTab, setMemberSubTab] = useState(() => sessionStorage.getItem('otp_sub_tab') || 'directory'); 
             const [targetMonth, setTargetMonth] = useState(() => {
+                const stored = sessionStorage.getItem('otp_target_month');
+                if (stored) return stored;
                 const now = new Date();
                 return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             });
@@ -352,16 +354,17 @@
             const [monthlyReasons, setMonthlyReasons] = useState({}); 
             const [setupTabMonthlyMembers, setSetupTabMonthlyMembers] = useState([]);
 
-            const [pullDistance, setPullDistance] = useState(0);
-            const touchStartY = useRef(0);
-            const isPullingRef = useRef(false);
-
             const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), []);
             const minuteOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')), []);
 
             const managers = useMemo(() => {
                 return members.filter(m => STAFF_ROLES.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
             }, [members]);
+
+            // 상태 변경 시 sessionStorage에 저장하여 새로고침 시 유지
+            useEffect(() => { sessionStorage.setItem('otp_view', view); }, [view]);
+            useEffect(() => { sessionStorage.setItem('otp_sub_tab', memberSubTab); }, [memberSubTab]);
+            useEffect(() => { sessionStorage.setItem('otp_target_month', targetMonth); }, [targetMonth]);
 
             // -- Derived States --
             const activeParticipants = useMemo(() => {
@@ -1320,60 +1323,8 @@
                 }
             }, [isMeetingOver, sessionData, meetingTimes.date]);
 
-            useEffect(() => {
-                const handleTouchStart = (e) => {
-                    if (window.scrollY === 0) {
-                        touchStartY.current = e.touches[0].clientY;
-                        isPullingRef.current = true;
-                    } else {
-                        isPullingRef.current = false;
-                    }
-                };
-
-                const handleTouchMove = (e) => {
-                    if (!isPullingRef.current) return;
-                    const touchY = e.touches[0].clientY;
-                    const diff = touchY - touchStartY.current;
-                    if (diff > 0) {
-                        setPullDistance(diff * 0.4); 
-                    } else {
-                        setPullDistance(0);
-                    }
-                };
-
-                const handleTouchEnd = () => {
-                    if (!isPullingRef.current) return;
-                    isPullingRef.current = false;
-                    if (pullDistance > 100) {
-                        window.location.reload();
-                    } else {
-                        setPullDistance(0);
-                    }
-                };
-
-                window.addEventListener('touchstart', handleTouchStart, { passive: false });
-                window.addEventListener('touchmove', handleTouchMove, { passive: false });
-                window.addEventListener('touchend', handleTouchEnd);
-
-                return () => {
-                    window.removeEventListener('touchstart', handleTouchStart);
-                    window.removeEventListener('touchmove', handleTouchMove);
-                    window.removeEventListener('touchend', handleTouchEnd);
-                };
-            }, [pullDistance]);
-
             return (
                 <div className="min-h-screen pb-40 text-slate-900">
-                    <div 
-                        style={{ height: `${pullDistance}px`, opacity: pullDistance > 0 ? 1 : 0 }} 
-                        className="fixed top-0 left-0 w-full bg-slate-100 flex items-center justify-center overflow-hidden z-[9999] transition-all duration-75 pointer-events-none"
-                    >
-                        <div className={`flex flex-col items-center gap-2 transform ${pullDistance > 100 ? 'scale-110 text-blue-600' : 'scale-100 text-slate-400'}`}>
-                            <Icon.Refresh className={`w-6 h-6 ${pullDistance > 100 ? 'animate-spin' : ''}`} />
-                            {pullDistance > 100 && <span className="text-[10px] font-black uppercase">Release to Refresh</span>}
-                        </div>
-                    </div>
-
                     {!isAppLocked && !isLoginModalOpen && (
                         <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 sm:h-20 flex items-center px-4 shadow-sm text-slate-900 transition-all">
                             <div className="max-w-5xl mx-auto w-full flex justify-between items-center text-left">
@@ -1384,13 +1335,14 @@
                                         </button>
                                     ))}
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 sm:gap-3">
                                     {loggedInManager && (
                                         <button onClick={() => setIsPasswordChangeModalOpen(true)} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-100 transition-all">
                                             <Icon.ShieldCheck size={14} className="text-blue-600" />
                                             {loggedInManager.name} ({loggedInManager.role})
                                         </button>
                                     )}
+                                    <button onClick={() => window.location.reload()} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-blue-600 transition-all shadow-none border-none"><Icon.Refresh size={18} /></button>
                                     <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all shadow-none border-none"><Icon.LogOut size={18} /></button>
                                     <button onClick={handleLockToggle} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-blue-600 border border-slate-100 transition-all shadow-none border-none"><Icon.Lock size={18} /></button>
                                 </div>
