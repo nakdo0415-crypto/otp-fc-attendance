@@ -308,6 +308,7 @@
             const [historyEditTarget, setHistoryEditTarget] = useState(null); 
             const [listModalData, setListModalData] = useState(null); // [NEW] 명단 모달 상태 추가
             const [isCapturing, setIsCapturing] = useState(false); // [NEW] 캡쳐 중 상태
+            const [capturedImage, setCapturedImage] = useState(null); // [NEW] 생성된 이미지 데이터 상태
 
             const [teamData, setTeamData] = useState(null);
             const [localTeamData, setLocalTeamData] = useState(null);
@@ -1038,6 +1039,42 @@
                 });
 
                 setListModalData({ title, count: filtered.length, items });
+                setCapturedImage(null); // 혹시 이전 이미지가 남아있을까봐 초기화
+            };
+
+            // [NEW] 모바일 호환 클립보드 복사 로직 (Fallback 적용)
+            const fallbackCopy = (text) => {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                // 모바일에서 스크롤 튀는 현상 및 화면 줌 방지
+                textArea.style.position = "fixed";
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                
+                // iOS 대응 특수 처리
+                if (navigator.userAgent.match(/ipad|iphone|mac/i)) {
+                    const range = document.createRange();
+                    range.selectNodeContents(textArea);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    textArea.setSelectionRange(0, 999999);
+                } else {
+                    textArea.select();
+                }
+
+                try {
+                    document.execCommand('copy');
+                    setListModalData(null);
+                    setCapturedImage(null);
+                    showAlert("복사 완료", `클립보드에 복사되었습니다.\n\n카카오톡 등 원하는 곳에 붙여넣기 하세요!`);
+                } catch (err) {
+                    showAlert("오류", "복사에 실패했습니다. 권한을 확인해주세요.");
+                } finally {
+                    document.body.removeChild(textArea);
+                }
             };
 
             const handleCopyFromModal = () => {
@@ -1051,47 +1088,54 @@
                 
                 const textToCopy = `[ ${listModalData.title} ]\n총 ${listModalData.count}명\n\n${names}`;
 
-                const textArea = document.createElement("textarea");
-                textArea.value = textToCopy;
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    setListModalData(null); // 명단 팝업 즉시 닫기
-                    showAlert("복사 완료", `클립보드에 복사되었습니다.\n\n카카오톡 등 원하는 곳에 붙여넣기 하세요!`);
-                } catch (err) {
-                    showAlert("오류", "복사에 실패했습니다.");
+                // 최신 Clipboard API 지원 시 우선 사용
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        setListModalData(null);
+                        setCapturedImage(null);
+                        showAlert("복사 완료", `클립보드에 복사되었습니다.\n\n카카오톡 등 원하는 곳에 붙여넣기 하세요!`);
+                    }).catch(() => fallbackCopy(textToCopy)); // 실패 시 예전 방식 폴백
+                } else {
+                    fallbackCopy(textToCopy);
                 }
-                document.body.removeChild(textArea);
             };
 
-            // [NEW] 모달 영역을 통째로 이미지로 캡쳐하여 저장하는 함수
+            // [NEW] 모달 영역을 이미지로 만들어서 모바일에서도 저장 가능하도록 띄우는 함수
             const handleCaptureImage = () => {
-                setIsCapturing(true); // 캡쳐 모드 ON (스크롤 해제 및 하단 버튼 숨김)
+                setIsCapturing(true); 
                 
-                // DOM이 스크롤 없이 완전히 렌더링될 시간을 줌
+                // 모달 렌더링이 안정을 찾을 시간 부여
                 setTimeout(() => {
                     const target = document.getElementById('capture-area');
                     if (target) {
                         html2canvas(target, {
-                            scale: 2, // 고해상도 캡쳐
-                            backgroundColor: '#ffffff' // 배경색 흰색 고정
+                            scale: 2, // 고해상도 처리
+                            backgroundColor: '#ffffff',
+                            useCORS: true 
                         }).then(canvas => {
-                            const link = document.createElement('a');
-                            link.download = `${listModalData.title}_명단.png`;
-                            link.href = canvas.toDataURL('image/png');
-                            link.click();
-                            setIsCapturing(false); // 캡쳐 모드 OFF
-                            setListModalData(null); // 알림창 띄우지 않고 창을 즉시 종료
+                            const imageBase64 = canvas.toDataURL('image/png');
+                            setCapturedImage(imageBase64); // 캔버스 이미지를 상태에 저장 (화면에 보여주기 위함)
+                            setIsCapturing(false); 
                         }).catch(err => {
                             console.error(err);
                             setIsCapturing(false);
-                            showAlert("오류", "이미지 저장에 실패했습니다.");
+                            showAlert("오류", "이미지 생성에 실패했습니다.");
                         });
                     } else {
                         setIsCapturing(false);
                     }
                 }, 300);
+            };
+
+            // PC용 강제 다운로드 버튼
+            const handleDownloadImage = () => {
+                if (!capturedImage) return;
+                const link = document.createElement('a');
+                link.download = `${listModalData?.title || '명단'}.png`;
+                link.href = capturedImage;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             };
             
             useEffect(() => {
@@ -1261,7 +1305,8 @@
                 setSelectedMonthlyMember(null);
                 setSpecialRestReason('');
                 setHistoryEditTarget(null); 
-                setListModalData(null); // 뷰가 변경될 때 모달 닫기
+                setListModalData(null); 
+                setCapturedImage(null);
             }, [view]);
 
             useEffect(() => {
@@ -2411,71 +2456,92 @@
 
                     {/* [NEW] 명단 확인 및 캡쳐용 모달 */}
                     {listModalData && (
-                        <div className={`fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[8000] flex justify-center p-4 ${isCapturing ? 'items-start overflow-y-auto py-10' : 'items-center'}`} onClick={() => !isCapturing && setListModalData(null)}>
+                        <div className={`fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[8000] flex justify-center p-4 ${isCapturing ? 'items-start overflow-y-auto py-10' : 'items-center'}`} onClick={() => { if(!isCapturing) { setListModalData(null); setCapturedImage(null); } }}>
                             <div 
-                                id="capture-area" 
-                                className={`bg-white w-full max-w-sm shadow-2xl flex flex-col ${isCapturing ? 'rounded-[40px] h-auto' : 'rounded-[40px] overflow-hidden max-h-[80vh] animate-zoom-in'}`} 
+                                className={`bg-white w-full max-w-sm shadow-2xl flex flex-col ${isCapturing || capturedImage ? 'rounded-[40px] h-auto' : 'rounded-[40px] overflow-hidden max-h-[80vh] animate-zoom-in'}`} 
                                 onClick={e => e.stopPropagation()}
                             >
-                                {/* 캡쳐 영역 헤더 */}
-                                <div className={`p-6 bg-slate-900 text-white text-center ${isCapturing ? 'rounded-t-[40px]' : ''}`}>
-                                    <h3 className="text-xl font-black mb-1">{listModalData.title}</h3>
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total {listModalData.count} Members</p>
-                                </div>
-                                
-                                {/* 명단 리스트 (스크롤) */}
-                                <div className={`p-6 bg-white flex-1 ${isCapturing ? 'rounded-b-[40px]' : 'overflow-y-auto custom-scrollbar'}`}>
-                                    <div className="flex flex-col space-y-1">
-                                        {listModalData.items.map((item, idx) => (
-                                            <div key={item.id || idx} className="flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-black text-slate-800">{item.name}</span>
-                                                    {item.tag && (
-                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold border border-slate-200">
-                                                            {item.tag}
-                                                        </span>
-                                                    )}
+                                {capturedImage ? (
+                                    // --- 캡쳐 완료된 이미지 보여주기 모드 ---
+                                    <div className="flex flex-col items-center">
+                                        <div className="bg-slate-100 p-4 rounded-t-[40px] w-full text-center border-b border-slate-200">
+                                            <p className="text-sm font-black text-slate-800">📸 이미지 생성 완료!</p>
+                                            <p className="text-[10px] text-slate-500 mt-1">모바일은 아래 이미지를 <b>길게 눌러 저장</b>하세요.</p>
+                                        </div>
+                                        <div className="p-4 w-full overflow-y-auto max-h-[60vh] custom-scrollbar bg-slate-50 flex justify-center">
+                                            <img src={capturedImage} alt="Captured List" className="w-full rounded-2xl shadow-sm border border-slate-200" />
+                                        </div>
+                                        <div className="p-4 bg-white w-full border-t border-slate-100 flex gap-2 rounded-b-[40px]">
+                                            <button onClick={() => setCapturedImage(null)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black shadow-sm active:scale-95 transition-all text-xs">다시 보기</button>
+                                            <button onClick={handleDownloadImage} className="flex-[2] py-3 bg-blue-600 text-white rounded-2xl font-black shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-1.5"><Icon.Save size={14}/> PC 다운로드</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    // --- 기존 명단 HTML 렌더링 영역 (캡쳐 대상) ---
+                                    <>
+                                        <div id="capture-area" className="bg-white flex flex-col w-full rounded-[40px] overflow-hidden">
+                                            {/* 캡쳐 영역 헤더 */}
+                                            <div className={`p-6 bg-slate-900 text-white text-center ${isCapturing ? '' : ''}`}>
+                                                <h3 className="text-xl font-black mb-1">{listModalData.title}</h3>
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total {listModalData.count} Members</p>
+                                            </div>
+                                            
+                                            {/* 명단 리스트 (스크롤) */}
+                                            <div className={`p-6 bg-white flex-1 ${isCapturing ? '' : 'overflow-y-auto custom-scrollbar'}`}>
+                                                <div className="flex flex-col space-y-1">
+                                                    {listModalData.items.map((item, idx) => (
+                                                        <div key={item.id || idx} className="flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-black text-slate-800">{item.name}</span>
+                                                                {item.tag && (
+                                                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold border border-slate-200">
+                                                                        {item.tag}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {item.details && (
+                                                                <span className="text-[10px] text-slate-500 font-bold text-right">
+                                                                    {item.details}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                {item.details && (
-                                                    <span className="text-[10px] text-slate-500 font-bold text-right">
-                                                        {item.details}
-                                                    </span>
+                                                {/* 캡쳐 이미지에만 표시되는 워터마크 */}
+                                                {isCapturing && (
+                                                    <div className="mt-8 text-center text-slate-300 font-black text-[9px] uppercase tracking-widest">
+                                                        OTP FC Attendance System
+                                                    </div>
                                                 )}
                                             </div>
-                                        ))}
-                                    </div>
-                                    {/* 캡쳐 이미지에만 표시되는 워터마크 */}
-                                    {isCapturing && (
-                                        <div className="mt-8 text-center text-slate-300 font-black text-[9px] uppercase tracking-widest">
-                                            OTP FC Attendance System
                                         </div>
-                                    )}
-                                </div>
 
-                                {/* 하단 버튼 (캡쳐 중일 때는 이미지에 안 보이도록 숨김) */}
-                                {!isCapturing && (
-                                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2">
-                                        <button 
-                                            onClick={handleCaptureImage} 
-                                            className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-md active:scale-95 transition-all text-sm flex items-center justify-center gap-2"
-                                        >
-                                            <Icon.Save size={16}/> 이 화면을 이미지로 저장
-                                        </button>
-                                        <div className="flex gap-2">
-                                            <button 
-                                                onClick={() => setListModalData(null)} 
-                                                className="flex-1 py-3 bg-white border border-slate-200 text-slate-500 rounded-2xl font-black shadow-sm active:scale-95 transition-all text-xs"
-                                            >
-                                                닫기
-                                            </button>
-                                            <button 
-                                                onClick={handleCopyFromModal} 
-                                                className="flex-1 py-3 bg-slate-800 text-white rounded-2xl font-black shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-1.5"
-                                            >
-                                                <Icon.FileSpreadsheet size={14}/> 텍스트 복사
-                                            </button>
-                                        </div>
-                                    </div>
+                                        {/* 하단 버튼 (캡쳐 중일 때는 이미지에 안 보이도록 숨김) */}
+                                        {!isCapturing && (
+                                            <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2 rounded-b-[40px]">
+                                                <button 
+                                                    onClick={handleCaptureImage} 
+                                                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-md active:scale-95 transition-all text-sm flex items-center justify-center gap-2"
+                                                >
+                                                    <Icon.Save size={16}/> 이 화면을 이미지로 저장
+                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => { setListModalData(null); setCapturedImage(null); }} 
+                                                        className="flex-1 py-3 bg-white border border-slate-200 text-slate-500 rounded-2xl font-black shadow-sm active:scale-95 transition-all text-xs"
+                                                    >
+                                                        닫기
+                                                    </button>
+                                                    <button 
+                                                        onClick={handleCopyFromModal} 
+                                                        className="flex-1 py-3 bg-slate-800 text-white rounded-2xl font-black shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-1.5"
+                                                    >
+                                                        <Icon.FileSpreadsheet size={14}/> 텍스트 복사
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
