@@ -20,6 +20,9 @@
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
+    <!-- html2canvas (캡쳐용 라이브러리 추가) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -303,6 +306,8 @@
             const [specialRestReason, setSpecialRestReason] = useState(''); 
             const [filterCategory, setFilterCategory] = useState('all'); 
             const [historyEditTarget, setHistoryEditTarget] = useState(null); 
+            const [listModalData, setListModalData] = useState(null); // [NEW] 명단 모달 상태 추가
+            const [isCapturing, setIsCapturing] = useState(false); // [NEW] 캡쳐 중 상태
 
             const [teamData, setTeamData] = useState(null);
             const [localTeamData, setLocalTeamData] = useState(null);
@@ -495,7 +500,7 @@
                 return counts;
             }, [members, monthlyStatuses, monthlyReasons, targetMonth]);
 
-            const showAlert = (title, content, type = 'info') => setAlertModal({ show: true, title, content, type, onConfirm: null });
+            const showAlert = (title, content, type = 'info', onConfirm = null) => setAlertModal({ show: true, title, content, type, onConfirm });
             const showConfirm = (title, content, onConfirm) => setAlertModal({ show: true, title, content, type: 'confirm', onConfirm });
 
             const getCoupleName = (id) => {
@@ -975,6 +980,119 @@
                      showAlert("오류", "상태 변경 실패");
                 }
             };
+
+            const handleShowListModal = (listType) => {
+                let filtered = [];
+                let title = "";
+
+                const sortedMembers = [...members].sort((a,b) => a.name.localeCompare(b.name));
+
+                if (listType === 'unpaid') {
+                    filtered = sortedMembers.filter(m => getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth) === 'unpaid');
+                    title = `${targetMonth} 미납자 명단`;
+                } else if (listType === 'half') {
+                    filtered = sortedMembers.filter(m => {
+                        if (STAFF_ROLES.includes(m.role)) return false;
+                        const info = getMembershipStatus(m, targetMonth);
+                        return info && info.active && info.type === '반년';
+                    });
+                    title = `${targetMonth} 반년납 명단`;
+                } else if (listType === 'full') {
+                    filtered = sortedMembers.filter(m => {
+                        if (STAFF_ROLES.includes(m.role)) return false;
+                        const info = getMembershipStatus(m, targetMonth);
+                        return info && info.active && info.type === '1년';
+                    });
+                    title = `${targetMonth} 1년납 명단`;
+                } else if (listType === 'rest_all') {
+                    filtered = sortedMembers.filter(m => {
+                        const t = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
+                        return t === 'rest' || t === 'special';
+                    });
+                    title = `${targetMonth} 휴식자 명단 (특별휴식 포함)`;
+                }
+
+                if (filtered.length === 0) {
+                    return showAlert("알림", "해당하는 인원이 없습니다.");
+                }
+
+                const items = filtered.map(m => {
+                    let tag = null;
+                    let details = null;
+
+                    if (listType === 'half' || listType === 'full') {
+                        const info = getMembershipStatus(m, targetMonth);
+                        const statusType = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
+                        if (statusType === 'rest') tag = "휴식중";
+                        if (statusType === 'special') tag = "특별휴식";
+                        
+                        if (info) {
+                            details = `${info.endDateFormatted} 만료 | 잔여휴식 ${info.remainingRest}회`;
+                        }
+                    } else if (listType === 'rest_all') {
+                        const statusType = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
+                        tag = statusType === 'special' ? '특별휴식' : '일반휴식';
+                    }
+                    
+                    return { id: m.id, name: m.name, tag, details };
+                });
+
+                setListModalData({ title, count: filtered.length, items });
+            };
+
+            const handleCopyFromModal = () => {
+                if (!listModalData) return;
+                const names = listModalData.items.map(item => {
+                    let str = `- ${item.name}`;
+                    if (item.tag) str += ` [${item.tag}]`;
+                    if (item.details) str += ` (${item.details})`;
+                    return str;
+                }).join('\n');
+                
+                const textToCopy = `[ ${listModalData.title} ]\n총 ${listModalData.count}명\n\n${names}`;
+
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    setListModalData(null); // 명단 팝업 즉시 닫기
+                    showAlert("복사 완료", `클립보드에 복사되었습니다.\n\n카카오톡 등 원하는 곳에 붙여넣기 하세요!`);
+                } catch (err) {
+                    showAlert("오류", "복사에 실패했습니다.");
+                }
+                document.body.removeChild(textArea);
+            };
+
+            // [NEW] 모달 영역을 통째로 이미지로 캡쳐하여 저장하는 함수
+            const handleCaptureImage = () => {
+                setIsCapturing(true); // 캡쳐 모드 ON (스크롤 해제 및 하단 버튼 숨김)
+                
+                // DOM이 스크롤 없이 완전히 렌더링될 시간을 줌
+                setTimeout(() => {
+                    const target = document.getElementById('capture-area');
+                    if (target) {
+                        html2canvas(target, {
+                            scale: 2, // 고해상도 캡쳐
+                            backgroundColor: '#ffffff' // 배경색 흰색 고정
+                        }).then(canvas => {
+                            const link = document.createElement('a');
+                            link.download = `${listModalData.title}_명단.png`;
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                            setIsCapturing(false); // 캡쳐 모드 OFF
+                            setListModalData(null); // 알림창 띄우지 않고 창을 즉시 종료
+                        }).catch(err => {
+                            console.error(err);
+                            setIsCapturing(false);
+                            showAlert("오류", "이미지 저장에 실패했습니다.");
+                        });
+                    } else {
+                        setIsCapturing(false);
+                    }
+                }, 300);
+            };
             
             useEffect(() => {
                 if (selectedMonthlyMember && selectedMonthlyMember.membershipEndDate) {
@@ -1143,6 +1261,7 @@
                 setSelectedMonthlyMember(null);
                 setSpecialRestReason('');
                 setHistoryEditTarget(null); 
+                setListModalData(null); // 뷰가 변경될 때 모달 닫기
             }, [view]);
 
             useEffect(() => {
@@ -1782,6 +1901,15 @@
                                                 })}
                                             </div>
 
+                                            {/* [NEW] Copy Actions */}
+                                            <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-4 no-scrollbar bg-slate-50 p-3 rounded-2xl">
+                                                <span className="text-[10px] font-black text-slate-400 whitespace-nowrap mr-1 flex items-center gap-1"><Icon.FileSpreadsheet size={12}/> 명단 확인</span>
+                                                <button onClick={() => handleShowListModal('unpaid')} className="flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black transition-all bg-white border border-red-200 text-red-600 hover:bg-red-50 shadow-sm active:scale-95">미납자</button>
+                                                <button onClick={() => handleShowListModal('half')} className="flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black transition-all bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 shadow-sm active:scale-95">반년납</button>
+                                                <button onClick={() => handleShowListModal('full')} className="flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black transition-all bg-white border border-purple-200 text-purple-600 hover:bg-purple-50 shadow-sm active:scale-95">1년납</button>
+                                                <button onClick={() => handleShowListModal('rest_all')} className="flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black transition-all bg-white border border-yellow-200 text-yellow-600 hover:bg-yellow-50 shadow-sm active:scale-95">휴식(전체)</button>
+                                            </div>
+
                                             {/* 리스트 뷰 */}
                                             <div className="flex flex-col space-y-2">
                                                 {/* 헤더 */}
@@ -2280,6 +2408,79 @@
                             </div>
                         </div>
                     )}
+
+                    {/* [NEW] 명단 확인 및 캡쳐용 모달 */}
+                    {listModalData && (
+                        <div className={`fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[8000] flex justify-center p-4 ${isCapturing ? 'items-start overflow-y-auto py-10' : 'items-center'}`} onClick={() => !isCapturing && setListModalData(null)}>
+                            <div 
+                                id="capture-area" 
+                                className={`bg-white w-full max-w-sm shadow-2xl flex flex-col ${isCapturing ? 'rounded-[40px] h-auto' : 'rounded-[40px] overflow-hidden max-h-[80vh] animate-zoom-in'}`} 
+                                onClick={e => e.stopPropagation()}
+                            >
+                                {/* 캡쳐 영역 헤더 */}
+                                <div className={`p-6 bg-slate-900 text-white text-center ${isCapturing ? 'rounded-t-[40px]' : ''}`}>
+                                    <h3 className="text-xl font-black mb-1">{listModalData.title}</h3>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total {listModalData.count} Members</p>
+                                </div>
+                                
+                                {/* 명단 리스트 (스크롤) */}
+                                <div className={`p-6 bg-white flex-1 ${isCapturing ? 'rounded-b-[40px]' : 'overflow-y-auto custom-scrollbar'}`}>
+                                    <div className="flex flex-col space-y-1">
+                                        {listModalData.items.map((item, idx) => (
+                                            <div key={item.id || idx} className="flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-black text-slate-800">{item.name}</span>
+                                                    {item.tag && (
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold border border-slate-200">
+                                                            {item.tag}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {item.details && (
+                                                    <span className="text-[10px] text-slate-500 font-bold text-right">
+                                                        {item.details}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {/* 캡쳐 이미지에만 표시되는 워터마크 */}
+                                    {isCapturing && (
+                                        <div className="mt-8 text-center text-slate-300 font-black text-[9px] uppercase tracking-widest">
+                                            OTP FC Attendance System
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* 하단 버튼 (캡쳐 중일 때는 이미지에 안 보이도록 숨김) */}
+                                {!isCapturing && (
+                                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2">
+                                        <button 
+                                            onClick={handleCaptureImage} 
+                                            className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-md active:scale-95 transition-all text-sm flex items-center justify-center gap-2"
+                                        >
+                                            <Icon.Save size={16}/> 이 화면을 이미지로 저장
+                                        </button>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => setListModalData(null)} 
+                                                className="flex-1 py-3 bg-white border border-slate-200 text-slate-500 rounded-2xl font-black shadow-sm active:scale-95 transition-all text-xs"
+                                            >
+                                                닫기
+                                            </button>
+                                            <button 
+                                                onClick={handleCopyFromModal} 
+                                                className="flex-1 py-3 bg-slate-800 text-white rounded-2xl font-black shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-1.5"
+                                            >
+                                                <Icon.FileSpreadsheet size={14}/> 텍스트 복사
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             );
         }
