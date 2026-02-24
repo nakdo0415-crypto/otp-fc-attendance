@@ -232,7 +232,6 @@
         const Icon = {
             Users: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
             Trash: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
-            UserMinus: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="11" x2="16" y2="11"/></svg>,
             Clock: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
             Save: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
             Calendar: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
@@ -310,7 +309,6 @@
             const [listModalData, setListModalData] = useState(null); // [NEW] 명단 모달 상태 추가
             const [isCapturing, setIsCapturing] = useState(false); // [NEW] 캡쳐 중 상태
             const [capturedImage, setCapturedImage] = useState(null); // [NEW] 생성된 이미지 데이터 상태
-            const [withdrawModal, setWithdrawModal] = useState({ show: false, member: null, date: '', reason: '', isForced: false }); // [NEW] 탈퇴 처리 모달
 
             const [teamData, setTeamData] = useState(null);
             const [localTeamData, setLocalTeamData] = useState(null);
@@ -359,13 +357,9 @@
             const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), []);
             const minuteOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')), []);
 
-            // [NEW] 활성 회원과 탈퇴 회원 분리 필터링
-            const activeMembers = useMemo(() => members.filter(m => m.status !== 'withdrawn'), [members]);
-            const withdrawnMembers = useMemo(() => members.filter(m => m.status === 'withdrawn'), [members]);
-
             const managers = useMemo(() => {
-                return activeMembers.filter(m => STAFF_ROLES.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
-            }, [activeMembers]);
+                return members.filter(m => STAFF_ROLES.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
+            }, [members]);
 
             // 상태 변경 시 sessionStorage에 저장하여 새로고침 시 유지
             useEffect(() => { sessionStorage.setItem('otp_view', view); }, [view]);
@@ -459,7 +453,7 @@
 
             const footerStats = useMemo(() => {
                 let label = "TOTAL"; 
-                let count = activeMembers.length;
+                let count = members.length;
                 if (view === 'setup') {
                     const m = meetingTimes.date ? parseInt(meetingTimes.date.split('-')[1], 10) : 0;
                     label = `MONTHLY(${m}월)`;
@@ -468,7 +462,7 @@
                     if (memberSubTab === 'monthly') {
                         const m = targetMonth ? parseInt(targetMonth.split('-')[1], 10) : 0;
                         label = `MONTHLY(${m}월)`;
-                        count = activeMembers.filter(m => {
+                        count = members.filter(m => {
                             if (STAFF_ROLES.includes(m.role)) return false; 
                             const status = monthlyStatuses[m.id];
                             const membershipInfo = getMembershipStatus(m, targetMonth);
@@ -479,17 +473,17 @@
                         }).length;
                     } else {
                         label = "TOTAL"; 
-                        count = activeMembers.length;
+                        count = members.length;
                     }
                 } else {
                     label = "TOTAL"; 
-                    count = activeMembers.length;
+                    count = members.length;
                 }
                 return { label, count };
-            }, [view, memberSubTab, activeMembers, monthlyStatuses, setupTabMonthlyMembers.length, meetingTimes.date, targetMonth]);
+            }, [view, memberSubTab, members, monthlyStatuses, setupTabMonthlyMembers.length, meetingTimes.date, targetMonth]);
 
             const filteredMonthlyMembers = useMemo(() => {
-                let list = [...activeMembers].sort((a,b)=>a.name.localeCompare(b.name));
+                let list = [...members].sort((a,b)=>a.name.localeCompare(b.name));
                 if (filterCategory !== 'all') {
                     list = list.filter(m => {
                         const type = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
@@ -497,18 +491,18 @@
                     });
                 }
                 return list;
-            }, [activeMembers, filterCategory, monthlyStatuses, monthlyReasons, targetMonth]);
+            }, [members, filterCategory, monthlyStatuses, monthlyReasons, targetMonth]);
 
             const filterCounts = useMemo(() => {
-                const counts = { all: activeMembers.length, monthly: 0, half: 0, full: 0, rest: 0, special: 0, unpaid: 0 };
-                activeMembers.forEach(m => {
+                const counts = { all: members.length, monthly: 0, half: 0, full: 0, rest: 0, special: 0, unpaid: 0 };
+                members.forEach(m => {
                     const type = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
                     if (type !== 'staff') { 
                         if (counts[type] !== undefined) counts[type]++;
                     }
                 });
                 return counts;
-            }, [activeMembers, monthlyStatuses, monthlyReasons, targetMonth]);
+            }, [members, monthlyStatuses, monthlyReasons, targetMonth]);
 
             const showAlert = (title, content, type = 'info', onConfirm = null) => setAlertModal({ show: true, title, content, type, onConfirm });
             const showConfirm = (title, content, onConfirm) => setAlertModal({ show: true, title, content, type: 'confirm', onConfirm });
@@ -516,65 +510,6 @@
             const getCoupleName = (id) => {
                 const c = members.find(m => m.id === id);
                 return c ? c.name : '';
-            };
-
-            // [NEW] 탈퇴 및 복구 관련 헬퍼 함수
-            const getTodayString = () => {
-                const d = new Date();
-                return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            };
-
-            const getBanInfo = (dateStr) => {
-                if(!dateStr) return null;
-                const withdrawDate = new Date(dateStr);
-                const banEndDate = new Date(withdrawDate.getFullYear(), withdrawDate.getMonth() + 6, withdrawDate.getDate());
-                const now = new Date();
-                now.setHours(0,0,0,0);
-                
-                if(now > banEndDate) return { isBanned: false };
-                
-                const diffTime = banEndDate.getTime() - now.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
-                return {
-                    isBanned: true,
-                    remainDays: diffDays
-                };
-            };
-
-            const handleWithdraw = async () => {
-                const { member, date, reason, isForced } = withdrawModal;
-                if(!date) return showAlert("알림", "탈퇴 일자를 입력해주세요.");
-                
-                try {
-                    await getMemberCol().doc(member.id).update({
-                        status: 'withdrawn',
-                        withdrawnDate: date,
-                        withdrawalReason: reason,
-                        isForcedWithdrawal: isForced
-                    });
-                    setWithdrawModal({ show: false, member: null, date: '', reason: '', isForced: false });
-                    showAlert("처리 완료", `${member.name} 님이 탈퇴 처리되었습니다.`);
-                } catch(e) {
-                    console.error(e);
-                    showAlert("오류", "탈퇴 처리 중 문제가 발생했습니다.");
-                }
-            };
-
-            const handleRestore = async (member) => {
-                showConfirm("회원 복구", `${member.name} 님을 다시 활성 회원으로 복구하시겠습니까?`, async () => {
-                    try {
-                        await getMemberCol().doc(member.id).update({
-                            status: 'active',
-                            withdrawnDate: firebase.firestore.FieldValue.delete(),
-                            withdrawalReason: firebase.firestore.FieldValue.delete(),
-                            isForcedWithdrawal: firebase.firestore.FieldValue.delete()
-                        });
-                        showAlert("복구 완료", "회원이 정상적으로 복구되었습니다.");
-                    } catch(e) {
-                        showAlert("오류", "복구 중 문제가 발생했습니다.");
-                    }
-                });
             };
 
             const updateMeetingTimeSettings = (newData) => {
@@ -1054,7 +989,7 @@
                 let filtered = [];
                 let title = "";
 
-                const sortedMembers = [...activeMembers].sort((a,b) => a.name.localeCompare(b.name));
+                const sortedMembers = [...members].sort((a,b) => a.name.localeCompare(b.name));
 
                 if (listType === 'unpaid') {
                     filtered = sortedMembers.filter(m => getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth) === 'unpaid');
@@ -1375,7 +1310,6 @@
                 setHistoryEditTarget(null); 
                 setListModalData(null); 
                 setCapturedImage(null);
-                setWithdrawModal(prev => ({ ...prev, show: false }));
             }, [view]);
 
             useEffect(() => {
@@ -1654,12 +1588,12 @@
                                                     className="flex-1 p-4 bg-slate-50 rounded-2xl font-black text-slate-700 outline-none border-none" 
                                                     value={meetingTimes.managerId || ""} 
                                                     onChange={e => {
-                                                        const target = activeMembers.find(m => m.id === e.target.value);
+                                                        const target = members.find(m => m.id === e.target.value);
                                                         updateMeetingTimeSettings({...meetingTimes, managerId: e.target.value, managerName: target ? target.name : ""});
                                                     }}
                                                 >
                                                     <option value="">담당자 선택 (회원 전체)</option>
-                                                    {activeMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
                                                         <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
                                                     ))}
                                                 </select>
@@ -1856,7 +1790,7 @@
                                     <div className="flex justify-between items-center mb-6">
                                         <h2 className="text-3xl font-black text-blue-600 tracking-tighter text-left">Master Directory</h2>
                                         
-                                        {/* 소 탭 (회원관리 / 월별참여 / 탈퇴자명단) */}
+                                        {/* 소 탭 (회원관리 / 월별참여) */}
                                         <div className="flex bg-slate-100 p-1 rounded-xl">
                                             <button 
                                                 onClick={() => setMemberSubTab('directory')}
@@ -1869,12 +1803,6 @@
                                                 className={`px-4 py-2 text-xs font-black rounded-lg transition-all ${memberSubTab === 'monthly' ? 'bg-white text-green-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                                             >
                                                 월별 참여
-                                            </button>
-                                            <button 
-                                                onClick={() => setMemberSubTab('withdrawn')}
-                                                className={`px-4 py-2 text-xs font-black rounded-lg transition-all ${memberSubTab === 'withdrawn' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                            >
-                                                탈퇴자 명단
                                             </button>
                                         </div>
                                     </div>
@@ -1911,20 +1839,16 @@
                                             )}
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-left text-xs sm:text-sm text-left">
-                                                {activeMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                                {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
                                                     <div key={m.id} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative group hover:shadow-md transition-all text-left">
                                                         <div className="flex items-start justify-between text-left">
                                                             <div className="flex items-center gap-4 text-left"><div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-black shadow-lg ${getGenderPastelClass(m.gender)}`}>{m.level}</div><div className="text-left"><h3 className="text-2xl font-black text-slate-900 flex items-center gap-2 text-left">{m.name}{m.role && m.role !== '회원' && <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black ${getRoleBadgeClass(m.role)} shadow-sm uppercase text-xs`}>{m.role}</span>}</h3><div className="flex gap-1.5 mt-1 text-left text-xs text-left"><span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${getPosColorClass(m.position)} shadow-sm`}>{m.position}</span><span className="text-[11px] font-bold text-slate-300 text-left">{formatBirth(m.birth)}</span></div></div></div>
-                                                            <div className="flex gap-2 text-right">
-                                                                <button onClick={() => setWithdrawModal({show: true, member: m, date: getTodayString(), reason: '', isForced: false})} className="text-slate-300 hover:text-orange-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none border-none" title="탈퇴 처리"><Icon.UserMinus size={20}/></button>
-                                                                <button onClick={() => setEditingMember({...m})} className="text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none border-none"><Icon.Edit size={20}/></button>
-                                                                <button onClick={() => showConfirm("회원 삭제", `${m.name} 님의 데이터를 완전히 삭제하시겠습니까?\n(일반적인 경우 '탈퇴 처리'를 권장합니다)`, async () => { await getMemberCol().doc(m.id).delete(); })} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none border-none"><Icon.Trash size={20}/></button>
-                                                            </div>
+                                                            <div className="flex gap-2 text-right"><button onClick={() => setEditingMember({...m})} className="text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none border-none"><Icon.Edit size={20}/></button><button onClick={() => showConfirm("회원 삭제", `${m.name} 님을 삭제하시겠습니까?`, async () => { await getMemberCol().doc(m.id).delete(); })} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none border-none"><Icon.Trash size={20}/></button></div>
                                                         </div>
                                                         {m.coupleId && <div className="inline-flex items-center gap-2 bg-pink-50 text-pink-600 px-4 py-2 rounded-full text-xs font-black border border-pink-100 mt-4 shadow-sm"><Icon.Heart size={14} className="animate-pulse text-left"/> {getCoupleName(m.coupleId)}</div>}
                                                     </div>
                                                 ))}
-                                                {activeMembers.length === 0 && (
+                                                {members.length === 0 && (
                                                     <div className="col-span-full py-20 text-center text-slate-400 font-bold bg-slate-50 rounded-[32px] border border-dashed border-slate-200">
                                                         등록된 회원이 없습니다.
                                                     </div>
@@ -2100,53 +2024,6 @@
                                             </div>
                                         </div>
                                     )}
-
-                                    {/* 4-3. 탈퇴자 명단 (신규) */}
-                                    {memberSubTab === 'withdrawn' && (
-                                        <div className="animate-fade-in">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-left text-xs sm:text-sm">
-                                                {withdrawnMembers.sort((a,b) => new Date(b.withdrawnDate) - new Date(a.withdrawnDate)).map(m => {
-                                                    const banInfo = m.isForcedWithdrawal ? getBanInfo(m.withdrawnDate) : null;
-                                                    return (
-                                                        <div key={m.id} className="bg-slate-50 p-6 rounded-[32px] border border-slate-200 relative group">
-                                                            <div className="flex items-start justify-between">
-                                                                <div className="flex flex-col gap-1">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <h3 className="text-xl font-black text-slate-700">{m.name}</h3>
-                                                                        <span className="text-[10px] font-bold text-slate-400 border border-slate-300 px-2 py-0.5 rounded-md">탈퇴</span>
-                                                                    </div>
-                                                                    <div className="mt-2 space-y-0.5">
-                                                                        <p className="text-[11px] font-bold text-slate-500">탈퇴일자: {m.withdrawnDate}</p>
-                                                                        <p className="text-[11px] font-bold text-slate-500">탈퇴사유: {m.withdrawalReason || '미기재'}</p>
-                                                                    </div>
-                                                                </div>
-                                                                <button onClick={() => handleRestore(m)} className="text-[11px] bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm font-bold text-slate-600 hover:text-blue-600 active:scale-95 transition-all">복구</button>
-                                                            </div>
-                                                            {m.isForcedWithdrawal && (
-                                                                <div className="mt-4 bg-red-50 border border-red-200 p-3.5 rounded-2xl flex flex-col gap-2">
-                                                                    <span className="text-[11px] font-black text-red-600 flex items-center gap-1.5"><Icon.ShieldCheck size={14}/> 강제 탈퇴 (6개월 재가입 불가)</span>
-                                                                    {banInfo && banInfo.isBanned ? (
-                                                                        <span className="text-[11px] font-bold text-red-500 flex items-center gap-1">
-                                                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span> 남은 기간: {banInfo.remainDays}일
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="text-[11px] font-bold text-green-600 flex items-center gap-1">
-                                                                            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> 재가입 가능
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                                {withdrawnMembers.length === 0 && (
-                                                    <div className="col-span-full py-20 text-center text-slate-400 font-bold bg-slate-50 rounded-[32px] border border-dashed border-slate-200">
-                                                        탈퇴자 기록이 없습니다.
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         )}
@@ -2280,7 +2157,7 @@
                             <div className="bg-white rounded-[48px] w-full max-w-2xl p-10 shadow-2xl animate-zoom-in text-left flex flex-col max-h-[80vh] text-left" onClick={e => e.stopPropagation()}>
                                 <h2 className="text-2xl font-black mb-6 text-blue-600 tracking-tighter uppercase text-left">Pick Manager</h2>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 overflow-y-auto pr-2 custom-scrollbar flex-1 mb-8 text-left text-xs">
-                                    {activeMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
                                         <button key={m.id} onClick={() => { updateMeetingTimeSettings({...meetingTimes, managerId: m.id, managerName: m.name}); setIsManagerSelectorOpen(false); }} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center ${meetingTimes.managerId === m.id ? 'border-blue-600 bg-blue-50' : 'bg-white border-slate-100 hover:border-blue-200 shadow-sm'}`}><span className="font-black text-slate-800 text-left">{m.name}</span><span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-xs text-left">{m.role}</span></button>
                                     ))}
                                 </div>
@@ -2298,7 +2175,7 @@
                                     <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Name</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={newGuest.name} onChange={e=>setNewGuest({...newGuest, name: e.target.value})} placeholder="이름 입력" /></div>
                                     <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Gender</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={newGuest.gender} onChange={e=>setNewGuest({...newGuest, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
                                     <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Level</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={newGuest.level} onChange={e=>setNewGuest({...newGuest, level: e.target.value})}>{newGuest.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
-                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Inviter</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={newGuest.inviterId} onChange={e=>setNewGuest({...newGuest, inviterId: e.target.value})}><option value="">없음</option>{activeMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Inviter</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={newGuest.inviterId} onChange={e=>setNewGuest({...newGuest, inviterId: e.target.value})}><option value="">없음</option>{members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
                                 </div>
                                 <div className="flex gap-3"><button onClick={() => setIsGuestModalOpen(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={handleAddGuest} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all shadow-blue-100 uppercase text-xs">Add</button></div>
                             </div>
@@ -2324,45 +2201,35 @@
                                         </select>
                                     </div>
                                     <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1">실력 점수</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left text-xs" value={String(editingMember.level)} onChange={e=>setEditingMember({...editingMember, level: e.target.value})}>{editingMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
-                                    <div className="flex flex-col gap-1 text-left text-xs sm:col-span-2"><label className="text-[10px] font-black text-slate-400 ml-1">커플 대상</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left text-xs" value={editingMember.coupleId} onChange={e=>setEditingMember({...editingMember, coupleId: e.target.value})}><option value="">없음</option>{activeMembers.filter(m => m.id !== editingMember.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs sm:col-span-2"><label className="text-[10px] font-black text-slate-400 ml-1">커플 대상</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left text-xs" value={editingMember.coupleId} onChange={e=>setEditingMember({...editingMember, coupleId: e.target.value})}><option value="">없음</option>{members.filter(m => m.id !== editingMember.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
                                 </div>
                                 <div className="flex gap-3"><button onClick={() => setEditingMember(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={handleUpdateMember} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl shadow-blue-100 active:scale-95 transition-all">저장</button></div>
                             </div>
                         </div>
                     )}
 
-                    {/* [NEW] 탈퇴 처리 모달 */}
-                    {withdrawModal.show && (
-                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[6000] flex items-center justify-center p-4" onClick={() => setWithdrawModal({...withdrawModal, show: false})}>
-                            <div className="bg-white rounded-[48px] w-full max-w-sm p-10 shadow-2xl animate-zoom-in text-left text-xs" onClick={e => e.stopPropagation()}>
-                                <h2 className="text-2xl font-black mb-8 text-orange-600 tracking-tighter text-left">회원 탈퇴 처리</h2>
-                                <div className="space-y-4 mb-10 text-left text-xs">
-                                    <div className="flex flex-col gap-1 text-left">
-                                        <label className="text-[10px] font-black text-slate-400 ml-1">대상 회원</label>
-                                        <div className="p-4 bg-slate-50 rounded-2xl font-black text-slate-800 text-sm border border-slate-100">{withdrawModal.member?.name}</div>
-                                    </div>
-                                    <div className="flex flex-col gap-1 text-left">
-                                        <label className="text-[10px] font-black text-slate-400 ml-1">탈퇴 일자</label>
-                                        <input type="date" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-orange-100 shadow-none text-xs" value={withdrawModal.date} onChange={e => setWithdrawModal({...withdrawModal, date: e.target.value})} />
-                                    </div>
-                                    <div className="flex flex-col gap-1 text-left">
-                                        <label className="text-[10px] font-black text-slate-400 ml-1">사유</label>
-                                        <input type="text" placeholder="사유 입력 (선택)" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-orange-100 shadow-none text-xs" value={withdrawModal.reason} onChange={e => setWithdrawModal({...withdrawModal, reason: e.target.value})} />
-                                    </div>
-                                    <div className={`flex items-center gap-3 mt-4 p-4 rounded-2xl border cursor-pointer transition-all ${withdrawModal.isForced ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`} onClick={() => setWithdrawModal({...withdrawModal, isForced: !withdrawModal.isForced})}>
-                                        <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-all ${withdrawModal.isForced ? 'bg-red-500 text-white' : 'bg-white border-2 border-slate-300'}`}>
-                                            {withdrawModal.isForced && <Icon.Check size={14}/>}
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className={`text-xs font-black ${withdrawModal.isForced ? 'text-red-600' : 'text-slate-600'}`}>강제 탈퇴 (블랙리스트)</span>
-                                            <span className="text-[9px] text-slate-400 font-bold mt-0.5">체크 시 6개월 간 재가입 불가 표시</span>
-                                        </div>
-                                    </div>
+                    {/* [MODIFIED] History Status Edit Modal */}
+                    {historyEditTarget && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[7000] flex items-center justify-center p-4" onClick={() => setHistoryEditTarget(null)}>
+                            <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in text-center" onClick={e => e.stopPropagation()}>
+                                <h3 className="text-xl font-black text-slate-900 mb-2">{historyEditTarget.name}</h3>
+                                <p className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-widest">Change Attendance Status</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {['정상', '지각', '노쇼', '대기', '미출석'].map(status => (
+                                        <button 
+                                            key={status} 
+                                            onClick={() => handleHistoryStatusUpdate(status)}
+                                            className={`py-3 rounded-xl font-black text-sm transition-all ${
+                                                historyEditTarget.currentStatus === status 
+                                                ? 'bg-slate-900 text-white shadow-lg' 
+                                                : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            {status}
+                                        </button>
+                                    ))}
                                 </div>
-                                <div className="flex gap-3 text-left text-xs">
-                                    <button onClick={() => setWithdrawModal({...withdrawModal, show: false})} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none text-xs text-center">취소</button>
-                                    <button onClick={handleWithdraw} className="flex-1 py-5 bg-orange-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all text-xs text-center hover:bg-orange-700 shadow-orange-100">탈퇴 확정</button>
-                                </div>
+                                <button onClick={() => setHistoryEditTarget(null)} className="mt-4 w-full py-3 text-slate-400 font-bold text-xs">취소</button>
                             </div>
                         </div>
                     )}
