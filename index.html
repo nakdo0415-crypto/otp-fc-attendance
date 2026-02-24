@@ -12,6 +12,17 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Esamanru', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     
     <!-- React & ReactDOM -->
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -32,26 +43,26 @@
         @font-face {
             font-family: 'Esamanru';
             font-weight: 700;
-            src: url('esamanru Bold.ttf') format('truetype'), local('sans-serif');
+            src: url('esamanru%20Bold.ttf') format('truetype');
         }
         @font-face {
             font-family: 'Esamanru';
             font-weight: 500;
-            src: url('esamanru Medium.ttf') format('truetype'), local('sans-serif');
+            src: url('esamanru%20Medium.ttf') format('truetype');
         }
         @font-face {
             font-family: 'Esamanru';
             font-weight: 300;
-            src: url('esamanru Light.ttf') format('truetype'), local('sans-serif');
+            src: url('esamanru%20Light.ttf') format('truetype');
         }
         @font-face {
             font-family: 'Esamanru';
             font-weight: 400;
-            src: url('esamanru Medium.ttf') format('truetype'), local('sans-serif');
+            src: url('esamanru%20Medium.ttf') format('truetype');
         }
 
         body { 
-            font-family: 'Esamanru', 'Pretendard', sans-serif;
+            font-family: 'Esamanru', sans-serif !important;
             -webkit-tap-highlight-color: transparent; 
             background-color: #f8fafc;
             user-select: none;
@@ -180,9 +191,11 @@
         };
 
         const getTeamName = (index) => String.fromCharCode(65 + index);
-        const getTeamNumberColor = (index) => ['text-red-500', 'text-blue-500', 'text-green-500', 'text-yellow-500', 'text-purple-500', 'text-orange-500'][index] || 'text-slate-300';
-        const getTeamColorClass = (index) => ['bg-red-50 border-red-200 text-red-900', 'bg-blue-50 border-blue-200 text-blue-900', 'bg-green-50 border-green-200 text-green-900', 'bg-yellow-50 border-yellow-200 text-yellow-900', 'bg-purple-50 border-purple-200 text-purple-900', 'bg-orange-50 border-orange-200 text-orange-900'][index] || 'bg-slate-50 border-slate-200 text-slate-900';
-        const getTeamBadgeColor = (index) => ['bg-red-500 text-white', 'bg-blue-500 text-white', 'bg-green-500 text-white', 'bg-yellow-500 text-white', 'bg-purple-500 text-white', 'bg-orange-500 text-white'][index] || 'bg-slate-500 text-white';
+        
+        // 팀 색상 변경 적용 (A: 핑크, B: 하늘, C: 형광녹(lime), D: 노랑, E: 파랑, F: 빨강)
+        const getTeamNumberColor = (index) => ['text-pink-500', 'text-sky-400', 'text-lime-500', 'text-yellow-400', 'text-blue-600', 'text-red-500'][index] || 'text-slate-300';
+        const getTeamColorClass = (index) => ['bg-pink-50 border-pink-200 text-pink-900', 'bg-sky-50 border-sky-200 text-sky-900', 'bg-lime-50 border-lime-200 text-lime-900', 'bg-yellow-50 border-yellow-200 text-yellow-900', 'bg-blue-50 border-blue-200 text-blue-900', 'bg-red-50 border-red-200 text-red-900'][index] || 'bg-slate-50 border-slate-200 text-slate-900';
+        const getTeamBadgeColor = (index) => ['bg-pink-500 text-white', 'bg-sky-400 text-white', 'bg-lime-400 text-slate-800', 'bg-yellow-400 text-slate-800', 'bg-blue-600 text-white', 'bg-red-500 text-white'][index] || 'bg-slate-500 text-white';
 
         const formatBirth = (birth) => {
             if (!birth) return '생일미입력';
@@ -247,6 +260,8 @@
             FileSpreadsheet: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>,
             RotateCcw: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>,
             UserPlus: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>,
+            UserMinus: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="11" x2="16" y2="11"/></svg>,
+            UserCheck: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>,
             MapPin: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
             ShieldCheck: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
             LogOut: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
@@ -306,6 +321,8 @@
             const [specialRestReason, setSpecialRestReason] = useState(''); 
             const [filterCategory, setFilterCategory] = useState('all'); 
             const [historyEditTarget, setHistoryEditTarget] = useState(null); 
+            const [isEditingLocation, setIsEditingLocation] = useState(false);
+            const [editLocationValue, setEditLocationValue] = useState('');
             const [listModalData, setListModalData] = useState(null); // [NEW] 명단 모달 상태 추가
             const [isCapturing, setIsCapturing] = useState(false); // [NEW] 캡쳐 중 상태
             const [capturedImage, setCapturedImage] = useState(null); // [NEW] 생성된 이미지 데이터 상태
@@ -313,11 +330,18 @@
             const [teamData, setTeamData] = useState(null);
             const [localTeamData, setLocalTeamData] = useState(null);
 
+            const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false); // [NEW] 회원등록 모달 상태
             const [newMember, setNewMember] = useState({ 
                 name: '', birth: '', gender: '남성', position: 'all', level: '1', role: '회원',
                 coupleId: '', isEarlyBirth: false 
             });
+            
+            // [NEW] 탈퇴 관리용 상태
+            const [resigningMember, setResigningMember] = useState(null);
+            const [resignForm, setResignForm] = useState({ date: '', reason: '', isForced: false });
+
             const [editingMember, setEditingMember] = useState(null);
+            const [editingGuest, setEditingGuest] = useState(null);
             const [isBulkMode, setIsBulkMode] = useState(false);
             const [bulkPasteText, setBulkPasteText] = useState('');
             const [isPending, setIsPending] = useState(false);
@@ -357,9 +381,12 @@
             const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), []);
             const minuteOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')), []);
 
+            const activeMembers = useMemo(() => members.filter(m => !m.isResigned), [members]);
+            const resignedMembers = useMemo(() => members.filter(m => m.isResigned), [members]);
+
             const managers = useMemo(() => {
-                return members.filter(m => STAFF_ROLES.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
-            }, [members]);
+                return activeMembers.filter(m => STAFF_ROLES.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
+            }, [activeMembers]);
 
             // 상태 변경 시 sessionStorage에 저장하여 새로고침 시 유지
             useEffect(() => { sessionStorage.setItem('otp_view', view); }, [view]);
@@ -453,7 +480,7 @@
 
             const footerStats = useMemo(() => {
                 let label = "TOTAL"; 
-                let count = members.length;
+                let count = activeMembers.length;
                 if (view === 'setup') {
                     const m = meetingTimes.date ? parseInt(meetingTimes.date.split('-')[1], 10) : 0;
                     label = `MONTHLY(${m}월)`;
@@ -462,7 +489,7 @@
                     if (memberSubTab === 'monthly') {
                         const m = targetMonth ? parseInt(targetMonth.split('-')[1], 10) : 0;
                         label = `MONTHLY(${m}월)`;
-                        count = members.filter(m => {
+                        count = activeMembers.filter(m => {
                             if (STAFF_ROLES.includes(m.role)) return false; 
                             const status = monthlyStatuses[m.id];
                             const membershipInfo = getMembershipStatus(m, targetMonth);
@@ -471,19 +498,22 @@
                             if (membershipInfo && membershipInfo.active) return true;
                             return false;
                         }).length;
+                    } else if (memberSubTab === 'resigned') {
+                        label = "RESIGNED";
+                        count = resignedMembers.length;
                     } else {
                         label = "TOTAL"; 
-                        count = members.length;
+                        count = activeMembers.length;
                     }
                 } else {
                     label = "TOTAL"; 
-                    count = members.length;
+                    count = activeMembers.length;
                 }
                 return { label, count };
-            }, [view, memberSubTab, members, monthlyStatuses, setupTabMonthlyMembers.length, meetingTimes.date, targetMonth]);
+            }, [view, memberSubTab, activeMembers, resignedMembers, monthlyStatuses, setupTabMonthlyMembers.length, meetingTimes.date, targetMonth]);
 
             const filteredMonthlyMembers = useMemo(() => {
-                let list = [...members].sort((a,b)=>a.name.localeCompare(b.name));
+                let list = [...activeMembers].sort((a,b)=>a.name.localeCompare(b.name));
                 if (filterCategory !== 'all') {
                     list = list.filter(m => {
                         const type = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
@@ -491,18 +521,18 @@
                     });
                 }
                 return list;
-            }, [members, filterCategory, monthlyStatuses, monthlyReasons, targetMonth]);
+            }, [activeMembers, filterCategory, monthlyStatuses, monthlyReasons, targetMonth]);
 
             const filterCounts = useMemo(() => {
-                const counts = { all: members.length, monthly: 0, half: 0, full: 0, rest: 0, special: 0, unpaid: 0 };
-                members.forEach(m => {
+                const counts = { all: activeMembers.length, monthly: 0, half: 0, full: 0, rest: 0, special: 0, unpaid: 0 };
+                activeMembers.forEach(m => {
                     const type = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
                     if (type !== 'staff') { 
                         if (counts[type] !== undefined) counts[type]++;
                     }
                 });
                 return counts;
-            }, [members, monthlyStatuses, monthlyReasons, targetMonth]);
+            }, [activeMembers, monthlyStatuses, monthlyReasons, targetMonth]);
 
             const showAlert = (title, content, type = 'info', onConfirm = null) => setAlertModal({ show: true, title, content, type, onConfirm });
             const showConfirm = (title, content, onConfirm) => setAlertModal({ show: true, title, content, type: 'confirm', onConfirm });
@@ -679,6 +709,7 @@
                 try {
                     await getMemberCol().add({ ...newMember, birth: birthClean, createdAt: new Date().toISOString() });
                     setNewMember({ name: '', birth: '', gender: '남성', position: 'all', level: '1', role: '회원', coupleId: '', isEarlyBirth: false });
+                    setIsAddMemberModalOpen(false);
                     showAlert("성공", "회원이 등록되었습니다.");
                 } catch (e) { showAlert("오류", "회원 등록 실패"); }
             };
@@ -705,6 +736,7 @@
                         });
                         await batch.commit();
                         setBulkPasteText(''); setIsBulkMode(false);
+                        setIsAddMemberModalOpen(false);
                         showAlert("성공", "대량 등록 완료");
                     } catch (e) { showAlert("오류", "대량 등록 실패"); } finally { setIsPending(false); }
                 });
@@ -740,6 +772,40 @@
                     setNewGuest({ name: '', gender: '남성', inviterId: '', inviterName: '', level: '1' });
                     showAlert("성공", "게스트가 추가되었습니다.");
                 } catch (e) { showAlert("오류", "게스트 등록 실패"); }
+            };
+
+            const handleUpdateGuest = async () => {
+                if (!editingGuest.name.trim()) return showAlert("알림", "게스트 이름을 입력해주세요.");
+                const inviter = members.find(m => m.id === editingGuest.inviterId);
+                try {
+                    await getSessionCol().doc(editingGuest.id).update({
+                        name: editingGuest.name,
+                        gender: editingGuest.gender,
+                        level: editingGuest.level,
+                        inviterId: editingGuest.inviterId || '',
+                        inviterName: inviter ? inviter.name : '없음'
+                    });
+                    setEditingGuest(null);
+                    showAlert("성공", "게스트 정보가 수정되었습니다.");
+                } catch (e) { showAlert("오류", "게스트 수정 실패"); }
+            };
+
+            // 탈퇴 처리 함수
+            const handleResignConfirm = async () => {
+                if (!resignForm.date) return showAlert("알림", "탈퇴 일자를 선택해주세요.");
+                try {
+                    await getMemberCol().doc(resigningMember.id).update({
+                        isResigned: true,
+                        resignDate: resignForm.date,
+                        resignReason: resignForm.reason || '사유 미작성',
+                        isForcedResign: resignForm.isForced
+                    });
+                    setResigningMember(null);
+                    showAlert("성공", `${resigningMember.name} 님이 탈퇴 처리되었습니다.`);
+                } catch (e) {
+                    console.error(e);
+                    showAlert("오류", "탈퇴 처리에 실패했습니다.");
+                }
             };
 
             // [MODIFIED] Save with Waiting List Logic
@@ -832,6 +898,19 @@
                 } catch(e) {
                     console.error(e);
                     showAlert("오류", "수정 중 문제가 발생했습니다.");
+                }
+            };
+            
+            const handleUpdateLocation = async () => {
+                if (!selectedHistoryDetail) return;
+                try {
+                    await getHistoryCol().doc(selectedHistoryDetail.id).update({ location: editLocationValue });
+                    setSelectedHistoryDetail(prev => ({ ...prev, location: editLocationValue }));
+                    setIsEditingLocation(false);
+                    showAlert("수정 완료", "장소명이 변경되었습니다.");
+                } catch(e) {
+                    console.error(e);
+                    showAlert("오류", "장소명 수정 중 문제가 발생했습니다.");
                 }
             };
             
@@ -989,7 +1068,7 @@
                 let filtered = [];
                 let title = "";
 
-                const sortedMembers = [...members].sort((a,b) => a.name.localeCompare(b.name));
+                const sortedMembers = [...activeMembers].sort((a,b) => a.name.localeCompare(b.name));
 
                 if (listType === 'unpaid') {
                     filtered = sortedMembers.filter(m => getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth) === 'unpaid');
@@ -1013,7 +1092,7 @@
                         const t = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
                         return t === 'rest' || t === 'special';
                     });
-                    title = `${targetMonth} 휴식자 명단 (특별휴식 포함)`;
+                    title = `${targetMonth} 휴식자 명단 (전체)`;
                 }
 
                 if (filtered.length === 0) {
@@ -1024,18 +1103,29 @@
                     let tag = null;
                     let details = null;
 
+                    const info = getMembershipStatus(m, targetMonth);
+                    const statusType = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
+
                     if (listType === 'half' || listType === 'full') {
-                        const info = getMembershipStatus(m, targetMonth);
-                        const statusType = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
-                        if (statusType === 'rest') tag = "휴식중";
-                        if (statusType === 'special') tag = "특별휴식";
+                        if (statusType === 'rest' || statusType === 'special') tag = "휴식";
                         
                         if (info) {
                             details = `${info.endDateFormatted} 만료 | 잔여휴식 ${info.remainingRest}회`;
+                            if (statusType === 'special' && monthlyReasons[m.id]) {
+                                details += ` | 사유: ${monthlyReasons[m.id]}`;
+                            } else if (statusType === 'rest') {
+                                details += ` | 사유: ${info.type} 휴식`;
+                            }
                         }
                     } else if (listType === 'rest_all') {
-                        const statusType = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
-                        tag = statusType === 'special' ? '특별휴식' : '일반휴식';
+                        tag = '휴식';
+                        if (statusType === 'special' && monthlyReasons[m.id]) {
+                            details = `사유: ${monthlyReasons[m.id]}`;
+                        } else if (info && info.active) {
+                            details = `사유: ${info.type} 휴식`;
+                        } else {
+                            details = `사유: 일반 휴식`;
+                        }
                     }
                     
                     return { id: m.id, name: m.name, tag, details };
@@ -1267,7 +1357,7 @@
                                 validMembers = data.memberIds;
                             }
                             
-                            members.forEach(member => {
+                            activeMembers.forEach(member => {
                                 const membershipInfo = getMembershipStatus(member, docKey);
                                 if (STAFF_ROLES.includes(member.role)) {
                                      if (!validMembers.includes(member.id)) validMembers.push(member.id);
@@ -1284,7 +1374,7 @@
                             
                             setSetupTabMonthlyMembers(validMembers);
                         } else {
-                            const autoMembers = members.filter(m => {
+                            const autoMembers = activeMembers.filter(m => {
                                 if (STAFF_ROLES.includes(m.role)) return true;
                                 const info = getMembershipStatus(m, docKey);
                                 return info && info.active;
@@ -1299,9 +1389,14 @@
             useEffect(() => {
                 setModal({ type: null, data: null });
                 setEditingMember(null);
+                setEditingGuest(null);
                 setIsGuestModalOpen(false);
+                setIsAddMemberModalOpen(false);
+                setIsBulkMode(false);
                 setLockModalMode(null);
                 setSelectedHistoryDetail(null);
+                setIsEditingLocation(false);
+                setEditLocationValue('');
                 setAlertModal(prev => ({...prev, show: false}));
                 setIsPasswordChangeModalOpen(false);
                 setIsManagerSelectorOpen(false); 
@@ -1310,6 +1405,7 @@
                 setHistoryEditTarget(null); 
                 setListModalData(null); 
                 setCapturedImage(null);
+                setResigningMember(null);
             }, [view]);
 
             useEffect(() => {
@@ -1462,7 +1558,6 @@
                                                         const isWaiting = rank > limit;
 
                                                         if (isWaiting) {
-                                                            // Waiting List Style
                                                             cardStyle = "bg-slate-50 border-4 border-dashed border-orange-300 text-slate-400";
                                                             nameColor = "text-slate-500";
                                                         } else if (p.checkedIn) {
@@ -1482,7 +1577,6 @@
                                                             <button 
                                                                 key={p.id} 
                                                                 onClick={() => {
-                                                                    // Alert for waiting list click
                                                                     if (isWaiting) {
                                                                         return showAlert("대기자 안내", `선착순(${limit}명) 마감되었습니다. 대기자는 출석 체크를 할 수 없습니다.`);
                                                                     }
@@ -1507,7 +1601,6 @@
                                                                                 {p.status}
                                                                             </span>
                                                                         )}
-                                                                        {/* Waiting Badge */}
                                                                         {isWaiting && (
                                                                             <span className="text-[10px] font-black px-2 py-1 rounded-full shadow-sm bg-orange-400 text-white">
                                                                                 대기
@@ -1570,7 +1663,6 @@
                                                 <select className="flex-1 p-4 bg-slate-50 rounded-2xl font-black outline-none border-none" value={meetingTimes.end.split(':')[1]} onChange={e => updateMeetingTimeSettings({...meetingTimes, end: `${meetingTimes.end.split(':')[0]}:${e.target.value}`})}>{minuteOptions.map(m => <option key={m} value={m}>{m}분</option>)}</select>
                                             </div>
                                         </div>
-                                        {/* [NEW] Max Limit Input */}
                                         <div className="text-left">
                                             <label className="text-[10px] font-black text-slate-400 ml-2 uppercase">Limit</label>
                                             <input
@@ -1592,8 +1684,8 @@
                                                         updateMeetingTimeSettings({...meetingTimes, managerId: e.target.value, managerName: target ? target.name : ""});
                                                     }}
                                                 >
-                                                    <option value="">담당자 선택 (회원 전체)</option>
-                                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                                    <option value="">담당자 선택 (전체)</option>
+                                                    {activeMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
                                                         <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
                                                     ))}
                                                 </select>
@@ -1617,7 +1709,6 @@
                                         </div>
                                     </div>
 
-                                    {/* [추가] 선착순 현황 바 */}
                                     <div className="mt-8 mb-4 bg-slate-100 rounded-full p-1 flex items-center relative h-10 overflow-hidden">
                                         <div 
                                             className="absolute top-0 bottom-0 left-0 bg-blue-500 transition-all duration-500 ease-out" 
@@ -1626,23 +1717,20 @@
                                         {activeParticipants.length > (meetingTimes.maxLimit || 18) && (
                                             <div 
                                                 className="absolute top-0 bottom-0 bg-orange-400 transition-all duration-500 ease-out"
-                                                style={{ left: '100%', width: '1000px' }} // 18명 초과분 시각적 표시 (간략화)
+                                                style={{ left: '100%', width: '1000px' }}
                                             ></div>
                                         )}
-                                        {/* [수정] 텍스트 색상 흰색 고정 및 그림자 추가 (mix-blend-difference 제거) */}
                                         <div className="absolute inset-0 flex items-center justify-between px-4 text-[10px] font-black z-10 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
                                             <span>ENTRY: {Math.min(activeParticipants.length, (meetingTimes.maxLimit || 18))} / {meetingTimes.maxLimit || 18}</span>
                                             {activeParticipants.length > (meetingTimes.maxLimit || 18) && <span>WAITING: {activeParticipants.length - (meetingTimes.maxLimit || 18)}</span>}
                                         </div>
                                     </div>
                                     
-                                    {/* 게스트 리스트 복원 및 가시성 확보 */}
                                     {activeParticipants.some(p => p.isGuest) && (
                                         <div className="mb-4 animate-zoom-in text-left">
                                             <h2 className="text-xl font-black mb-4 flex items-center gap-2 px-1 text-blue-600 text-left">추가된 게스트</h2>
                                             <div className="flex flex-wrap gap-2">
                                                 {activeParticipants.filter(p => p.isGuest).map(g => {
-                                                    // 선착순 계산
                                                     const rank = activeParticipants.findIndex(ap => ap.id === g.id) + 1;
                                                     const limit = meetingTimes.maxLimit || 18;
                                                     const isWaiting = rank > limit;
@@ -1653,7 +1741,10 @@
                                                                 {isWaiting ? <span className="ml-1 text-[9px] bg-orange-200 text-orange-700 px-1 rounded">대기 {rank - limit}</span> : <span className="ml-1 opacity-60">({g.level}단)</span>}
                                                                 {g.inviterName !== '없음' && <small className="ml-2 opacity-70">초대:{g.inviterName}</small>}
                                                             </span>
-                                                            <button onClick={() => getSessionCol().doc(g.id).delete()} className="text-red-400 hover:text-red-600 p-0.5"><Icon.Trash size={14}/></button>
+                                                            <div className="flex items-center gap-1">
+                                                                <button onClick={() => setEditingGuest({...g})} className={`${g.gender === '남성' ? 'text-blue-400 hover:text-blue-600' : 'text-pink-400 hover:text-pink-600'} p-0.5`}><Icon.Edit size={14}/></button>
+                                                                <button onClick={() => getSessionCol().doc(g.id).delete()} className="text-red-400 hover:text-red-600 p-0.5"><Icon.Trash size={14}/></button>
+                                                            </div>
                                                         </div>
                                                     );
                                                 })}
@@ -1663,12 +1754,10 @@
                                 </div>
                                 <h2 className="text-2xl font-black mb-6 text-slate-700 text-left"><Icon.CheckCircle size={24} className="text-green-500" /> 주간 참여자 선정</h2>
                                 <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 text-left text-xs">
-                                    {/* [수정] 선정 탭 명단 로직 수정 (월별 참여자 필터링 적용) */}
                                     {(() => {
-                                        // 1. 현재 셋업 탭에 설정된 날짜의 월별 참여자 리스트 가져오기
                                         const currentPool = setupTabMonthlyMembers.length > 0 
-                                            ? members.filter(m => setupTabMonthlyMembers.includes(m.id))
-                                            : []; // 데이터가 없으면 비워둠 (안내 메시지 출력)
+                                            ? activeMembers.filter(m => setupTabMonthlyMembers.includes(m.id))
+                                            : []; 
 
                                         if (currentPool.length === 0) {
                                             return (
@@ -1680,12 +1769,10 @@
                                         }
 
                                         return currentPool.sort((a,b)=>a.name.localeCompare(b.name)).map(m => {
-                                            // 해당 멤버의 참여 데이터 찾기
                                             const participant = activeParticipants.find(p => p.memberId === m.id);
                                             const isSel = !!participant;
                                             const limit = meetingTimes.maxLimit || 18;
                                             
-                                            // 선착순 순위 계산
                                             let rankDisplay = null;
                                             let isWaiting = false;
                                             if (isSel) {
@@ -1710,7 +1797,6 @@
                                                         <span className={`text-[9px] font-bold ${m.gender === '남성' ? 'text-blue-500' : 'text-pink-500'}`}>{m.gender}</span>
                                                     </div>
                                                     
-                                                    {/* 선착순 번호 / 대기 번호 표시 */}
                                                     {isSel && (
                                                         <div className={`absolute top-2 right-2 text-[9px] font-black px-1.5 py-0.5 rounded-full animate-zoom-in ${isWaiting ? 'bg-orange-200 text-orange-700' : 'bg-green-200 text-green-700'}`}>
                                                             {rankDisplay}
@@ -1744,19 +1830,39 @@
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl overflow-hidden animate-zoom-in text-left" onClick={() => setSelectedHistoryDetail(null)}>
+                                    <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl overflow-hidden animate-zoom-in text-left" onClick={() => { setSelectedHistoryDetail(null); setIsEditingLocation(false); }}>
                                         <div className="p-6 sm:p-8 bg-slate-900 text-white flex justify-between items-center" onClick={e => e.stopPropagation()}>
-                                            <button onClick={() => setSelectedHistoryDetail(null)} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all shadow-none outline-none border-none"><Icon.ArrowLeft size={20} /></button>
-                                            <div className="text-right">
+                                            <button onClick={() => { setSelectedHistoryDetail(null); setIsEditingLocation(false); }} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-all shadow-none outline-none border-none"><Icon.ArrowLeft size={20} /></button>
+                                            <div className="text-right flex flex-col items-end">
                                                 <h3 className="text-xl sm:text-2xl font-black">{selectedHistoryDetail.date}</h3>
-                                                <p className="text-[10px] font-bold opacity-50">{selectedHistoryDetail.meetingTime} | {selectedHistoryDetail.location || "장소 미지정"}</p>
+                                                <div className="flex items-center gap-1 mt-0.5">
+                                                    <p className="text-[10px] font-bold opacity-50">{selectedHistoryDetail.meetingTime} | </p>
+                                                    {isEditingLocation ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <input 
+                                                                type="text" 
+                                                                className="bg-slate-800 text-white placeholder-slate-400 text-[10px] px-2 py-0.5 rounded border border-slate-600 outline-none w-24 text-right font-bold" 
+                                                                value={editLocationValue} 
+                                                                onChange={e => setEditLocationValue(e.target.value)} 
+                                                                autoFocus
+                                                                onClick={e => e.stopPropagation()}
+                                                            />
+                                                            <button onClick={(e) => { e.stopPropagation(); handleUpdateLocation(); }} className="text-blue-400 hover:text-blue-300 p-0.5"><Icon.Check size={12} /></button>
+                                                            <button onClick={(e) => { e.stopPropagation(); setIsEditingLocation(false); }} className="text-red-400 hover:text-red-300 p-0.5"><Icon.RotateCcw size={12} /></button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1 group cursor-pointer" onClick={(e) => { e.stopPropagation(); setEditLocationValue(selectedHistoryDetail.location || ''); setIsEditingLocation(true); }}>
+                                                            <p className="text-[10px] font-bold opacity-50 group-hover:text-blue-300 transition-colors">{selectedHistoryDetail.location || "장소 미지정"}</p>
+                                                            <Icon.Edit2 size={10} className="text-slate-500 group-hover:text-blue-300 transition-colors" />
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <p className="text-[10px] font-black text-blue-300 mt-0.5 tracking-tighter uppercase text-xs">Managed By: {selectedHistoryDetail.managerName || "미지정"}</p>
                                             </div>
                                         </div>
                                         <div className="p-5 sm:p-6 text-left" onClick={e => e.stopPropagation()}>
                                             <div className="flex gap-2 mb-6 text-xs"><button onClick={() => setHistorySortKey('time')} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'time' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 시간순</button><button onClick={() => { if (historySortKey === 'status') { setHistorySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); } else { setHistorySortKey('status'); setHistorySortOrder('asc'); } }} className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${historySortKey === 'status' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>출석 구분순 {historySortKey === 'status' && (historySortOrder === 'asc' ? '▲' : '▼')}</button></div>
                                             <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar text-left text-xs">
-                                                {/* FIX APPLIED: Using sortedHistoryRecords instead of selectedHistoryDetail.records */}
                                                 {sortedHistoryRecords.map((r, idx) => (
                                                     <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-[20px] text-left">
                                                         <div className="flex items-center gap-3 text-left"><span className="font-black text-base text-slate-700">{r.name}</span><span className="text-[9px] font-black text-slate-400">{r.level}단</span><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${getGenderPastelClass(r.gender)}`}>{r.gender}</span></div>
@@ -1769,7 +1875,6 @@
                                                             }`}>{r.status}</span>
                                                             <span className="text-[10px] font-black text-slate-400 min-w-[55px] text-right">{r.checkInTime}</span>
                                                             
-                                                            {/* [NEW] Edit Button for History Record */}
                                                             <button onClick={(e) => { e.stopPropagation(); setHistoryEditTarget({ docId: selectedHistoryDetail.id, recordIndex: r.originalIndex, currentStatus: r.status, name: r.name }); }} className="p-1.5 ml-1 text-slate-300 hover:text-blue-500 bg-slate-100 hover:bg-blue-50 rounded-lg transition-all">
                                                                 <Icon.Edit2 size={12} />
                                                             </button>
@@ -1790,7 +1895,7 @@
                                     <div className="flex justify-between items-center mb-6">
                                         <h2 className="text-3xl font-black text-blue-600 tracking-tighter text-left">Master Directory</h2>
                                         
-                                        {/* 소 탭 (회원관리 / 월별참여) */}
+                                        {/* 소 탭 (회원관리 / 월별참여 / 탈퇴자명단) */}
                                         <div className="flex bg-slate-100 p-1 rounded-xl">
                                             <button 
                                                 onClick={() => setMemberSubTab('directory')}
@@ -1804,6 +1909,12 @@
                                             >
                                                 월별 참여
                                             </button>
+                                            <button 
+                                                onClick={() => setMemberSubTab('resigned')}
+                                                className={`px-4 py-2 text-xs font-black rounded-lg transition-all ${memberSubTab === 'resigned' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                            >
+                                                탈퇴자 명단
+                                            </button>
                                         </div>
                                     </div>
 
@@ -1811,46 +1922,107 @@
                                     {memberSubTab === 'directory' && (
                                         <div className="animate-fade-in">
                                             <div className="flex justify-end mb-6">
-                                                 <button onClick={() => setIsBulkMode(!isBulkMode)} className={`px-6 py-2.5 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${isBulkMode ? 'bg-slate-900 text-white shadow-lg' : 'bg-blue-50 text-blue-600'}`}><Icon.FileSpreadsheet size={18}/>{isBulkMode ? '개별 등록' : '대량 등록'}</button>
+                                                 <button onClick={() => setIsAddMemberModalOpen(true)} className="px-6 py-2.5 rounded-2xl bg-blue-600 text-white font-black text-sm transition-all shadow-xl shadow-blue-100 flex items-center gap-2 active:scale-95"><Icon.UserPlus size={18}/>회원 등록</button>
                                             </div>
 
-                                            {isBulkMode ? (
-                                                <div className="animate-zoom-in text-left text-xs"><textarea className="w-full h-64 p-6 bg-slate-50 rounded-3xl font-bold text-sm border-2 border-transparent focus:border-blue-300 resize-none transition-all custom-scrollbar shadow-none outline-none border-none" placeholder="이름, 생일, 성별, 포지션, 단계..." value={bulkPasteText} onChange={e => setBulkPasteText(e.target.value)} /><div className="flex justify-end gap-3 mt-6 text-xs text-left"><button onClick={() => setBulkPasteText('')} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black active:scale-95 transition-all border-none outline-none">초기화</button><button onClick={handleBulkAdd} className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 active:scale-95 transition-all shadow-blue-100 uppercase">Submit Bulk</button></div></div>
-                                            ) : (
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 animate-zoom-in text-left text-xs mb-8">
-                                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase text-xs">Name</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100" value={newMember.name} onChange={e=>setNewMember({...newMember, name: e.target.value})} placeholder="성함" /></div>
-                                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 flex justify-between uppercase text-left"><span>Birth</span><label className="flex items-center gap-1 cursor-pointer select-none"><input type="checkbox" checked={newMember.isEarlyBirth} onChange={e=>setNewMember({...newMember, isEarlyBirth: e.target.checked})} className="scale-75" /><span className="text-[9px] text-blue-600 font-black">빠른</span></label></label><input type="text" maxLength="8" className="p-4 bg-slate-50 rounded-2xl font-black text-sm outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={newMember.birth} onChange={e=>setNewMember({...newMember, birth: e.target.value.replace(/[^0-9]/g, '')})} placeholder="19900101" /></div>
-                                                    <div className="flex flex-col gap-1 text-left text-xs text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase text-xs text-left">Gender</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left" value={newMember.gender} onChange={e=>setNewMember({...newMember, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
-                                                    
-                                                    <div className="flex flex-col gap-1 text-left text-xs text-left">
-                                                        <label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase text-xs text-left">Position</label>
-                                                        <select 
-                                                            className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left" 
-                                                            value={newMember.position || 'ALL'} 
-                                                            onChange={e => setNewMember({...newMember, position: e.target.value})}
-                                                        >
-                                                            {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
-                                                        </select>
-                                                    </div>
-
-                                                    <div className="flex flex-col gap-1 text-left text-xs text-left"><label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase text-xs text-left">Level</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left" value={newMember.level} onChange={e=>setNewMember({...newMember, level: e.target.value})}>{newMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
-                                                    <div className="sm:col-span-1 flex items-end"><button onClick={handleAddMember} className="w-full h-14 bg-blue-600 text-white rounded-[20px] font-black shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-blue-100 uppercase text-xs sm:text-sm">Register</button></div>
-                                                </div>
-                                            )}
-
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-left text-xs sm:text-sm text-left">
-                                                {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
-                                                    <div key={m.id} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative group hover:shadow-md transition-all text-left">
-                                                        <div className="flex items-start justify-between text-left">
-                                                            <div className="flex items-center gap-4 text-left"><div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-black shadow-lg ${getGenderPastelClass(m.gender)}`}>{m.level}</div><div className="text-left"><h3 className="text-2xl font-black text-slate-900 flex items-center gap-2 text-left">{m.name}{m.role && m.role !== '회원' && <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black ${getRoleBadgeClass(m.role)} shadow-sm uppercase text-xs`}>{m.role}</span>}</h3><div className="flex gap-1.5 mt-1 text-left text-xs text-left"><span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${getPosColorClass(m.position)} shadow-sm`}>{m.position}</span><span className="text-[11px] font-bold text-slate-300 text-left">{formatBirth(m.birth)}</span></div></div></div>
-                                                            <div className="flex gap-2 text-right"><button onClick={() => setEditingMember({...m})} className="text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none border-none"><Icon.Edit size={20}/></button><button onClick={() => showConfirm("회원 삭제", `${m.name} 님을 삭제하시겠습니까?`, async () => { await getMemberCol().doc(m.id).delete(); })} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1 shadow-none outline-none border-none"><Icon.Trash size={20}/></button></div>
+                                                {activeMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                                    <div key={m.id} className="bg-white p-5 sm:p-6 rounded-[32px] border border-slate-100 shadow-sm relative group hover:shadow-md transition-all text-left">
+                                                        <div className="flex items-start gap-4 text-left">
+                                                            <div className={`flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-lg sm:text-xl font-black shadow-lg ${getGenderPastelClass(m.gender)}`}>{m.level}</div>
+                                                            <div className="flex flex-col min-w-0 flex-1">
+                                                                <div className="flex items-center justify-between w-full mb-1.5">
+                                                                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 whitespace-nowrap">{m.name}</h3>
+                                                                    <div className="flex flex-shrink-0 gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+                                                                        <button onClick={() => setEditingMember({...m})} className="text-slate-400 hover:text-blue-500 p-1.5 bg-slate-50 hover:bg-blue-50 rounded-lg shadow-none outline-none border-none transition-all"><Icon.Edit size={14}/></button>
+                                                                        <button onClick={() => {
+                                                                            setResigningMember(m);
+                                                                            setResignForm({ date: new Date().toISOString().split('T')[0], reason: '', isForced: false });
+                                                                        }} className="text-slate-400 hover:text-orange-500 p-1.5 bg-slate-50 hover:bg-orange-50 rounded-lg shadow-none outline-none border-none transition-all"><Icon.UserMinus size={14}/></button>
+                                                                        <button onClick={() => showConfirm("회원 삭제", `${m.name} 님을 영구 삭제하시겠습니까?`, async () => { await getMemberCol().doc(m.id).delete(); })} className="text-slate-400 hover:text-red-500 p-1.5 bg-slate-50 hover:bg-red-50 rounded-lg shadow-none outline-none border-none transition-all"><Icon.Trash size={14}/></button>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex flex-nowrap items-center gap-1.5 w-full overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
+                                                                    <span className={`flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full border ${getPosColorClass(m.position)} shadow-sm`}>{m.position}</span>
+                                                                    {m.role && m.role !== '회원' && <span className={`flex-shrink-0 text-[9px] px-2 py-0.5 rounded-lg font-black ${getRoleBadgeClass(m.role)} shadow-sm uppercase`}>{m.role}</span>}
+                                                                    {m.coupleId && <span className="flex-shrink-0 inline-flex items-center gap-1 bg-pink-50 text-pink-500 px-2 py-0.5 rounded-full text-[10px] font-black border border-pink-100 shadow-sm"><Icon.Heart size={10} className="animate-pulse"/> {getCoupleName(m.coupleId)}</span>}
+                                                                </div>
+                                                                <div className="mt-1 whitespace-nowrap">
+                                                                    <span className="text-[11px] font-bold text-slate-400">{formatBirth(m.birth)}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        {m.coupleId && <div className="inline-flex items-center gap-2 bg-pink-50 text-pink-600 px-4 py-2 rounded-full text-xs font-black border border-pink-100 mt-4 shadow-sm"><Icon.Heart size={14} className="animate-pulse text-left"/> {getCoupleName(m.coupleId)}</div>}
                                                     </div>
                                                 ))}
-                                                {members.length === 0 && (
+                                                {activeMembers.length === 0 && (
                                                     <div className="col-span-full py-20 text-center text-slate-400 font-bold bg-slate-50 rounded-[32px] border border-dashed border-slate-200">
-                                                        등록된 회원이 없습니다.
+                                                        등록된 활성 회원이 없습니다.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* 4-1-2. 탈퇴자 명단 (신규) */}
+                                    {memberSubTab === 'resigned' && (
+                                        <div className="animate-fade-in">
+                                            <div className="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center">
+                                                <p className="text-xs font-bold text-slate-500">총 <span className="text-red-500 font-black">{resignedMembers.length}</span>명의 탈퇴자가 있습니다.</p>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-left text-xs sm:text-sm text-left">
+                                                {resignedMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                                    <div key={m.id} className="bg-slate-50 p-5 sm:p-6 rounded-[32px] border border-slate-200 shadow-sm relative group hover:shadow-md transition-all text-left opacity-70">
+                                                        <div className="flex items-start gap-4 text-left grayscale">
+                                                            <div className={`flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-lg sm:text-xl font-black shadow-inner ${getGenderPastelClass(m.gender)}`}>{m.level}</div>
+                                                            <div className="flex flex-col min-w-0 flex-1">
+                                                                <div className="flex items-center justify-between w-full mb-1.5">
+                                                                    <h3 className="text-xl sm:text-2xl font-black text-slate-600 whitespace-nowrap line-through decoration-slate-400 decoration-2 flex items-center gap-2">
+                                                                        {m.name}
+                                                                        {m.isForcedResign && <span className="text-[9px] px-1.5 py-0.5 bg-red-100 text-red-600 border border-red-200 rounded font-black not-italic no-underline">강제탈퇴</span>}
+                                                                    </h3>
+                                                                    <div className="flex flex-shrink-0 gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+                                                                        <button onClick={() => showConfirm("복구", `${m.name} 님을 다시 활성 회원으로 복구하시겠습니까?`, async () => { 
+                                                                            await getMemberCol().doc(m.id).update({
+                                                                                isResigned: false,
+                                                                                resignDate: firebase.firestore.FieldValue.delete(),
+                                                                                resignReason: firebase.firestore.FieldValue.delete(),
+                                                                                isForcedResign: firebase.firestore.FieldValue.delete()
+                                                                            }); 
+                                                                        })} className="text-slate-400 hover:text-green-500 p-1.5 bg-white hover:bg-green-50 rounded-lg shadow-sm outline-none border-none transition-all"><Icon.UserCheck size={14}/></button>
+                                                                        <button onClick={() => showConfirm("회원 삭제", `${m.name} 님을 영구 삭제하시겠습니까?`, async () => { await getMemberCol().doc(m.id).delete(); })} className="text-slate-400 hover:text-red-500 p-1.5 bg-white hover:bg-red-50 rounded-lg shadow-sm outline-none border-none transition-all"><Icon.Trash size={14}/></button>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex flex-nowrap items-center gap-1.5 w-full overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
+                                                                    <span className={`flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full border ${getPosColorClass(m.position)} shadow-sm`}>{m.position}</span>
+                                                                    {m.role && m.role !== '회원' && <span className={`flex-shrink-0 text-[9px] px-2 py-0.5 rounded-lg font-black ${getRoleBadgeClass(m.role)} shadow-sm uppercase`}>{m.role}</span>}
+                                                                </div>
+                                                                <div className="mt-1 whitespace-nowrap">
+                                                                    <span className="text-[11px] font-bold text-slate-400">{formatBirth(m.birth)}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {/* 탈퇴 상세 정보 블록 */}
+                                                        <div className="mt-3 p-3 bg-white/50 rounded-xl border border-slate-200 text-[10px] flex flex-col gap-1 w-full text-slate-500">
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="font-bold opacity-70">탈퇴일</span>
+                                                                <span className="font-black">{m.resignDate || '-'}</span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="font-bold opacity-70">사유</span>
+                                                                <span className="font-black truncate max-w-[120px] text-right" title={m.resignReason}>{m.resignReason || '-'}</span>
+                                                            </div>
+                                                            {m.isForcedResign && (
+                                                                <div className="mt-1 text-red-500 font-black text-right border-t border-slate-200 pt-1 flex justify-end gap-1 items-center">
+                                                                    <Icon.Lock size={10} /> 6개월간 재가입 불가
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {resignedMembers.length === 0 && (
+                                                    <div className="col-span-full py-20 text-center text-slate-400 font-bold bg-slate-50 rounded-[32px] border border-dashed border-slate-200">
+                                                        탈퇴한 회원이 없습니다.
                                                     </div>
                                                 )}
                                             </div>
@@ -1924,6 +2096,7 @@
                                                     
                                                     let styleType = 'none';
                                                     let label = '미납';
+                                                    let restReasonText = null;
 
                                                     if (isStaff) {
                                                         styleType = 'staff';
@@ -1931,7 +2104,8 @@
                                                     } else if (membershipInfo && membershipInfo.active) {
                                                         if (status === 'rest') {
                                                             styleType = 'rest';
-                                                            label = reason ? '특별휴식' : '휴식중';
+                                                            label = '휴식';
+                                                            restReasonText = reason ? reason : `${membershipInfo.type} 휴식`;
                                                         } else {
                                                             if (membershipInfo.type === '반년') styleType = 'half';
                                                             else styleType = 'full';
@@ -1943,7 +2117,8 @@
                                                             label = '월납';
                                                         } else if (status === 'rest') { 
                                                             styleType = 'rest';
-                                                            label = reason ? '특별휴식' : '휴식비';
+                                                            label = '휴식';
+                                                            restReasonText = reason ? reason : null;
                                                         }
                                                     }
 
@@ -1994,7 +2169,7 @@
                                                             <button onClick={() => !isStaff && setSelectedMonthlyMember(m)} className="flex-1 flex flex-col items-start pl-2 text-left" disabled={isStaff}>
                                                                 <span className={`text-base font-black flex flex-wrap items-center gap-1.5 ${nameColor}`}>
                                                                     {m.name}
-                                                                    {/* 장기 회원 정보 표시: 휴식 상태여도 표시되도록 조건 수정 */}
+                                                                    {/* 장기 회원 정보 표시 */}
                                                                     {membershipInfo && membershipInfo.active && (
                                                                         <span className={`text-[9px] font-normal px-1.5 py-0.5 rounded-md border ${
                                                                             membershipInfo.type === '반년' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'
@@ -2002,7 +2177,12 @@
                                                                             <b className="font-bold">{membershipInfo.endDateFormatted} 만료</b> <span className="opacity-50">|</span> 잔여휴식 <b className="font-bold">{membershipInfo.remainingRest}회</b>
                                                                         </span>
                                                                     )}
-                                                                    {reason && <span className="text-[9px] font-normal px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 border border-purple-200">📝 {reason}</span>}
+                                                                    {/* 휴식 사유 표시 */}
+                                                                    {restReasonText && (
+                                                                        <span className="text-[9px] font-normal px-1.5 py-0.5 rounded-md bg-yellow-50 text-yellow-700 border border-yellow-200">
+                                                                            📝 {restReasonText}
+                                                                        </span>
+                                                                    )}
                                                                 </span>
                                                                 <span className="text-[10px] text-slate-400 font-bold">{m.level}단 / {m.position} / {m.gender === '남성' ? 'M' : 'F'}</span>
                                                             </button>
@@ -2157,7 +2337,7 @@
                             <div className="bg-white rounded-[48px] w-full max-w-2xl p-10 shadow-2xl animate-zoom-in text-left flex flex-col max-h-[80vh] text-left" onClick={e => e.stopPropagation()}>
                                 <h2 className="text-2xl font-black mb-6 text-blue-600 tracking-tighter uppercase text-left">Pick Manager</h2>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 overflow-y-auto pr-2 custom-scrollbar flex-1 mb-8 text-left text-xs">
-                                    {members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
+                                    {activeMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m => (
                                         <button key={m.id} onClick={() => { updateMeetingTimeSettings({...meetingTimes, managerId: m.id, managerName: m.name}); setIsManagerSelectorOpen(false); }} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center ${meetingTimes.managerId === m.id ? 'border-blue-600 bg-blue-50' : 'bg-white border-slate-100 hover:border-blue-200 shadow-sm'}`}><span className="font-black text-slate-800 text-left">{m.name}</span><span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-xs text-left">{m.role}</span></button>
                                     ))}
                                 </div>
@@ -2175,13 +2355,96 @@
                                     <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Name</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={newGuest.name} onChange={e=>setNewGuest({...newGuest, name: e.target.value})} placeholder="이름 입력" /></div>
                                     <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Gender</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={newGuest.gender} onChange={e=>setNewGuest({...newGuest, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
                                     <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Level</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={newGuest.level} onChange={e=>setNewGuest({...newGuest, level: e.target.value})}>{newGuest.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
-                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Inviter</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={newGuest.inviterId} onChange={e=>setNewGuest({...newGuest, inviterId: e.target.value})}><option value="">없음</option>{members.sort((a,b)=>a.name.localeCompare(b.name)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Inviter</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={newGuest.inviterId} onChange={e=>setNewGuest({...newGuest, inviterId: e.target.value})}><option value="">없음</option>{activeMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
                                 </div>
                                 <div className="flex gap-3"><button onClick={() => setIsGuestModalOpen(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={handleAddGuest} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all shadow-blue-100 uppercase text-xs">Add</button></div>
                             </div>
                         </div>
                     )}
 
+                    {/* 회원 등록 모달 (팝업) */}
+                    {isAddMemberModalOpen && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setIsAddMemberModalOpen(false)}>
+                            <div className="bg-white rounded-[48px] w-full max-w-lg p-8 sm:p-10 shadow-2xl animate-zoom-in text-left text-xs" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-8">
+                                    <h2 className="text-2xl font-black text-blue-600 tracking-tighter uppercase">Add Member</h2>
+                                    <button onClick={() => setIsBulkMode(!isBulkMode)} className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 ${isBulkMode ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                                        <Icon.FileSpreadsheet size={14}/>{isBulkMode ? '개별 등록' : '대량 등록'}
+                                    </button>
+                                </div>
+
+                                {isBulkMode ? (
+                                    <div className="animate-fade-in text-left text-xs">
+                                        <textarea className="w-full h-48 p-5 bg-slate-50 rounded-2xl font-bold text-sm border-2 border-transparent focus:border-blue-300 resize-none transition-all custom-scrollbar shadow-inner outline-none mb-6" placeholder="이름, 생일, 성별, 포지션, 단계..." value={bulkPasteText} onChange={e => setBulkPasteText(e.target.value)} />
+                                        <div className="flex gap-3 text-xs text-left">
+                                            <button onClick={() => { setIsAddMemberModalOpen(false); setBulkPasteText(''); }} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black active:scale-95 transition-all border-none outline-none">취소</button>
+                                            <button onClick={handleBulkAdd} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl hover:bg-blue-700 active:scale-95 transition-all shadow-blue-100 uppercase">Submit Bulk</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="animate-fade-in text-left text-xs">
+                                        <div className="grid grid-cols-2 gap-4 mb-8">
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Name</label>
+                                                <input type="text" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100" value={newMember.name} onChange={e=>setNewMember({...newMember, name: e.target.value})} placeholder="성함" />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[10px] font-black text-slate-400 ml-1 flex justify-between uppercase">
+                                                    <span>Birth</span>
+                                                    <label className="flex items-center gap-1 cursor-pointer select-none">
+                                                        <input type="checkbox" checked={newMember.isEarlyBirth} onChange={e=>setNewMember({...newMember, isEarlyBirth: e.target.checked})} className="scale-75" />
+                                                        <span className="text-[9px] text-blue-600 font-black">빠른</span>
+                                                    </label>
+                                                </label>
+                                                <input type="text" maxLength="8" className="p-4 bg-slate-50 rounded-2xl font-black text-sm outline-none border-2 border-transparent focus:border-blue-100" value={newMember.birth} onChange={e=>setNewMember({...newMember, birth: e.target.value.replace(/[^0-9]/g, '')})} placeholder="19900101" />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Gender</label>
+                                                <select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100" value={newMember.gender} onChange={e=>setNewMember({...newMember, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}>
+                                                    <option>남성</option>
+                                                    <option>여성</option>
+                                                </select>
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Position</label>
+                                                <select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100" value={newMember.position || 'ALL'} onChange={e => setNewMember({...newMember, position: e.target.value})}>
+                                                    {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="flex flex-col gap-1 col-span-2">
+                                                <label className="text-[10px] font-black text-slate-400 ml-1 uppercase">Level</label>
+                                                <select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100" value={newMember.level} onChange={e=>setNewMember({...newMember, level: e.target.value})}>
+                                                    {newMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button onClick={() => setIsAddMemberModalOpen(false)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none text-xs sm:text-sm">취소</button>
+                                            <button onClick={handleAddMember} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all shadow-blue-100 uppercase text-xs sm:text-sm">Register</button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 게스트 수정 모달 */}
+                    {editingGuest && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setEditingGuest(null)}>
+                            <div className="bg-white rounded-[48px] w-full max-w-md p-10 shadow-2xl animate-zoom-in text-left text-xs sm:text-sm" onClick={e => e.stopPropagation()}>
+                                <h2 className="text-2xl font-black mb-8 text-blue-600 tracking-tighter uppercase">Edit Guest</h2>
+                                <div className="space-y-5 mb-8 text-left text-xs">
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Name</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none" value={editingGuest.name} onChange={e=>setEditingGuest({...editingGuest, name: e.target.value})} placeholder="이름 입력" /></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Gender</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={editingGuest.gender} onChange={e=>setEditingGuest({...editingGuest, gender: e.target.value, level: e.target.value === '남성' ? '1' : '7'})}><option>남성</option><option>여성</option></select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Level</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={String(editingGuest.level)} onChange={e=>setEditingGuest({...editingGuest, level: e.target.value})}>{editingGuest.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 uppercase text-xs">Inviter</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-100 outline-none shadow-none text-xs" value={editingGuest.inviterId || ''} onChange={e=>setEditingGuest({...editingGuest, inviterId: e.target.value})}><option value="">없음</option>{activeMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                </div>
+                                <div className="flex gap-3"><button onClick={() => setEditingGuest(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={handleUpdateGuest} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all shadow-blue-100 uppercase text-xs">Save</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 회원 정보 수정 모달 */}
                     {editingMember && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setEditingMember(null)}>
                             <div className="bg-white rounded-[48px] w-full max-w-lg p-10 shadow-2xl animate-zoom-in text-left text-xs" onClick={e => e.stopPropagation()}>
@@ -2189,7 +2452,7 @@
                                 <div className="grid grid-cols-2 gap-4 mb-8 text-left text-xs">
                                     <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1">이름</label><input type="text" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={editingMember.name} onChange={e=>setEditingMember({...editingMember, name: e.target.value})} /></div>
                                     <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1">성별</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none" value={editingMember.gender} onChange={e=>setEditingMember({...editingMember, gender: e.target.value})}><option>남성</option><option>여성</option></select></div>
-                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 text-blue-600 font-black">직책</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-blue-100 outline-none shadow-none text-left text-xs" value={editingMember.role || '회원'} onChange={e=>setEditingMember({...editingMember, role: e.target.value})}>{roles.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1 text-blue-600 font-black">직책</label><select className="p-4 bg-slate-50 rounded-2xl font-black border-2 border-blue-100 outline-none shadow-none text-left text-xs" value={editingMember.role || '회원'} onChange={e=>setEditingMember({...editingMember, role: e.target.value})}>{STAFF_ROLES.concat(['회원']).map(r => <option key={r} value={r}>{r}</option>)}</select></div>
                                     <div className="flex flex-col gap-1 text-left text-xs">
                                         <label className="text-[10px] font-black text-slate-400 ml-1 text-left uppercase text-xs text-left">Position</label>
                                         <select 
@@ -2197,13 +2460,49 @@
                                             value={editingMember.position || 'ALL'} 
                                             onChange={e => setEditingMember({...editingMember, position: e.target.value})}
                                         >
-                                            {positions.map(p => <option key={p} value={p}>{p}</option>)}
+                                            {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex flex-col gap-1 text-left text-xs"><label className="text-[10px] font-black text-slate-400 ml-1">실력 점수</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left text-xs" value={String(editingMember.level)} onChange={e=>setEditingMember({...editingMember, level: e.target.value})}>{editingMember.gender === '남성' ? [1,2,3,4,5,6].map(v => <option key={v} value={String(v)}>{v}단계</option>) : [7,8,9,10,11,12].map(v => <option key={v} value={String(v)}>{v}단계</option>)}</select></div>
-                                    <div className="flex flex-col gap-1 text-left text-xs sm:col-span-2"><label className="text-[10px] font-black text-slate-400 ml-1">커플 대상</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left text-xs" value={editingMember.coupleId} onChange={e=>setEditingMember({...editingMember, coupleId: e.target.value})}><option value="">없음</option>{members.filter(m => m.id !== editingMember.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                    <div className="flex flex-col gap-1 text-left text-xs sm:col-span-2"><label className="text-[10px] font-black text-slate-400 ml-1">커플 대상</label><select className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-blue-100 shadow-none text-left text-xs" value={editingMember.coupleId} onChange={e=>setEditingMember({...editingMember, coupleId: e.target.value})}><option value="">없음</option>{activeMembers.filter(m => m.id !== editingMember.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
                                 </div>
                                 <div className="flex gap-3"><button onClick={() => setEditingMember(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all border-none outline-none">취소</button><button onClick={handleUpdateMember} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl shadow-blue-100 active:scale-95 transition-all">저장</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 탈퇴 처리 모달 (팝업) */}
+                    {resigningMember && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[600] flex items-center justify-center p-4" onClick={() => setResigningMember(null)}>
+                            <div className="bg-white rounded-[48px] w-full max-w-md p-8 sm:p-10 shadow-2xl animate-zoom-in text-left" onClick={e => e.stopPropagation()}>
+                                <h2 className="text-2xl font-black mb-2 text-red-500 tracking-tighter uppercase">회원 탈퇴</h2>
+                                <p className="text-xs font-bold text-slate-400 mb-8">{resigningMember.name} 님의 탈퇴 정보를 입력해주세요.</p>
+                                
+                                <div className="space-y-4 mb-8">
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase">탈퇴 일자</label>
+                                        <input type="date" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-red-100 text-sm" value={resignForm.date} onChange={e => setResignForm({...resignForm, date: e.target.value})} />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase">탈퇴 사유</label>
+                                        <input type="text" placeholder="사유를 입력해주세요 (예: 이사, 부상 등)" className="p-4 bg-slate-50 rounded-2xl font-black outline-none border-2 border-transparent focus:border-red-100 text-sm" value={resignForm.reason} onChange={e => setResignForm({...resignForm, reason: e.target.value})} />
+                                    </div>
+                                    
+                                    <div className="mt-4 p-4 rounded-2xl bg-red-50 border border-red-100 flex flex-col gap-2">
+                                        <label className="flex items-center gap-2 cursor-pointer w-fit">
+                                            <input type="checkbox" className="w-5 h-5 accent-red-600 rounded" checked={resignForm.isForced} onChange={e => setResignForm({...resignForm, isForced: e.target.checked})} />
+                                            <span className="font-black text-red-600 text-sm">강제 탈퇴 적용</span>
+                                        </label>
+                                        {resignForm.isForced && (
+                                            <p className="text-[10px] text-red-500 font-bold ml-7">⚠️ 강제 탈퇴 시 6개월간 재가입이 불가합니다.</p>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <div className="flex gap-3">
+                                    <button onClick={() => setResigningMember(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all text-sm">취소</button>
+                                    <button onClick={handleResignConfirm} className="flex-1 py-5 bg-red-500 text-white rounded-3xl font-black shadow-xl shadow-red-200 active:scale-95 transition-all text-sm">탈퇴 처리</button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -2508,4 +2807,3 @@
     </script>
 </body>
 </html>
-
