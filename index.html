@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <!-- 모바일 앱 모드 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#f8fafc">
@@ -31,7 +30,7 @@
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- html2canvas (캡쳐용 라이브러리 추가) -->
+    <!-- html2canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <!-- Firebase SDK -->
@@ -40,26 +39,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     
     <style>
-        @font-face {
-            font-family: 'Esamanru';
-            font-weight: 700;
-            src: url('esamanru%20Bold.ttf') format('truetype');
-        }
-        @font-face {
-            font-family: 'Esamanru';
-            font-weight: 500;
-            src: url('esamanru%20Medium.ttf') format('truetype');
-        }
-        @font-face {
-            font-family: 'Esamanru';
-            font-weight: 300;
-            src: url('esamanru%20Light.ttf') format('truetype');
-        }
-        @font-face {
-            font-family: 'Esamanru';
-            font-weight: 400;
-            src: url('esamanru%20Medium.ttf') format('truetype');
-        }
+        @font-face { font-family: 'Esamanru'; font-weight: 700; src: url('esamanru%20Bold.ttf') format('truetype'); }
+        @font-face { font-family: 'Esamanru'; font-weight: 500; src: url('esamanru%20Medium.ttf') format('truetype'); }
+        @font-face { font-family: 'Esamanru'; font-weight: 300; src: url('esamanru%20Light.ttf') format('truetype'); }
+        @font-face { font-family: 'Esamanru'; font-weight: 400; src: url('esamanru%20Medium.ttf') format('truetype'); }
 
         body { 
             font-family: 'Esamanru', sans-serif !important;
@@ -73,7 +56,9 @@
         }
 
         .animate-zoom-in { animation: zoomIn 0.2s ease-out; }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out; }
         @keyframes zoomIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         button:active { transform: scale(0.95); opacity: 0.8; }
         
@@ -106,7 +91,6 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // --- 1. Global Setup ---
         const { useState, useEffect, useRef, useMemo } = React;
         
         const STAFF_ROLES = ['회장', '매니저', '총무', '부총무'];
@@ -126,7 +110,6 @@
         const db = firebase.firestore();
         const APP_ID = 'otp-fc-attendance';
 
-        // Collection Helpers
         const getCol = (name) => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(name);
         const getTeamDraftsCol = () => db.collection('artifacts').doc('otp-fc-attendance').collection('public').doc('data').collection('team_drafts');
         const getMonthlyCol = () => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('monthly_checks');
@@ -135,35 +118,22 @@
         const getMemberCol = () => getCol('members');
         const getSettingsCol = () => getCol('settings');
 
-        // Helper Functions
         const getThisSunday = () => {
             const now = new Date();
             const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
             const day = d.getDay(); 
             const diff = (day === 0) ? 0 : 7 - day;
             d.setDate(d.getDate() + diff);
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const date = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${date}`;
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         };
 
         const getNextSundayFromDate = (dateStr) => {
-            let d;
-            if (dateStr) {
-                const parts = dateStr.split('-');
-                d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0);
-            } else {
-                d = new Date();
-                d.setHours(12, 0, 0, 0);
-            }
+            let d = dateStr ? new Date(parseInt(dateStr.split('-')[0]), parseInt(dateStr.split('-')[1]) - 1, parseInt(dateStr.split('-')[2]), 12, 0, 0) : new Date();
+            if (!dateStr) d.setHours(12, 0, 0, 0);
             const day = d.getDay(); 
             const diff = (day === 0) ? 7 : 7 - day; 
             d.setDate(d.getDate() + diff);
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const date = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${date}`;
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         };
 
         const getPosColorClass = (pos) => {
@@ -176,9 +146,7 @@
             return 'bg-yellow-50 text-yellow-600 border-yellow-100';
         };
 
-        const getGenderPastelClass = (gender) => {
-            return gender === '남성' ? 'bg-[#E1F0FF] text-[#2563EB]' : 'bg-[#FFE5ED] text-[#DB2777]';
-        };
+        const getGenderPastelClass = (gender) => gender === '남성' ? 'bg-[#E1F0FF] text-[#2563EB]' : 'bg-[#FFE5ED] text-[#DB2777]';
 
         const getRoleBadgeClass = (role) => {
             switch(role) {
@@ -191,8 +159,6 @@
         };
 
         const getTeamName = (index) => String.fromCharCode(65 + index);
-        
-        // 팀 색상 변경 적용 (A: 핑크, B: 하늘, C: 형광녹(lime), D: 노랑, E: 파랑, F: 빨강)
         const getTeamNumberColor = (index) => ['text-pink-500', 'text-sky-400', 'text-lime-500', 'text-yellow-400', 'text-blue-600', 'text-red-500'][index] || 'text-slate-300';
         const getTeamColorClass = (index) => ['bg-pink-50 border-pink-200 text-pink-900', 'bg-sky-50 border-sky-200 text-sky-900', 'bg-lime-50 border-lime-200 text-lime-900', 'bg-yellow-50 border-yellow-200 text-yellow-900', 'bg-blue-50 border-blue-200 text-blue-900', 'bg-red-50 border-red-200 text-red-900'][index] || 'bg-slate-50 border-slate-200 text-slate-900';
         const getTeamBadgeColor = (index) => ['bg-pink-500 text-white', 'bg-sky-400 text-white', 'bg-lime-400 text-slate-800', 'bg-yellow-400 text-slate-800', 'bg-blue-600 text-white', 'bg-red-500 text-white'][index] || 'bg-slate-500 text-white';
@@ -205,24 +171,16 @@
 
         const getMembershipStatus = (member, targetMonthStr) => {
             if (!member.membershipType || member.membershipType === 'monthly' || !member.membershipEndDate) return null;
-            
             const end = new Date(member.membershipEndDate);
             const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
             const [y, m] = targetMonthStr.split('-').map(Number);
             const current = new Date(y, m - 1, 1);
-            
             if (current > endMonth) return { active: false, msg: '만료됨', type: member.membershipType === 'half_year' ? '반년' : '1년' };
-            
             let monthsRemaining = (endMonth.getFullYear() - current.getFullYear()) * 12 + (endMonth.getMonth() - current.getMonth()) + 1;
             const maxRest = member.membershipType === 'half_year' ? 3 : 6;
             const usedRest = member.totalRestMonths || 0;
             const remainingRest = maxRest - usedRest;
-            
-            const year = end.getFullYear().toString().slice(2);
-            const month = String(end.getMonth() + 1).padStart(2, '0');
-            const day = String(end.getDate()).padStart(2, '0');
-            const endDateFormatted = `${year}.${month}.${day}`;
-
+            const endDateFormatted = `${end.getFullYear().toString().slice(2)}.${String(end.getMonth() + 1).padStart(2, '0')}.${String(end.getDate()).padStart(2, '0')}`;
             return { active: true, remaining: monthsRemaining, type: member.membershipType === 'half_year' ? '반년' : '1년', endDate: member.membershipEndDate, endDateFormatted, maxRest, usedRest, remainingRest };
         };
 
@@ -231,7 +189,6 @@
             const status = statuses[member.id];
             const reason = reasons[member.id];
             const membershipInfo = getMembershipStatus(member, targetMonthStr);
-
             if (membershipInfo && membershipInfo.active) {
                 if (status === 'rest') return reason ? 'special' : 'rest';
                 return membershipInfo.type === '반년' ? 'half' : 'full';
@@ -241,7 +198,6 @@
             return 'unpaid';
         };
 
-        // Icons
         const Icon = {
             Users: ({size=20, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
             Trash: ({size=18, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
@@ -270,24 +226,40 @@
             Refresh: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>,
             Check: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
             Coffee: ({size=16, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>,
-            CreditCard: ({size=16, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+            Bookmark: ({size=16, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>,
+            AlertCircle: ({size=16, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
             Edit2: ({size=14, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
         };
 
         const CurrentTimeClock = () => {
             const [time, setTime] = useState(new Date());
             useEffect(() => {
-                const timer = setInterval(() => {
-                    setTime(new Date());
-                }, 1000);
+                const timer = setInterval(() => setTime(new Date()), 1000);
                 return () => clearInterval(timer);
             }, []);
-
             return (
                 <span className="text-xl sm:text-2xl font-bold text-slate-400 tabular-nums mb-6">
                     {time.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
                 </span>
             );
+        };
+
+        const formatLocalDate = (d) => {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
+
+        const calculateEndDate = (startMonthStr, durationMonths) => {
+            if (!startMonthStr) return '';
+            const [y, m] = startMonthStr.split('-').map(Number);
+            const end = new Date(y, m - 1 + durationMonths + 1, 0); // 달의 마지막 날
+            return formatLocalDate(end);
+        };
+
+        const extendEndDate = (currentEndDateStr, monthsToAdd = 1) => {
+            if (!currentEndDateStr) return '';
+            const [y, m] = currentEndDateStr.split('-').map(Number);
+            const end = new Date(y, m + monthsToAdd, 0); 
+            return formatLocalDate(end);
         };
 
         function App() {
@@ -301,13 +273,7 @@
             const [historySortKey, setHistorySortKey] = useState('time'); 
             const [historySortOrder, setHistorySortOrder] = useState('asc'); 
             const [meetingTimes, setMeetingTimes] = useState({ 
-                date: getThisSunday(), 
-                start: "08:00", 
-                end: "10:00", 
-                location: "", 
-                managerId: "", 
-                managerName: "",
-                maxLimit: 18 // Default limit
+                date: getThisSunday(), start: "08:00", end: "10:00", location: "", managerId: "", managerName: "", maxLimit: 18
             });
             const [currentTime, setCurrentTime] = useState(new Date());
             const [isAppLocked, setIsAppLocked] = useState(false);
@@ -321,20 +287,18 @@
             const [historyEditTarget, setHistoryEditTarget] = useState(null); 
             const [isEditingLocation, setIsEditingLocation] = useState(false);
             const [editLocationValue, setEditLocationValue] = useState('');
-            const [listModalData, setListModalData] = useState(null); // [NEW] 명단 모달 상태 추가
-            const [isCapturing, setIsCapturing] = useState(false); // [NEW] 캡쳐 중 상태
-            const [capturedImage, setCapturedImage] = useState(null); // [NEW] 생성된 이미지 데이터 상태
+            const [listModalData, setListModalData] = useState(null); 
+            const [isCapturing, setIsCapturing] = useState(false); 
+            const [capturedImage, setCapturedImage] = useState(null); 
 
             const [teamData, setTeamData] = useState(null);
             const [localTeamData, setLocalTeamData] = useState(null);
 
-            const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false); // [NEW] 회원등록 모달 상태
+            const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false); 
             const [newMember, setNewMember] = useState({ 
-                name: '', birth: '', gender: '남성', position: 'all', level: '1', role: '회원',
-                coupleId: '', isEarlyBirth: false 
+                name: '', birth: '', gender: '남성', position: 'all', level: '1', role: '회원', coupleId: '', isEarlyBirth: false 
             });
             
-            // [NEW] 탈퇴 관리용 상태
             const [resigningMember, setResigningMember] = useState(null);
             const [resignForm, setResignForm] = useState({ date: '', reason: '', isForced: false });
 
@@ -351,9 +315,7 @@
                 try {
                     const stored = localStorage.getItem('otp_attendance_manager');
                     return stored ? JSON.parse(stored) : null;
-                } catch (e) {
-                    return null;
-                }
+                } catch (e) { return null; }
             });
             const [isLoginModalOpen, setIsLoginModalOpen] = useState(!loggedInManager);
             
@@ -374,14 +336,14 @@
             const [monthlyStatuses, setMonthlyStatuses] = useState({}); 
             const [monthlyParticipants, setMonthlyParticipants] = useState([]); 
             const [monthlyReasons, setMonthlyReasons] = useState({}); 
-            const [monthlyPaymentDates, setMonthlyPaymentDates] = useState({}); // [NEW] 결제일/납부일 상태 추가
+            const [monthlyPaymentDates, setMonthlyPaymentDates] = useState({}); 
             
-            // [NEW] 월별 상태 모달 내 폼(작성/선택) 상태
+            const [actionStep, setActionStep] = useState('main'); 
+            const [selectedAction, setSelectedAction] = useState(null); 
             const [paymentDateInput, setPaymentDateInput] = useState(''); 
             const [manualEndDate, setManualEndDate] = useState(''); 
             const [specialRestReason, setSpecialRestReason] = useState(''); 
             const [tempRestCount, setTempRestCount] = useState(0);
-            const [selectedAction, setSelectedAction] = useState(null);
             
             const [setupTabMonthlyMembers, setSetupTabMonthlyMembers] = useState([]);
 
@@ -395,12 +357,10 @@
                 return activeMembers.filter(m => STAFF_ROLES.includes(m.role)).sort((a,b) => a.name.localeCompare(b.name));
             }, [activeMembers]);
 
-            // 상태 변경 시 sessionStorage에 저장하여 새로고침 시 유지
             useEffect(() => { sessionStorage.setItem('otp_view', view); }, [view]);
             useEffect(() => { sessionStorage.setItem('otp_sub_tab', memberSubTab); }, [memberSubTab]);
             useEffect(() => { sessionStorage.setItem('otp_target_month', targetMonth); }, [targetMonth]);
 
-            // -- Derived States --
             const activeParticipants = useMemo(() => {
                 const list = sessionData.filter(p => p.date === meetingTimes.date);
                 return list.sort((a,b) => {
@@ -463,14 +423,10 @@
 
             const sortedHistoryRecords = useMemo(() => {
                 if (!selectedHistoryDetail || !selectedHistoryDetail.records) return [];
-                
-                // Attach original index to handle sorting correctly
                 const list = selectedHistoryDetail.records.map((r, index) => ({ ...r, originalIndex: index }));
-                
                 if (historySortKey === 'time') {
                     return list.sort((a, b) => (a.timestamp || '99:99:99').localeCompare(b.timestamp || '99:99:99'));
                 }
-                
                 if (historySortKey === 'status') {
                     const order = { '정상': 1, '지각': 2, '노쇼': 3, '미출석': 4 };
                     return list.sort((a, b) => {
@@ -797,7 +753,6 @@
                 } catch (e) { showAlert("오류", "게스트 수정 실패"); }
             };
 
-            // 탈퇴 처리 함수
             const handleResignConfirm = async () => {
                 if (!resignForm.date) return showAlert("알림", "탈퇴 일자를 선택해주세요.");
                 try {
@@ -815,7 +770,6 @@
                 }
             };
 
-            // [MODIFIED] Save with Waiting List Logic
             const saveAndResetCurrent = async () => {
                 const currentParticipants = sessionData.filter(p => p.date === meetingTimes.date);
                 if (currentParticipants.length === 0) return showAlert("확인", "현재 출석부에 인원이 없습니다.");
@@ -929,11 +883,11 @@
                 setTargetMonth(`${nextY}-${nextM}`);
             };
 
-            // 선택된 회원을 기반으로 모달창 열 때 상태 초기화
             const handleMemberClick = (m) => {
                 setSelectedMonthlyMember(m);
-                setManualEndDate(m.membershipEndDate || '');
-                setTempRestCount(m.totalRestMonths || 0);
+                setActionStep('main');
+                setSelectedAction(null);
+                
                 if (monthlyPaymentDates[m.id]) {
                     setPaymentDateInput(monthlyPaymentDates[m.id]);
                 } else {
@@ -942,26 +896,24 @@
                     setPaymentDateInput((new Date(today - offset)).toISOString().split('T')[0]);
                 }
                 setSpecialRestReason(monthlyReasons[m.id] || '');
-                setSelectedAction(null);
             };
 
-            // [NEW] 상태 선택 시 자동 폼 완성 핸들러
-            const handleActionSelect = (action) => {
-                setSelectedAction(action);
-                if (action === 'start_half') {
-                    const [y, m] = targetMonth.split('-').map(Number);
-                    const endDateStr = new Date(y, m - 1 + 6, 0).toISOString().split('T')[0];
+            const handleActionClick = (actionType) => {
+                setSelectedAction(actionType);
+                setActionStep('form');
+                
+                if (actionType === 'start_half') {
+                    const endDateStr = calculateEndDate(targetMonth, 6);
                     setManualEndDate(endDateStr);
                     setTempRestCount(0);
-                } else if (action === 'start_full') {
-                    const [y, m] = targetMonth.split('-').map(Number);
-                    const endDateStr = new Date(y, m - 1 + 12, 0).toISOString().split('T')[0];
+                } else if (actionType === 'start_full') {
+                    const endDateStr = calculateEndDate(targetMonth, 12);
                     setManualEndDate(endDateStr);
                     setTempRestCount(0);
                 }
             };
 
-            const handleConfirmMonthlyChanges = async () => {
+            const processActionImmediate = async (actionType) => {
                 if (!selectedMonthlyMember || !targetMonth) return;
                 try {
                     const batch = db.batch();
@@ -969,88 +921,71 @@
                     const memberRef = getMemberCol().doc(selectedMonthlyMember.id);
                     const memberId = selectedMonthlyMember.id;
                     
-                    // 1. 선택된 주 상태 반영 액션이 있는 경우
-                    if (selectedAction) {
-                        if (selectedAction === 'monthly_paid') {
-                             batch.set(monthRef, { statuses: { [memberId]: 'paid' }, paymentDates: { [memberId]: paymentDateInput }, updatedAt: new Date().toISOString() }, { merge: true });
-                             batch.update(monthRef, { [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete() });
-                             batch.update(memberRef, { membershipType: 'monthly', membershipStartDate: '', membershipEndDate: '', totalRestMonths: 0 });
-                        } else if (selectedAction === 'start_half') {
-                            const [y, m] = targetMonth.split('-').map(Number);
-                            const defaultEndDateStr = new Date(y, m - 1 + 6, 0).toISOString().split('T')[0];
-                            const finalEndDate = manualEndDate || defaultEndDateStr;
-                            batch.update(memberRef, { membershipType: 'half_year', membershipStartDate: `${targetMonth}-01`, membershipEndDate: finalEndDate, totalRestMonths: tempRestCount });
-                            batch.set(monthRef, { paymentDates: { [memberId]: paymentDateInput }, updatedAt: new Date().toISOString() }, { merge: true });
-                            batch.update(monthRef, { [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(), [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete() });
-                        } else if (selectedAction === 'start_full') {
-                            const [y, m] = targetMonth.split('-').map(Number);
-                            const defaultEndDateStr = new Date(y, m - 1 + 12, 0).toISOString().split('T')[0];
-                            const finalEndDate = manualEndDate || defaultEndDateStr;
-                            batch.update(memberRef, { membershipType: 'full_year', membershipStartDate: `${targetMonth}-01`, membershipEndDate: finalEndDate, totalRestMonths: tempRestCount });
-                            batch.set(monthRef, { paymentDates: { [memberId]: paymentDateInput }, updatedAt: new Date().toISOString() }, { merge: true });
-                            batch.update(monthRef, { [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(), [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete() });
-                        } else if (selectedAction === 'rest') {
-                             batch.set(monthRef, { statuses: { [memberId]: 'rest' }, paymentDates: { [memberId]: paymentDateInput }, updatedAt: new Date().toISOString() }, { merge: true });
-                             batch.update(monthRef, { [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete() });
-                             
-                             if (selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year') {
-                                const currentEnd = new Date(selectedMonthlyMember.membershipEndDate || new Date());
-                                const nextEndDate = new Date(currentEnd.getFullYear(), currentEnd.getMonth() + 1 + 1, 0).toISOString().split('T')[0];
-                                const finalEndDate = manualEndDate !== selectedMonthlyMember.membershipEndDate ? manualEndDate : nextEndDate;
-                                const finalRestCount = tempRestCount !== (selectedMonthlyMember.totalRestMonths || 0) ? tempRestCount : (selectedMonthlyMember.totalRestMonths || 0) + 1;
-                                batch.update(memberRef, { membershipEndDate: finalEndDate, totalRestMonths: finalRestCount });
-                             }
-                        } else if (selectedAction === 'special_rest') {
-                            batch.set(monthRef, { statuses: { [memberId]: 'rest' }, reasons: { [memberId]: specialRestReason || '관리자 휴식' }, updatedAt: new Date().toISOString() }, { merge: true });
-                            if (selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year') {
-                                const currentEnd = new Date(selectedMonthlyMember.membershipEndDate || new Date());
-                                const nextEndDate = new Date(currentEnd.getFullYear(), currentEnd.getMonth() + 1 + 1, 0).toISOString().split('T')[0];
-                                const finalEndDate = manualEndDate !== selectedMonthlyMember.membershipEndDate ? manualEndDate : nextEndDate;
-                                batch.update(memberRef, { membershipEndDate: finalEndDate, totalRestMonths: tempRestCount });
-                            }
-                        } else if (selectedAction === 'end_membership') {
-                             batch.update(memberRef, { membershipType: 'monthly', membershipStartDate: '', membershipEndDate: '', totalRestMonths: 0 });
-                             batch.update(monthRef, { [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(), [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete() });
-                        } else if (selectedAction === 'clear') {
-                             batch.update(monthRef, { [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(), [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete(), [`paymentDates.${memberId}`]: firebase.firestore.FieldValue.delete() });
-                        } else if (selectedAction === 'cancel_rest') {
-                            batch.update(monthRef, { [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(), [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete(), [`paymentDates.${memberId}`]: firebase.firestore.FieldValue.delete() });
-                            if (selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year') {
-                                 const currentEnd = new Date(selectedMonthlyMember.membershipEndDate);
-                                 const prevEndDate = new Date(currentEnd.getFullYear(), currentEnd.getMonth(), 0).toISOString().split('T')[0];
-                                 const finalEndDate = manualEndDate !== selectedMonthlyMember.membershipEndDate ? manualEndDate : prevEndDate;
-                                 const finalRestCount = tempRestCount !== (selectedMonthlyMember.totalRestMonths || 0) ? tempRestCount : (monthlyReasons[memberId] ? tempRestCount : Math.max(0, tempRestCount - 1));
-                                 batch.update(memberRef, { membershipEndDate: finalEndDate, totalRestMonths: finalRestCount });
-                            }
+                    if (actionType === 'monthly_paid') {
+                        batch.set(monthRef, { statuses: { [memberId]: 'paid' }, paymentDates: { [memberId]: paymentDateInput }, updatedAt: new Date().toISOString() }, { merge: true });
+                        batch.update(monthRef, { [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete() });
+                        batch.update(memberRef, { membershipType: 'monthly', membershipStartDate: '', membershipEndDate: '', totalRestMonths: 0 });
+                    } else if (actionType === 'start_half') {
+                        const finalEndDate = manualEndDate || calculateEndDate(targetMonth, 6);
+                        batch.update(memberRef, { membershipType: 'half_year', membershipStartDate: `${targetMonth}-01`, membershipEndDate: finalEndDate, totalRestMonths: 0 });
+                        batch.set(monthRef, { paymentDates: { [memberId]: paymentDateInput }, updatedAt: new Date().toISOString() }, { merge: true });
+                        batch.update(monthRef, { [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(), [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete() });
+                    } else if (actionType === 'start_full') {
+                        const finalEndDate = manualEndDate || calculateEndDate(targetMonth, 12);
+                        batch.update(memberRef, { membershipType: 'full_year', membershipStartDate: `${targetMonth}-01`, membershipEndDate: finalEndDate, totalRestMonths: 0 });
+                        batch.set(monthRef, { paymentDates: { [memberId]: paymentDateInput }, updatedAt: new Date().toISOString() }, { merge: true });
+                        batch.update(monthRef, { [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(), [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete() });
+                    } else if (actionType === 'rest') {
+                        if (selectedMonthlyMember.membershipType === 'half_year' && (selectedMonthlyMember.totalRestMonths || 0) >= 3) {
+                            return showAlert("알림", "반년납 회원은 휴식을 최대 3회까지만 사용할 수 있습니다.");
                         }
-                    } else {
-                        // 2. 메인 액션 버튼은 누르지 않고 수동 값(날짜, 횟수)만 변경 후 확인 누른 경우 처리
-                        const memberUpdates = {};
-                        const monthUpdates = {};
-
-                        if (manualEndDate !== (selectedMonthlyMember.membershipEndDate || '')) {
-                            memberUpdates.membershipEndDate = manualEndDate;
-                        }
-                        if (tempRestCount !== (selectedMonthlyMember.totalRestMonths || 0)) {
-                            memberUpdates.totalRestMonths = tempRestCount;
-                        }
-                        if (paymentDateInput !== (monthlyPaymentDates[memberId] || '')) {
-                            monthUpdates[`paymentDates.${memberId}`] = paymentDateInput;
-                        }
-                        if (specialRestReason !== (monthlyReasons[memberId] || '')) {
-                            monthUpdates[`reasons.${memberId}`] = specialRestReason;
+                        if (selectedMonthlyMember.membershipType === 'full_year' && (selectedMonthlyMember.totalRestMonths || 0) >= 6) {
+                            return showAlert("알림", "1년납 회원은 휴식을 최대 6회까지만 사용할 수 있습니다.");
                         }
 
-                        if (Object.keys(memberUpdates).length > 0) batch.update(memberRef, memberUpdates);
-                        if (Object.keys(monthUpdates).length > 0) batch.set(monthRef, monthUpdates, { merge: true });
+                        batch.set(monthRef, { statuses: { [memberId]: 'rest' }, paymentDates: { [memberId]: paymentDateInput }, updatedAt: new Date().toISOString() }, { merge: true });
+                        batch.update(monthRef, { [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete() });
+                        
+                        if (selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year') {
+                            const nextEndDate = extendEndDate(selectedMonthlyMember.membershipEndDate, 1);
+                            batch.update(memberRef, { membershipEndDate: nextEndDate, totalRestMonths: firebase.firestore.FieldValue.increment(1) });
+                        }
+                    } else if (actionType === 'special_rest') {
+                        batch.set(monthRef, { statuses: { [memberId]: 'rest' }, reasons: { [memberId]: specialRestReason || '특별 휴식' }, updatedAt: new Date().toISOString() }, { merge: true });
+                        
+                        batch.update(monthRef, { [`paymentDates.${memberId}`]: firebase.firestore.FieldValue.delete() });
+
+                        if (selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year') {
+                            const nextEndDate = extendEndDate(selectedMonthlyMember.membershipEndDate, 1);
+                            batch.update(memberRef, { membershipEndDate: nextEndDate });
+                        }
+                    } else if (actionType === 'clear') {
+                        batch.update(monthRef, { [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(), [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete(), [`paymentDates.${memberId}`]: firebase.firestore.FieldValue.delete() });
+                    } else if (actionType === 'cancel_rest') {
+                        batch.update(monthRef, { [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(), [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete(), [`paymentDates.${memberId}`]: firebase.firestore.FieldValue.delete() });
+                        const reason = monthlyReasons[memberId];
+                        if (selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year') {
+                            const prevEndDate = extendEndDate(selectedMonthlyMember.membershipEndDate, -1);
+                            const updatePayload = { membershipEndDate: prevEndDate };
+                            if (!reason) { updatePayload.totalRestMonths = firebase.firestore.FieldValue.increment(-1); }
+                            batch.update(memberRef, updatePayload);
+                        }
+                    } else if (actionType === 'end_membership') {
+                        batch.update(memberRef, { membershipType: 'monthly', membershipStartDate: '', membershipEndDate: '', totalRestMonths: 0 });
+                        batch.update(monthRef, { [`statuses.${memberId}`]: firebase.firestore.FieldValue.delete(), [`reasons.${memberId}`]: firebase.firestore.FieldValue.delete() });
+                    } else if (actionType === 'update_payment_date') {
+                        batch.set(monthRef, { paymentDates: { [memberId]: paymentDateInput }, updatedAt: new Date().toISOString() }, { merge: true });
+                    } else if (actionType === 'update_longterm_info') {
+                        batch.update(memberRef, { membershipEndDate: manualEndDate });
+                        batch.set(monthRef, { paymentDates: { [memberId]: paymentDateInput }, updatedAt: new Date().toISOString() }, { merge: true });
                     }
 
                     await batch.commit();
                     setSelectedMonthlyMember(null);
-                    showAlert("성공", "상태가 성공적으로 저장되었습니다.");
+                    showAlert("성공", "상태가 성공적으로 반영되었습니다.");
                 } catch(e) {
-                     console.error("Update error:", e);
-                     showAlert("오류", "상태 저장에 실패했습니다.");
+                    console.error(e);
+                    showAlert("오류", "상태 처리에 실패했습니다.");
                 }
             };
 
@@ -1126,21 +1061,18 @@
                 });
 
                 setListModalData({ title, count: filtered.length, items });
-                setCapturedImage(null); // 혹시 이전 이미지가 남아있을까봐 초기화
+                setCapturedImage(null); 
             };
 
-            // [NEW] 모바일 호환 클립보드 복사 로직 (Fallback 적용)
             const fallbackCopy = (text) => {
                 const textArea = document.createElement("textarea");
                 textArea.value = text;
-                // 모바일에서 스크롤 튀는 현상 및 화면 줌 방지
                 textArea.style.position = "fixed";
                 textArea.style.top = "0";
                 textArea.style.left = "0";
                 textArea.style.opacity = "0";
                 document.body.appendChild(textArea);
                 
-                // iOS 대응 특수 처리
                 if (navigator.userAgent.match(/ipad|iphone|mac/i)) {
                     const range = document.createRange();
                     range.selectNodeContents(textArea);
@@ -1175,33 +1107,29 @@
                 
                 const textToCopy = `[ ${listModalData.title} ]\n총 ${listModalData.count}명\n\n${names}`;
 
-                // 최신 Clipboard API 지원 시 우선 사용
                 if (navigator.clipboard && window.isSecureContext) {
                     navigator.clipboard.writeText(textToCopy).then(() => {
                         setListModalData(null);
                         setCapturedImage(null);
                         showAlert("복사 완료", `클립보드에 복사되었습니다.\n\n카카오톡 등 원하는 곳에 붙여넣기 하세요!`);
-                    }).catch(() => fallbackCopy(textToCopy)); // 실패 시 예전 방식 폴백
+                    }).catch(() => fallbackCopy(textToCopy));
                 } else {
                     fallbackCopy(textToCopy);
                 }
             };
 
-            // [NEW] 모달 영역을 이미지로 만들어서 모바일에서도 저장 가능하도록 띄우는 함수
             const handleCaptureImage = () => {
                 setIsCapturing(true); 
-                
-                // 모달 렌더링이 안정을 찾을 시간 부여
                 setTimeout(() => {
                     const target = document.getElementById('capture-area');
                     if (target) {
                         html2canvas(target, {
-                            scale: 2, // 고해상도 처리
+                            scale: 2, 
                             backgroundColor: '#ffffff',
                             useCORS: true 
                         }).then(canvas => {
                             const imageBase64 = canvas.toDataURL('image/png');
-                            setCapturedImage(imageBase64); // 캔버스 이미지를 상태에 저장 (화면에 보여주기 위함)
+                            setCapturedImage(imageBase64); 
                             setIsCapturing(false); 
                         }).catch(err => {
                             console.error(err);
@@ -1214,7 +1142,6 @@
                 }, 300);
             };
 
-            // PC용 강제 다운로드 버튼
             const handleDownloadImage = () => {
                 if (!capturedImage) return;
                 const link = document.createElement('a');
@@ -1224,15 +1151,6 @@
                 link.click();
                 document.body.removeChild(link);
             };
-
-            useEffect(() => {
-                if (selectedMonthlyMember) {
-                    const liveMember = members.find(m => m.id === selectedMonthlyMember.id);
-                    if (liveMember) {
-                        setSelectedMonthlyMember(liveMember);
-                    }
-                }
-            }, [members]);
 
             useEffect(() => {
                 const initAuth = async () => {
@@ -1545,7 +1463,6 @@
                                                         let cardStyle = `border-4 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200 ${baseColorClass}`;
                                                         let nameColor = "text-slate-900";
                                                         
-                                                        // Check waiting status from rank
                                                         const rank = activeParticipants.findIndex(ap => ap.id === p.id) + 1;
                                                         const limit = meetingTimes.maxLimit || 18;
                                                         const isWaiting = rank > limit;
@@ -1995,7 +1912,6 @@
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        {/* 탈퇴 상세 정보 블록 */}
                                                         <div className="mt-3 p-3 bg-white/50 rounded-xl border border-slate-200 text-[10px] flex flex-col gap-1 w-full text-slate-500">
                                                             <div className="flex justify-between items-center">
                                                                 <span className="font-bold opacity-70">탈퇴일</span>
@@ -2025,7 +1941,6 @@
                                     {/* 4-2. 월별 참여 관리 (신규 - 회비 납부 현황 및 설정) */}
                                     {memberSubTab === 'monthly' && (
                                         <div className="animate-fade-in">
-                                            {/* 월 선택기 */}
                                             <div className="flex justify-center items-center gap-4 mb-4">
                                                 <button onClick={() => moveMonth(-1)} className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"><Icon.ChevronRight className="rotate-180" /></button>
                                                 <div className="text-center">
@@ -2035,7 +1950,6 @@
                                                 <button onClick={() => moveMonth(1)} className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"><Icon.ChevronRight /></button>
                                             </div>
                                             
-                                            {/* [NEW] Filter Bar */}
                                             <div className="flex gap-2 overflow-x-auto pb-4 mb-4 no-scrollbar">
                                                 {['all', 'monthly', 'half', 'full', 'rest', 'special', 'unpaid'].map(cat => {
                                                     const label = { all: '전체', monthly: '월납', half: '반년', full: '1년', rest: '휴식', special: '특별', unpaid: '미납' }[cat];
@@ -2063,7 +1977,6 @@
                                                 })}
                                             </div>
 
-                                            {/* [NEW] Copy Actions */}
                                             <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-4 no-scrollbar bg-slate-50 p-3 rounded-2xl">
                                                 <span className="text-[10px] font-black text-slate-400 whitespace-nowrap mr-1 flex items-center gap-1"><Icon.FileSpreadsheet size={12}/> 명단 확인</span>
                                                 <button onClick={() => handleShowListModal('unpaid')} className="flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black transition-all bg-white border border-red-200 text-red-600 hover:bg-red-50 shadow-sm active:scale-95">미납자</button>
@@ -2072,9 +1985,7 @@
                                                 <button onClick={() => handleShowListModal('rest_all')} className="flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-black transition-all bg-white border border-yellow-200 text-yellow-600 hover:bg-yellow-50 shadow-sm active:scale-95">휴식(전체)</button>
                                             </div>
 
-                                            {/* 리스트 뷰 */}
                                             <div className="flex flex-col space-y-2">
-                                                {/* 헤더 */}
                                                 <div className="flex items-center px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                     <div className="w-10 text-center">No.</div>
                                                     <div className="flex-1 pl-2">Name / Info</div>
@@ -2115,11 +2026,10 @@
                                                         }
                                                     }
 
-                                                    // Determine styles based on styleType
                                                     let containerClass = 'bg-slate-50 border-transparent opacity-60 hover:opacity-80';
                                                     let indexColor = 'text-slate-400';
                                                     let nameColor = 'text-slate-500';
-                                                    let badgeClass = 'border-2 border-slate-200 bg-white text-slate-300'; // Default gray badge
+                                                    let badgeClass = 'border-2 border-slate-200 bg-white text-slate-300';
 
                                                     if (styleType === 'monthly') {
                                                         containerClass = 'bg-white border-green-200 shadow-sm';
@@ -2142,13 +2052,11 @@
                                                         nameColor = 'text-yellow-800';
                                                         badgeClass = 'bg-yellow-400 text-white shadow-md';
                                                     } else if (styleType === 'staff') {
-                                                        // 운영진 스타일
                                                         containerClass = 'bg-white border-orange-200 shadow-sm';
                                                         indexColor = 'text-orange-500';
                                                         nameColor = 'text-slate-900';
                                                         badgeClass = 'bg-orange-500 text-white shadow-md';
                                                     } else {
-                                                        // 미납 빨간색 처리
                                                         containerClass = 'bg-red-50 border-red-100 shadow-sm';
                                                         indexColor = 'text-red-400';
                                                         nameColor = 'text-slate-800';
@@ -2162,7 +2070,6 @@
                                                             <button onClick={() => !isStaff && handleMemberClick(m)} className="flex-1 flex flex-col items-start pl-2 text-left" disabled={isStaff}>
                                                                 <span className={`text-base font-black flex flex-wrap items-center gap-1.5 ${nameColor}`}>
                                                                     {m.name}
-                                                                    {/* 장기 회원 정보 표시 */}
                                                                     {membershipInfo && membershipInfo.active && (
                                                                         <span className={`text-[9px] font-normal px-1.5 py-0.5 rounded-md border ${
                                                                             membershipInfo.type === '반년' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'
@@ -2170,13 +2077,11 @@
                                                                             <b className="font-bold">{membershipInfo.endDateFormatted} 만료</b> <span className="opacity-50">|</span> 잔여휴식 <b className="font-bold">{membershipInfo.remainingRest}회</b>
                                                                         </span>
                                                                     )}
-                                                                    {/* 휴식 사유 표시 */}
                                                                     {restReasonText && (
                                                                         <span className="text-[9px] font-normal px-1.5 py-0.5 rounded-md bg-yellow-50 text-yellow-700 border border-yellow-200">
                                                                             📝 {restReasonText}
                                                                         </span>
                                                                     )}
-                                                                    {/* 납부일 표시 */}
                                                                     {monthlyPaymentDates[m.id] && (styleType === 'monthly' || styleType === 'rest' || styleType === 'half' || styleType === 'full') && (
                                                                         <span className="text-[9px] font-normal px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                                                                             💳 {monthlyPaymentDates[m.id]} 납부
@@ -2297,8 +2202,6 @@
                                             )}
                                         </div>
                                     </div>
-                                    
-                                    {/* 비밀번호 입력란 제거됨 (원터치 로그인) */}
                                 </div>
                                 <button 
                                     onClick={handleLogin} 
@@ -2506,7 +2409,7 @@
                         </div>
                     )}
 
-                    {/* [MODIFIED] History Status Edit Modal */}
+                    {/* History Status Edit Modal */}
                     {historyEditTarget && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[7000] flex items-center justify-center p-4" onClick={() => setHistoryEditTarget(null)}>
                             <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in text-center" onClick={e => e.stopPropagation()}>
@@ -2532,6 +2435,7 @@
                         </div>
                     )}
 
+                    {/* System Lock Modal */}
                     {lockModalMode && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[300] flex items-center justify-center p-4" onClick={() => setLockModalMode(null)}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
@@ -2543,6 +2447,7 @@
                         </div>
                     )}
 
+                    {/* Alert Modal */}
                     {alertModal.show && (
                         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4" onClick={() => setAlertModal(p => ({...p, show: false}))}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 shadow-2xl text-center animate-zoom-in" onClick={e => e.stopPropagation()}>
@@ -2556,6 +2461,7 @@
                         </div>
                     )}
 
+                    {/* Check In Modal */}
                     {modal.type === 'check' && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4" onClick={() => setModal({type:null, data:null})}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center shadow-2xl animate-zoom-in" onClick={e => e.stopPropagation()}>
@@ -2565,6 +2471,8 @@
                             </div>
                         </div>
                     )}
+
+                    {/* Cancel Attendance Modal */}
                     {modal.type === 'cancel' && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4" onClick={() => setModal({type:null, data:null})}>
                             <div className="bg-white rounded-[48px] w-full max-w-sm p-10 text-center animate-zoom-in shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -2576,7 +2484,7 @@
                         </div>
                     )}
                     
-                     {/* [수정] 잠금 해제 버튼 위치 변경 (Bottom -> Top Right) */}
+                    {/* App Locked Modal */}
                     {isAppLocked && (
                         <button 
                             onClick={handleLockToggle} 
@@ -2586,163 +2494,200 @@
                         </button>
                     )}
 
-
-                    {/* 월별 상태 관리 모달 (New) */}
+                    {/* 월별 상태 관리 모달 (New Flow) */}
                     {selectedMonthlyMember && (() => {
-                        const isLongTermAction = selectedAction === 'start_half' || selectedAction === 'start_full';
-                        const isCurrentlyLongTerm = selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year';
-                        const showLongTermSettings = isCurrentlyLongTerm || isLongTermAction;
+                        const memberId = selectedMonthlyMember.id;
+                        const status = monthlyStatuses[memberId]; 
+                        const reason = monthlyReasons[memberId]; 
+                        const membershipInfo = getMembershipStatus(selectedMonthlyMember, targetMonth);
                         
-                        let maxRest = 6;
-                        if (selectedAction === 'start_half') maxRest = 3;
-                        else if (selectedAction === 'start_full') maxRest = 6;
-                        else if (selectedMonthlyMember.membershipType === 'half_year') maxRest = 3;
-                        else if (selectedMonthlyMember.membershipType === 'full_year') maxRest = 6;
+                        const isPaid = status === 'paid';
+                        const isRest = status === 'rest';
+                        const isLongTerm = membershipInfo && membershipInfo.active;
+
+                        let computedEndDate = '';
+                        if (selectedAction === 'start_half') {
+                            computedEndDate = calculateEndDate(targetMonth, 6);
+                        } else if (selectedAction === 'start_full') {
+                            computedEndDate = calculateEndDate(targetMonth, 12);
+                        }
 
                         return (
-                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[8000] flex items-center justify-center p-4" onClick={() => setSelectedMonthlyMember(null)}>
-                            <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-                                <h3 className="text-2xl font-black text-slate-900 mb-2 text-center">{selectedMonthlyMember.name} 님</h3>
-                                <p className="text-xs font-bold text-slate-400 text-center mb-8 uppercase tracking-widest">{targetMonth} 납부 상태 관리</p>
-                                
-                                {/* 납부 일자 설정 */}
-                                <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                                    <label className="text-[10px] font-black text-slate-400 mb-2 block uppercase">결제 / 납부 일자</label>
-                                    <input 
-                                        type="date" 
-                                        className="w-full p-3 rounded-xl border border-slate-200 text-sm font-black outline-none bg-white focus:border-blue-500 transition-all"
-                                        value={paymentDateInput}
-                                        onChange={(e) => setPaymentDateInput(e.target.value)}
-                                    />
-                                </div>
-
-                                {/* 만료일 수동 설정 (장기 회원 전용) */}
-                                {showLongTermSettings && (
-                                    <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200 animate-fade-in">
-                                        <label className="text-[10px] font-black text-slate-400 mb-2 block uppercase">Membership Expiration (만료일 설정)</label>
-                                        <input 
-                                            type="date" 
-                                            className="w-full p-3 rounded-xl border border-slate-200 text-sm font-black outline-none focus:border-blue-500 transition-all bg-white"
-                                            value={manualEndDate || ''}
-                                            onChange={(e) => setManualEndDate(e.target.value)}
-                                        />
+                            <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[8000] flex items-center justify-center p-4" onClick={() => setSelectedMonthlyMember(null)}>
+                                <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
+                                    <div className="text-center mb-6">
+                                        <h3 className="text-2xl font-black text-slate-900">{selectedMonthlyMember.name} 님</h3>
+                                        <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">{targetMonth} 납부 상태 관리</p>
                                     </div>
-                                )}
-                                
-                                {/* 잔여 휴식 횟수 수정 (장기 회원 전용) */}
-                                {showLongTermSettings && (
-                                    <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200 animate-fade-in">
-                                        <label className="text-[10px] font-black text-slate-400 mb-1 block uppercase">Rest Count Adjustment (휴식 횟수)</label>
-                                        <div className="flex items-center justify-between">
-                                             <span className="text-xs font-bold text-slate-600">
-                                                 사용: <span className="text-blue-600 font-black">{tempRestCount}</span>회 / 남은 횟수: {maxRest - tempRestCount}회
-                                             </span>
-                                             <div className="flex gap-2">
-                                                 <button 
-                                                    onClick={() => setTempRestCount(Math.max(0, tempRestCount - 1))}
-                                                    className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold active:scale-95 transition-all hover:bg-blue-200"
-                                                 >
-                                                     +
-                                                 </button>
-                                                 <button 
-                                                    onClick={() => setTempRestCount(tempRestCount + 1)}
-                                                    className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center font-bold active:scale-95 transition-all hover:bg-red-200"
-                                                 >
-                                                     -
-                                                 </button>
-                                             </div>
+
+                                    {/* Step 1: Main Status or Cancellation */}
+                                    {actionStep === 'main' && (
+                                        <div className="animate-fade-in space-y-4 text-left">
+                                            {/* Paid Status */}
+                                            {isPaid && (
+                                                <div className="bg-green-50 p-6 rounded-[24px] border border-green-200 text-center mb-6">
+                                                    <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-3"><Icon.CheckCircle size={24}/></div>
+                                                    <h4 className="font-black text-green-700 text-lg mb-1">월납 결제 완료</h4>
+                                                    
+                                                    <div className="flex items-center justify-center gap-2 mb-6 mt-3">
+                                                        <span className="text-xs text-green-700 font-bold">납부일:</span>
+                                                        <input type="date" value={paymentDateInput} onChange={e => setPaymentDateInput(e.target.value)} className="p-1.5 rounded-lg border border-green-200 text-xs font-bold text-green-800 outline-none w-28 bg-white" />
+                                                        <button onClick={() => processActionImmediate('update_payment_date')} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-black shadow-sm active:scale-95 transition-all">수정</button>
+                                                    </div>
+
+                                                    <button onClick={() => processActionImmediate('clear')} className="w-full py-4 bg-white border-2 border-red-200 text-red-500 rounded-2xl font-black active:scale-95 transition-all text-sm shadow-sm hover:bg-red-50 flex items-center justify-center gap-2"><Icon.RotateCcw size={16}/>납부 취소 (초기화)</button>
+                                                </div>
+                                            )}
+
+                                            {/* Rest Status */}
+                                            {isRest && (
+                                                <div className={`${reason ? 'bg-indigo-50 border-indigo-200' : 'bg-yellow-50 border-yellow-200'} p-6 rounded-[24px] border text-center mb-6`}>
+                                                    <div className={`w-12 h-12 ${reason ? 'bg-indigo-500' : 'bg-yellow-400'} text-white rounded-full flex items-center justify-center mx-auto mb-3`}>
+                                                        {reason ? <Icon.AlertCircle size={24}/> : <Icon.Coffee size={24}/>}
+                                                    </div>
+                                                    <h4 className={`font-black ${reason ? 'text-indigo-700' : 'text-yellow-700'} text-lg mb-1`}>{reason ? '특별 휴식' : '휴식'} 적용됨</h4>
+                                                    
+                                                    {reason && <p className="text-xs text-indigo-600 font-bold mb-1 mt-2">사유: {reason}</p>}
+                                                    
+                                                    {!reason && (
+                                                        <div className="flex items-center justify-center gap-2 mb-2 mt-3">
+                                                            <span className="text-xs text-yellow-700 font-bold">납부일:</span>
+                                                            <input type="date" value={paymentDateInput} onChange={e => setPaymentDateInput(e.target.value)} className="p-1.5 rounded-lg border border-yellow-200 text-xs font-bold text-yellow-800 outline-none w-28 bg-white" />
+                                                            <button onClick={() => processActionImmediate('update_payment_date')} className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg text-xs font-black shadow-sm active:scale-95 transition-all">수정</button>
+                                                        </div>
+                                                    )}
+
+                                                    {isLongTerm && (
+                                                        <p className={`text-xs ${reason ? 'text-indigo-600' : 'text-yellow-600'} font-bold mt-4 mb-2`}>
+                                                            {reason ? '※ 특별휴식 (잔여 휴식 횟수 차감 없음)' : '※ 잔여 휴식 횟수 1회 차감됨'}
+                                                        </p>
+                                                    )}
+                                                    <div className="mt-6">
+                                                        <button onClick={() => processActionImmediate('cancel_rest')} className="w-full py-4 bg-white border-2 border-red-200 text-red-500 rounded-2xl font-black active:scale-95 transition-all text-sm shadow-sm hover:bg-red-50 flex items-center justify-center gap-2"><Icon.RotateCcw size={16}/>{reason ? '특별 ' : ''}휴식 취소 (복귀)</button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Long-term Membership Active Edit Form */}
+                                            {isLongTerm && !isPaid && !isRest && (
+                                                <div className="bg-blue-50 p-6 rounded-[24px] border border-blue-200 text-center mb-6">
+                                                    <div className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-3"><Icon.Bookmark size={24}/></div>
+                                                    <h4 className="font-black text-blue-700 text-lg mb-1">{membershipInfo.type} 멤버십 적용중</h4>
+                                                    <p className="text-xs text-blue-600 font-bold mb-4">잔여 휴식: {membershipInfo.remainingRest}회</p>
+                                                    
+                                                    <div className="flex flex-col gap-3 bg-white p-4 rounded-xl border border-blue-100 mb-6 text-left">
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">결제 / 납부일</label>
+                                                            <input type="date" value={paymentDateInput} onChange={e => setPaymentDateInput(e.target.value)} className="p-2.5 rounded-lg border border-slate-200 text-xs font-bold focus:border-blue-500 outline-none w-full" />
+                                                        </div>
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">만료일 (수동 변경 가능)</label>
+                                                            <input type="date" value={manualEndDate} onChange={e => setManualEndDate(e.target.value)} className="p-2.5 rounded-lg border border-slate-200 text-xs font-bold focus:border-blue-500 outline-none w-full" />
+                                                        </div>
+                                                        <button onClick={() => processActionImmediate('update_longterm_info')} className="w-full mt-2 py-3 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-xl text-xs font-black transition-all active:scale-95 flex items-center justify-center gap-1.5"><Icon.Save size={14}/> 변경사항 저장</button>
+                                                    </div>
+                                                    
+                                                    <div className="space-y-3">
+                                                        <button onClick={() => handleActionClick('rest')} className="w-full py-4 bg-white border-2 border-yellow-200 text-yellow-600 rounded-2xl font-black active:scale-95 transition-all text-sm shadow-sm hover:bg-yellow-50 flex justify-center gap-2 items-center"><Icon.Coffee size={18}/> 이번 달 휴식 사용</button>
+                                                        <button onClick={() => handleActionClick('special_rest')} className="w-full py-4 bg-white border-2 border-indigo-200 text-indigo-600 rounded-2xl font-black active:scale-95 transition-all text-sm shadow-sm hover:bg-indigo-50 flex justify-center gap-2 items-center"><Icon.AlertCircle size={18}/> 특별 휴식 처리</button>
+                                                        <div className="pt-4 mt-2 border-t border-blue-200/50">
+                                                            <button onClick={() => showConfirm("멤버십 강제 종료", "정말로 멤버십을 강제 종료하시겠습니까?", () => processActionImmediate('end_membership'))} className="w-full py-3 text-red-400 font-bold text-xs hover:text-red-600 transition-all underline underline-offset-4">멤버십 강제 종료</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Unpaid (No active long-term or monthly payment) */}
+                                            {!isLongTerm && !isPaid && !isRest && (
+                                                <div className="space-y-3">
+                                                    <button onClick={() => handleActionClick('monthly_paid')} className="w-full py-4 bg-white border-2 border-green-200 text-green-700 rounded-2xl font-black shadow-sm active:scale-95 transition-all hover:bg-green-50 flex items-center justify-center gap-2 text-sm">
+                                                        <Icon.CheckCircle size={18}/> 월납 결제
+                                                    </button>
+                                                    <button onClick={() => handleActionClick('start_half')} className="w-full py-4 bg-white border-2 border-blue-200 text-blue-700 rounded-2xl font-black shadow-sm active:scale-95 transition-all hover:bg-blue-50 flex items-center justify-center gap-2 text-sm">
+                                                        <Icon.Calendar size={18}/> 6개월 (반년납) 시작
+                                                    </button>
+                                                    <button onClick={() => handleActionClick('start_full')} className="w-full py-4 bg-white border-2 border-purple-200 text-purple-700 rounded-2xl font-black shadow-sm active:scale-95 transition-all hover:bg-purple-50 flex items-center justify-center gap-2 text-sm">
+                                                        <Icon.Calendar size={18}/> 12개월 (1년납) 시작
+                                                    </button>
+                                                    <div className="h-px bg-slate-100 my-1"></div>
+                                                    <button onClick={() => handleActionClick('rest')} className="w-full py-4 bg-white border-2 border-yellow-200 text-yellow-600 rounded-2xl font-black shadow-sm active:scale-95 transition-all hover:bg-yellow-50 flex items-center justify-center gap-2 text-sm">
+                                                        <Icon.Coffee size={18}/> 이번 달 휴식비 결제
+                                                    </button>
+                                                    <button onClick={() => handleActionClick('special_rest')} className="w-full py-4 bg-white border-2 border-indigo-200 text-indigo-600 rounded-2xl font-black shadow-sm active:scale-95 transition-all hover:bg-indigo-50 flex items-center justify-center gap-2 text-sm">
+                                                        <Icon.AlertCircle size={18}/> 특별 휴식 처리
+                                                    </button>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="mt-4">
+                                                <button onClick={() => setSelectedMonthlyMember(null)} className="w-full py-4 text-slate-400 font-bold text-sm bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all active:scale-95">닫기</button>
+                                            </div>
                                         </div>
-                                        <p className="text-[9px] text-slate-400 mt-2 text-right">* + 누르면 남은 횟수 증가 (사용 취소)<br/>* - 누르면 남은 횟수 감소 (사용 추가)</p>
-                                    </div>
-                                )}
-
-                                <div className="space-y-3">
-                                    <button 
-                                        onClick={() => handleActionSelect('monthly_paid')} 
-                                        className={`w-full py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2 border-2 ${selectedAction === 'monthly_paid' ? 'bg-green-100 text-green-800 border-green-500 shadow-md ring-2 ring-green-200' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
-                                    >
-                                        <Icon.CheckCircle size={18}/> 월납 (이번달 납부)
-                                    </button>
-                                    
-                                    <div className="flex gap-3">
-                                        <button 
-                                            onClick={() => handleActionSelect('start_half')} 
-                                            className={`flex-1 py-4 rounded-2xl font-black transition-all flex flex-col items-center gap-1 border-2 ${selectedAction === 'start_half' ? 'bg-blue-100 text-blue-800 border-blue-500 shadow-md ring-2 ring-blue-200' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'}`}
-                                        >
-                                            <span className="text-lg">6개월</span>
-                                            <span className="text-[9px]">반년납 시작</span>
-                                        </button>
-                                        <button 
-                                            onClick={() => handleActionSelect('start_full')} 
-                                            className={`flex-1 py-4 rounded-2xl font-black transition-all flex flex-col items-center gap-1 border-2 ${selectedAction === 'start_full' ? 'bg-purple-100 text-purple-800 border-purple-500 shadow-md ring-2 ring-purple-200' : 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'}`}
-                                        >
-                                            <span className="text-lg">12개월</span>
-                                            <span className="text-[9px]">1년납 시작</span>
-                                        </button>
-                                    </div>
-                                    
-                                    <div className="h-px bg-slate-100 my-2"></div>
-                                    
-                                    {monthlyStatuses[selectedMonthlyMember.id] === 'rest' ? (
-                                        <button 
-                                            onClick={() => handleActionSelect('cancel_rest')} 
-                                            className={`w-full py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2 border-2 ${selectedAction === 'cancel_rest' ? 'bg-yellow-200 text-yellow-800 border-yellow-500 shadow-md ring-2 ring-yellow-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-200'}`}
-                                        >
-                                            <Icon.RotateCcw size={18}/> 휴식 취소 (복귀)
-                                        </button>
-                                    ) : (
-                                        <button 
-                                            onClick={() => handleActionSelect('rest')} 
-                                            className={`w-full py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2 border-2 ${selectedAction === 'rest' ? 'bg-yellow-100 text-yellow-800 border-yellow-500 shadow-md ring-2 ring-yellow-200' : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'}`}
-                                        >
-                                            <Icon.Coffee size={18}/> 이번 달 휴식 (휴식비 납부)
-                                        </button>
                                     )}
 
-                                    <div className={`flex gap-2 p-1 rounded-2xl border-2 transition-all ${selectedAction === 'special_rest' ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-transparent'}`}>
-                                        <input 
-                                            type="text" 
-                                            placeholder="특별 휴식 사유 (예: 육아)" 
-                                            className="flex-1 p-3 rounded-xl border border-slate-200 text-xs font-bold outline-none focus:border-indigo-300"
-                                            value={specialRestReason}
-                                            onChange={(e) => {
-                                                setSpecialRestReason(e.target.value);
-                                                handleActionSelect('special_rest'); // 입력 시 자동 선택
-                                            }}
-                                        />
-                                        <button 
-                                            onClick={() => handleActionSelect('special_rest')} 
-                                            className={`px-4 py-2 rounded-xl font-bold text-xs shadow-sm transition-all ${selectedAction === 'special_rest' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100'}`}
-                                            disabled={!specialRestReason.trim()}
-                                        >
-                                            선택
-                                        </button>
-                                    </div>
+                                    {/* Step 2: Form */}
+                                    {actionStep === 'form' && (
+                                        <div className="animate-fade-in text-left">
+                                            <div className="mb-6 pb-4 border-b border-slate-100 text-center">
+                                                <h4 className="text-lg font-black text-slate-800">
+                                                    {selectedAction === 'monthly_paid' ? '월납 결제 진행' : 
+                                                     selectedAction === 'start_half' ? '반년납 시작 설정' : 
+                                                     selectedAction === 'start_full' ? '1년납 시작 설정' : 
+                                                     selectedAction === 'rest' ? '휴식 처리' : '특별 휴식 설정'}
+                                                </h4>
+                                            </div>
 
-                                    {(selectedMonthlyMember.membershipType === 'half_year' || selectedMonthlyMember.membershipType === 'full_year') && (
-                                         <button 
-                                            onClick={() => handleActionSelect('end_membership')} 
-                                            className={`w-full py-4 rounded-2xl font-black transition-all text-xs border-2 ${selectedAction === 'end_membership' ? 'border-red-500 bg-red-100 text-red-800 ring-2 ring-red-200' : 'border-transparent text-red-400 hover:text-red-600 hover:bg-red-50'}`}
-                                        >
-                                            멤버십 강제 종료
-                                        </button>
+                                            {/* 납부일 입력 (특별휴식 제외 모두 표시) */}
+                                            {selectedAction !== 'special_rest' && (
+                                                <div className="mb-6 flex flex-col gap-2">
+                                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">{selectedAction === 'rest' ? '휴식비 결제 / 납부 일자' : '결제 / 납부 일자'}</label>
+                                                    <input 
+                                                        type="date" 
+                                                        className="p-4 bg-slate-50 rounded-2xl font-black text-slate-700 outline-none border-2 border-transparent focus:border-blue-300 w-full shadow-inner"
+                                                        value={paymentDateInput}
+                                                        onChange={(e) => setPaymentDateInput(e.target.value)}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* 장기 회원 시작 시 만료일 자동 계산 안내 뷰 */}
+                                            {(selectedAction === 'start_half' || selectedAction === 'start_full') && (
+                                                <div className="mb-6 p-4 bg-slate-800 text-white rounded-2xl text-center">
+                                                    <p className="text-[10px] font-bold opacity-70 mb-1">멤버십 예상 만료일</p>
+                                                    <p className="text-xl font-black text-blue-300">{computedEndDate}</p>
+                                                </div>
+                                            )}
+
+                                            {/* 장기 회원이 일반 휴식을 신청할 때 안내 문구 */}
+                                            {(selectedAction === 'rest' && isLongTerm) && (
+                                                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl text-center">
+                                                    <p className="text-xs font-bold text-yellow-700 mb-1">만료일이 1개월 연장되고 잔여 휴식이 차감됩니다.</p>
+                                                    <p className="text-sm font-black text-yellow-800">잔여 휴식: {membershipInfo.remainingRest}회 → <span className="text-red-500">{Math.max(0, membershipInfo.remainingRest - 1)}회</span></p>
+                                                </div>
+                                            )}
+
+                                            {/* 장기 회원이 특별 휴식을 신청할 때 안내 문구 */}
+                                            {(selectedAction === 'special_rest' && isLongTerm) && (
+                                                <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-2xl text-center">
+                                                    <p className="text-xs font-bold text-indigo-700 mb-1">만료일이 1개월 연장되며, <b className="text-indigo-900">잔여 휴식은 차감되지 않습니다.</b></p>
+                                                    <p className="text-sm font-black text-indigo-800">잔여 휴식: {membershipInfo.remainingRest}회 (유지)</p>
+                                                </div>
+                                            )}
+
+                                            <div className="flex gap-3">
+                                                <button onClick={() => setActionStep('main')} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all outline-none">이전</button>
+                                                <button 
+                                                    onClick={() => processActionImmediate(selectedAction)} 
+                                                    disabled={selectedAction === 'special_rest' && !specialRestReason.trim()}
+                                                    className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl shadow-blue-200 active:scale-95 transition-all outline-none disabled:opacity-50"
+                                                >
+                                                    확 인
+                                                </button>
+                                            </div>
+                                        </div>
                                     )}
-
-                                    <div className="h-px bg-slate-100 my-2"></div>
-                                    <button 
-                                        onClick={() => handleActionSelect('clear')} 
-                                        className={`w-full py-3 rounded-2xl font-bold transition-all text-xs border-2 ${selectedAction === 'clear' ? 'border-slate-500 bg-slate-100 text-slate-800 ring-2 ring-slate-200' : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
-                                    >
-                                        미납 상태로 초기화
-                                    </button>
-                                </div>
-
-                                <div className="flex gap-3 mt-8">
-                                    <button onClick={() => setSelectedMonthlyMember(null)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all outline-none">취소</button>
-                                    <button onClick={handleConfirmMonthlyChanges} className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl shadow-blue-200 active:scale-95 transition-all outline-none">확인 (저장)</button>
                                 </div>
                             </div>
-                        </div>
                         );
                     })()}
 
@@ -2754,7 +2699,6 @@
                                 onClick={e => e.stopPropagation()}
                             >
                                 {capturedImage ? (
-                                    // --- 캡쳐 완료된 이미지 보여주기 모드 ---
                                     <div className="flex flex-col items-center">
                                         <div className="bg-slate-100 p-4 rounded-t-[40px] w-full text-center border-b border-slate-200">
                                             <p className="text-sm font-black text-slate-800">📸 이미지 생성 완료!</p>
@@ -2769,16 +2713,13 @@
                                         </div>
                                     </div>
                                 ) : (
-                                    // --- 기존 명단 HTML 렌더링 영역 (캡쳐 대상) ---
                                     <>
                                         <div id="capture-area" className="bg-white flex flex-col w-full rounded-[40px] overflow-hidden">
-                                            {/* 캡쳐 영역 헤더 */}
                                             <div className={`p-6 bg-slate-900 text-white text-center ${isCapturing ? '' : ''}`}>
                                                 <h3 className="text-xl font-black mb-1">{listModalData.title}</h3>
                                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total {listModalData.count} Members</p>
                                             </div>
                                             
-                                            {/* 명단 리스트 (스크롤) */}
                                             <div className={`p-6 bg-white flex-1 ${isCapturing ? '' : 'overflow-y-auto custom-scrollbar'}`}>
                                                 <div className="flex flex-col space-y-1">
                                                     {listModalData.items.map((item, idx) => (
@@ -2799,7 +2740,6 @@
                                                         </div>
                                                     ))}
                                                 </div>
-                                                {/* 캡쳐 이미지에만 표시되는 워터마크 */}
                                                 {isCapturing && (
                                                     <div className="mt-8 text-center text-slate-300 font-black text-[9px] uppercase tracking-widest">
                                                         OTP FC Attendance System
@@ -2808,7 +2748,6 @@
                                             </div>
                                         </div>
 
-                                        {/* 하단 버튼 (캡쳐 중일 때는 이미지에 안 보이도록 숨김) */}
                                         {!isCapturing && (
                                             <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2 rounded-b-[40px]">
                                                 <button 
@@ -2838,7 +2777,6 @@
                             </div>
                         </div>
                     )}
-
                 </div>
             );
         }
