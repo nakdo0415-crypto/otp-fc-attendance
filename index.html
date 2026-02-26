@@ -418,11 +418,20 @@
 
             const activeParticipantsSorted = useMemo(() => [...activeParticipants].sort((a,b) => a.name.localeCompare(b.name)), [activeParticipants]);
 
+            // 실시간으로 시간을 체크하도록 타이머 추가
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 10000); // 10초마다 현재 시간 업데이트
+                return () => clearInterval(timer);
+            }, []);
+
+            // 아이폰(사파리)에서도 에러나지 않도록 시간 파싱 로직 안정화
             const isMeetingOver = useMemo(() => {
-                const now = new Date();
-                const meetingEndTime = new Date(`${meetingTimes.date}T${meetingTimes.end}`);
-                return now >= meetingEndTime;
-            }, [meetingTimes]);
+                if (!meetingTimes.date || !meetingTimes.end) return false;
+                const [y, m, d] = meetingTimes.date.split('-');
+                const [hr, min] = meetingTimes.end.split(':');
+                const meetingEndTime = new Date(y, m - 1, d, hr, min, 0);
+                return currentTime >= meetingEndTime;
+            }, [meetingTimes, currentTime]);
 
             const sortedHistoryRecords = useMemo(() => {
                 if (!selectedHistoryDetail || !selectedHistoryDetail.records) return [];
@@ -643,7 +652,12 @@
                 }
 
                 const now = new Date();
-                const meetingStart = new Date(`${participant.date}T${meetingTimes.start}`);
+                
+                // 아이폰(사파리) 시간 파싱 오류 방지 처리
+                const [sy, sm, sd] = participant.date.split('-');
+                const [shr, smin] = meetingTimes.start.split(':');
+                const meetingStart = new Date(sy, sm - 1, sd, shr, smin, 0);
+                
                 const allowFrom = new Date(meetingStart.getTime() - 60 * 60 * 1000); 
                 const allowFromStr = allowFrom.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
                 
