@@ -255,7 +255,7 @@
         const calculateEndDate = (startMonthStr, durationMonths) => {
             if (!startMonthStr) return '';
             const [y, m] = startMonthStr.split('-').map(Number);
-            const end = new Date(y, m - 1 + durationMonths + 1, 0); // 달의 마지막 날
+            const end = new Date(y, m - 1 + durationMonths + 1, 0); 
             return formatLocalDate(end);
         };
 
@@ -342,7 +342,6 @@
             const [monthlyReasons, setMonthlyReasons] = useState({}); 
             const [monthlyPaymentDates, setMonthlyPaymentDates] = useState({}); 
             
-            // [NEW] 월별 상태 모달 폼 상태
             const [actionStep, setActionStep] = useState('main'); 
             const [selectedAction, setSelectedAction] = useState(null); 
             const [paymentDateInput, setPaymentDateInput] = useState(''); 
@@ -420,13 +419,11 @@
 
             const activeParticipantsSorted = useMemo(() => [...activeParticipants].sort((a,b) => a.name.localeCompare(b.name)), [activeParticipants]);
 
-            // 실시간으로 시간을 체크하도록 타이머 추가
             useEffect(() => {
-                const timer = setInterval(() => setCurrentTime(new Date()), 10000); // 10초마다 현재 시간 업데이트
+                const timer = setInterval(() => setCurrentTime(new Date()), 10000); 
                 return () => clearInterval(timer);
             }, []);
 
-            // 아이폰(사파리)에서도 에러나지 않도록 시간 파싱 로직 안정화
             const isMeetingOver = useMemo(() => {
                 if (!meetingTimes.date || !meetingTimes.end) return false;
                 const [y, m, d] = meetingTimes.date.split('-');
@@ -655,7 +652,6 @@
 
                 const now = new Date();
                 
-                // 아이폰(사파리) 시간 파싱 오류 방지 처리
                 const [sy, sm, sd] = participant.date.split('-');
                 const [shr, smin] = meetingTimes.start.split(':');
                 const meetingStart = new Date(sy, sm - 1, sd, shr, smin, 0);
@@ -915,6 +911,8 @@
                     setPaymentDateInput((new Date(today - offset)).toISOString().split('T')[0]);
                 }
                 setSpecialRestReason(monthlyReasons[m.id] || '');
+                setTempRestCount(m.totalRestMonths || 0);
+                setManualEndDate(m.membershipEndDate || '');
             };
 
             const handleActionClick = (actionType) => {
@@ -1360,17 +1358,6 @@
                 setCapturedImage(null);
                 setResigningMember(null);
             }, [view]);
-
-            useEffect(() => {
-                if (isMeetingOver && sessionData.length > 0) {
-                    const unchecked = sessionData.filter(p => p.date === meetingTimes.date && !p.checkedIn && p.status !== '노쇼');
-                    if (unchecked.length > 0) {
-                        const batch = db.batch();
-                        unchecked.forEach(p => batch.update(getSessionCol().doc(p.id), { status: '노쇼' }));
-                        batch.commit().catch(err => console.error(err));
-                    }
-                }
-            }, [isMeetingOver, sessionData, meetingTimes.date]);
 
             return (
                 <div className="min-h-screen pb-40 text-slate-900">
@@ -2460,6 +2447,339 @@
                         >
                             <Icon.Unlock size={24} />
                         </button>
+                    )}
+
+                    {/* 월별 상태 관리 모달 (New Flow) */}
+                    {selectedMonthlyMember && (() => {
+                        const memberId = selectedMonthlyMember.id;
+                        const status = monthlyStatuses[memberId]; 
+                        const reason = monthlyReasons[memberId]; 
+                        const membershipInfo = getMembershipStatus(selectedMonthlyMember, targetMonth);
+                        const isGlobalSpecialRest = selectedMonthlyMember.isSpecialRest && targetMonth >= (selectedMonthlyMember.specialRestStartMonth || '0000-00');
+
+                        const isPaid = status === 'paid';
+                        const isRest = status === 'rest';
+                        const isLongTerm = membershipInfo && membershipInfo.active;
+
+                        let computedEndDate = '';
+                        if (selectedAction === 'start_half') {
+                            computedEndDate = calculateEndDate(targetMonth, 6);
+                        } else if (selectedAction === 'start_full') {
+                            computedEndDate = calculateEndDate(targetMonth, 12);
+                        }
+
+                        return (
+                            <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[8000] flex items-center justify-center p-4" onClick={() => setSelectedMonthlyMember(null)}>
+                                <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl animate-zoom-in max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
+                                    <div className="text-center mb-6">
+                                        <h3 className="text-2xl font-black text-slate-900">{selectedMonthlyMember.name} 님</h3>
+                                        <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">{targetMonth} 납부 상태 관리</p>
+                                    </div>
+
+                                    {/* Step 1: Main Status or Cancellation */}
+                                    {actionStep === 'main' && (
+                                        <div className="animate-fade-in space-y-4 text-left">
+                                            
+                                            {/* Special Rest (Global) */}
+                                            {isGlobalSpecialRest && (
+                                                <div className="bg-indigo-50 p-6 rounded-[24px] border border-indigo-200 text-center mb-6">
+                                                    <div className="w-12 h-12 bg-indigo-500 text-white rounded-full flex items-center justify-center mx-auto mb-3"><Icon.AlertCircle size={24}/></div>
+                                                    <h4 className="font-black text-indigo-700 text-lg mb-1">특별 휴식 적용중</h4>
+                                                    <p className="text-xs text-indigo-600 font-bold mb-1">사유: {selectedMonthlyMember.specialRestReason}</p>
+                                                    <p className="text-xs text-indigo-600 font-bold mb-6">시작월: {selectedMonthlyMember.specialRestStartMonth}</p>
+                                                    <button onClick={() => processActionImmediate('cancel_special_rest')} className="w-full py-4 bg-white border-2 border-indigo-200 text-indigo-600 rounded-2xl font-black active:scale-95 transition-all text-sm shadow-sm hover:bg-indigo-50 flex items-center justify-center gap-2"><Icon.RotateCcw size={16}/>특별 휴식 해제 (복귀)</button>
+                                                    {isLongTerm && (
+                                                        <p className="text-[10px] text-indigo-500 font-bold mt-3">※ 해제 시 휴식한 개월 수만큼 만료일이 자동 연장됩니다.</p>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Paid Status */}
+                                            {(!isGlobalSpecialRest && isPaid) && (
+                                                <div className="bg-green-50 p-6 rounded-[24px] border border-green-200 text-center mb-6">
+                                                    <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-3"><Icon.CheckCircle size={24}/></div>
+                                                    <h4 className="font-black text-green-700 text-lg mb-1">월납 결제 완료</h4>
+                                                    
+                                                    <div className="flex items-center justify-center gap-2 mb-6 mt-3">
+                                                        <span className="text-xs text-green-700 font-bold">납부일:</span>
+                                                        <input type="date" value={paymentDateInput} onChange={e => setPaymentDateInput(e.target.value)} className="p-1.5 rounded-lg border border-green-200 text-xs font-bold text-green-800 outline-none w-28 bg-white" />
+                                                        <button onClick={() => processActionImmediate('update_payment_date')} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-black shadow-sm active:scale-95 transition-all">수정</button>
+                                                    </div>
+
+                                                    <button onClick={() => processActionImmediate('clear')} className="w-full py-4 bg-white border-2 border-red-200 text-red-500 rounded-2xl font-black active:scale-95 transition-all text-sm shadow-sm hover:bg-red-50 flex items-center justify-center gap-2"><Icon.RotateCcw size={16}/>납부 취소 (초기화)</button>
+                                                </div>
+                                            )}
+
+                                            {/* Rest Status (Legacy/Regular) */}
+                                            {(!isGlobalSpecialRest && isRest) && (
+                                                <div className={`${reason ? 'bg-indigo-50 border-indigo-200' : 'bg-yellow-50 border-yellow-200'} p-6 rounded-[24px] border text-center mb-6`}>
+                                                    <div className={`w-12 h-12 ${reason ? 'bg-indigo-500' : 'bg-yellow-400'} text-white rounded-full flex items-center justify-center mx-auto mb-3`}>
+                                                        {reason ? <Icon.AlertCircle size={24}/> : <Icon.Coffee size={24}/>}
+                                                    </div>
+                                                    <h4 className={`font-black ${reason ? 'text-indigo-700' : 'text-yellow-700'} text-lg mb-1`}>{reason ? '특별 휴식' : '휴식'} 적용됨</h4>
+                                                    
+                                                    {reason && <p className="text-xs text-indigo-600 font-bold mb-1 mt-2">사유: {reason}</p>}
+                                                    
+                                                    {!reason && (
+                                                        <div className="flex items-center justify-center gap-2 mb-2 mt-3">
+                                                            <span className="text-xs text-yellow-700 font-bold">납부일:</span>
+                                                            <input type="date" value={paymentDateInput} onChange={e => setPaymentDateInput(e.target.value)} className="p-1.5 rounded-lg border border-yellow-200 text-xs font-bold text-yellow-800 outline-none w-28 bg-white" />
+                                                            <button onClick={() => processActionImmediate('update_payment_date')} className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg text-xs font-black shadow-sm active:scale-95 transition-all">수정</button>
+                                                        </div>
+                                                    )}
+
+                                                    {isLongTerm && (
+                                                        <p className={`text-xs ${reason ? 'text-indigo-600' : 'text-yellow-600'} font-bold mt-4 mb-2`}>
+                                                            {reason ? '※ 특별휴식 (잔여 휴식 횟수 차감 없음)' : '※ 잔여 휴식 횟수 1회 차감됨'}
+                                                        </p>
+                                                    )}
+                                                    <div className="mt-6">
+                                                        <button onClick={() => processActionImmediate('cancel_rest')} className="w-full py-4 bg-white border-2 border-red-200 text-red-500 rounded-2xl font-black active:scale-95 transition-all text-sm shadow-sm hover:bg-red-50 flex items-center justify-center gap-2"><Icon.RotateCcw size={16}/>{reason ? '특별 ' : ''}휴식 취소 (복귀)</button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Long-term Membership Active Edit Form */}
+                                            {(!isGlobalSpecialRest && isLongTerm && !isPaid && !isRest) && (
+                                                <div className="bg-blue-50 p-6 rounded-[24px] border border-blue-200 text-center mb-6">
+                                                    <div className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-3"><Icon.Bookmark size={24}/></div>
+                                                    <h4 className="font-black text-blue-700 text-lg mb-1">{membershipInfo.type} 멤버십 적용중</h4>
+                                                    <p className="text-xs text-blue-600 font-bold mb-4">잔여 휴식: {membershipInfo.remainingRest}회</p>
+                                                    
+                                                    <div className="flex flex-col gap-3 bg-white p-4 rounded-xl border border-blue-100 mb-6 text-left">
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">결제 / 납부일</label>
+                                                            <input type="date" value={paymentDateInput} onChange={e => setPaymentDateInput(e.target.value)} className="p-2.5 rounded-lg border border-slate-200 text-xs font-bold focus:border-blue-500 outline-none w-full" />
+                                                        </div>
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">만료일 (수동 변경 가능)</label>
+                                                            <input type="date" value={manualEndDate} onChange={e => setManualEndDate(e.target.value)} className="p-2.5 rounded-lg border border-slate-200 text-xs font-bold focus:border-blue-500 outline-none w-full" />
+                                                        </div>
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">기사용 휴식 횟수</label>
+                                                            <div className="flex items-center justify-between p-2 rounded-lg border border-slate-200 bg-slate-50">
+                                                                <span className="text-xs font-bold text-slate-600 pl-1">
+                                                                    사용: <span className="text-blue-600 font-black">{tempRestCount}</span>회 <span className="opacity-50 mx-1">|</span> 잔여: {(selectedMonthlyMember.membershipType === 'half_year' ? 3 : 6) - tempRestCount}회
+                                                                </span>
+                                                                <div className="flex gap-1">
+                                                                    <button onClick={() => setTempRestCount(Math.max(0, tempRestCount - 1))} className="w-7 h-7 rounded bg-white border border-slate-200 text-slate-600 font-black hover:bg-slate-100">-</button>
+                                                                    <button onClick={() => setTempRestCount(tempRestCount + 1)} className="w-7 h-7 rounded bg-white border border-slate-200 text-slate-600 font-black hover:bg-slate-100">+</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <button onClick={() => processActionImmediate('update_longterm_info')} className="w-full mt-2 py-3 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-xl text-xs font-black transition-all active:scale-95 flex items-center justify-center gap-1.5"><Icon.Save size={14}/> 변경사항 저장</button>
+                                                    </div>
+                                                    
+                                                    <div className="space-y-3">
+                                                        <button onClick={() => handleActionClick('rest')} className="w-full py-4 bg-white border-2 border-yellow-200 text-yellow-600 rounded-2xl font-black active:scale-95 transition-all text-sm shadow-sm hover:bg-yellow-50 flex justify-center gap-2 items-center"><Icon.Coffee size={18}/> 이번 달 휴식 사용</button>
+                                                        <button onClick={() => handleActionClick('special_rest')} className="w-full py-4 bg-white border-2 border-indigo-200 text-indigo-600 rounded-2xl font-black active:scale-95 transition-all text-sm shadow-sm hover:bg-indigo-50 flex justify-center gap-2 items-center"><Icon.AlertCircle size={18}/> 특별 휴식 처리</button>
+                                                        <div className="pt-4 mt-2 border-t border-blue-200/50">
+                                                            <button onClick={() => showConfirm("멤버십 강제 종료", "정말로 멤버십을 강제 종료하시겠습니까?", () => processActionImmediate('end_membership'))} className="w-full py-3 text-red-400 font-bold text-xs hover:text-red-600 transition-all underline underline-offset-4">멤버십 강제 종료</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Unpaid (No active long-term or monthly payment) */}
+                                            {(!isGlobalSpecialRest && !isLongTerm && !isPaid && !isRest) && (
+                                                <div className="space-y-3">
+                                                    <button onClick={() => handleActionClick('monthly_paid')} className="w-full py-4 bg-white border-2 border-green-200 text-green-700 rounded-2xl font-black shadow-sm active:scale-95 transition-all hover:bg-green-50 flex items-center justify-center gap-2 text-sm">
+                                                        <Icon.CheckCircle size={18}/> 월납 결제
+                                                    </button>
+                                                    <button onClick={() => handleActionClick('start_half')} className="w-full py-4 bg-white border-2 border-blue-200 text-blue-700 rounded-2xl font-black shadow-sm active:scale-95 transition-all hover:bg-blue-50 flex items-center justify-center gap-2 text-sm">
+                                                        <Icon.Calendar size={18}/> 6개월 (반년납) 시작
+                                                    </button>
+                                                    <button onClick={() => handleActionClick('start_full')} className="w-full py-4 bg-white border-2 border-purple-200 text-purple-700 rounded-2xl font-black shadow-sm active:scale-95 transition-all hover:bg-purple-50 flex items-center justify-center gap-2 text-sm">
+                                                        <Icon.Calendar size={18}/> 12개월 (1년납) 시작
+                                                    </button>
+                                                    <div className="h-px bg-slate-100 my-1"></div>
+                                                    <button onClick={() => handleActionClick('rest')} className="w-full py-4 bg-white border-2 border-yellow-200 text-yellow-600 rounded-2xl font-black shadow-sm active:scale-95 transition-all hover:bg-yellow-50 flex items-center justify-center gap-2 text-sm">
+                                                        <Icon.Coffee size={18}/> 이번 달 휴식비 결제
+                                                    </button>
+                                                    <button onClick={() => handleActionClick('special_rest')} className="w-full py-4 bg-white border-2 border-indigo-200 text-indigo-600 rounded-2xl font-black shadow-sm active:scale-95 transition-all hover:bg-indigo-50 flex items-center justify-center gap-2 text-sm">
+                                                        <Icon.AlertCircle size={18}/> 특별 휴식 처리
+                                                    </button>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="mt-4">
+                                                <button onClick={() => setSelectedMonthlyMember(null)} className="w-full py-4 text-slate-400 font-bold text-sm bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all active:scale-95">닫기</button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Step 2: Form */}
+                                    {actionStep === 'form' && (
+                                        <div className="animate-fade-in text-left">
+                                            <div className="mb-6 pb-4 border-b border-slate-100 text-center">
+                                                <h4 className="text-lg font-black text-slate-800">
+                                                    {selectedAction === 'monthly_paid' ? '월납 결제 진행' : 
+                                                     selectedAction === 'start_half' ? '반년납 시작 설정' : 
+                                                     selectedAction === 'start_full' ? '1년납 시작 설정' : 
+                                                     selectedAction === 'rest' ? '휴식 처리' : '특별 휴식 설정'}
+                                                </h4>
+                                            </div>
+
+                                            {/* 납부일 입력 (특별휴식 제외 모두 표시) */}
+                                            {selectedAction !== 'special_rest' && (
+                                                <div className="mb-6 flex flex-col gap-2">
+                                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">{selectedAction === 'rest' ? '휴식비 결제 / 납부 일자' : '결제 / 납부 일자'}</label>
+                                                    <input 
+                                                        type="date" 
+                                                        className="p-4 bg-slate-50 rounded-2xl font-black text-slate-700 outline-none border-2 border-transparent focus:border-blue-300 w-full shadow-inner"
+                                                        value={paymentDateInput}
+                                                        onChange={(e) => setPaymentDateInput(e.target.value)}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* 장기 회원 시작 시 만료일 자동 계산 안내 뷰 */}
+                                            {(selectedAction === 'start_half' || selectedAction === 'start_full') && (
+                                                <div className="mb-6 flex flex-col gap-2">
+                                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">자동 계산된 만료일</label>
+                                                    <input 
+                                                        type="date" 
+                                                        className="p-4 bg-blue-50 rounded-2xl font-black text-blue-700 outline-none border-2 border-blue-200 w-full"
+                                                        value={manualEndDate}
+                                                        onChange={(e) => setManualEndDate(e.target.value)}
+                                                    />
+                                                    <p className="text-[10px] text-slate-400 ml-1 font-bold">※ 현재 달 기준 {selectedAction === 'start_half' ? '6개월' : '12개월'} 뒤 마지막 날짜로 세팅됩니다. (수정 가능)</p>
+                                                </div>
+                                            )}
+
+                                            {/* 특별 휴식 사유 입력 */}
+                                            {selectedAction === 'special_rest' && (
+                                                <div className="mb-6 flex flex-col gap-2">
+                                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">특별 휴식 사유</label>
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="예: 육아, 부상 등"
+                                                        className="p-4 bg-slate-50 rounded-2xl font-black text-slate-700 outline-none border-2 border-transparent focus:border-indigo-300 w-full shadow-inner"
+                                                        value={specialRestReason}
+                                                        onChange={(e) => setSpecialRestReason(e.target.value)}
+                                                        autoFocus
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* 장기 회원이 일반 휴식을 신청할 때 안내 문구 */}
+                                            {(selectedAction === 'rest' && isLongTerm) && (
+                                                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl text-center">
+                                                    <p className="text-xs font-bold text-yellow-700 mb-1">만료일이 1개월 연장되고 잔여 휴식이 차감됩니다.</p>
+                                                    <p className="text-sm font-black text-yellow-800">잔여 휴식: {membershipInfo.remainingRest}회 → <span className="text-red-500">{Math.max(0, membershipInfo.remainingRest - 1)}회</span></p>
+                                                </div>
+                                            )}
+
+                                            {/* 장기 회원이 특별 휴식을 신청할 때 안내 문구 */}
+                                            {(selectedAction === 'special_rest' && isLongTerm) && (
+                                                <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-2xl text-center">
+                                                    <p className="text-xs font-bold text-indigo-700 mb-1">만료일이 1개월 연장되며, <b className="text-indigo-900">잔여 휴식은 차감되지 않습니다.</b></p>
+                                                    <p className="text-sm font-black text-indigo-800">잔여 휴식: {membershipInfo.remainingRest}회 (유지)</p>
+                                                </div>
+                                            )}
+
+                                            <div className="flex gap-3">
+                                                <button onClick={() => setActionStep('main')} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-3xl font-black shadow-none active:scale-95 transition-all outline-none">이전</button>
+                                                <button 
+                                                    onClick={() => processActionImmediate(selectedAction)} 
+                                                    disabled={selectedAction === 'special_rest' && !specialRestReason.trim()}
+                                                    className="flex-1 py-5 bg-blue-600 text-white rounded-3xl font-black shadow-xl shadow-blue-200 active:scale-95 transition-all outline-none disabled:opacity-50"
+                                                >
+                                                    확 인
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* [NEW] 명단 확인 및 캡쳐용 모달 */}
+                    {listModalData && (
+                        <div className={`fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[8000] flex justify-center p-4 ${isCapturing ? 'items-start overflow-y-auto py-10' : 'items-center'}`} onClick={() => { if(!isCapturing) { setListModalData(null); setCapturedImage(null); } }}>
+                            <div 
+                                className={`bg-white w-full max-w-sm shadow-2xl flex flex-col ${isCapturing || capturedImage ? 'rounded-[40px] h-auto' : 'rounded-[40px] overflow-hidden max-h-[80vh] animate-zoom-in'}`} 
+                                onClick={e => e.stopPropagation()}
+                            >
+                                {capturedImage ? (
+                                    <div className="flex flex-col items-center">
+                                        <div className="bg-slate-100 p-4 rounded-t-[40px] w-full text-center border-b border-slate-200">
+                                            <p className="text-sm font-black text-slate-800">📸 이미지 생성 완료!</p>
+                                            <p className="text-[10px] text-slate-500 mt-1">모바일은 아래 이미지를 <b>길게 눌러 저장</b>하세요.</p>
+                                        </div>
+                                        <div className="p-4 w-full overflow-y-auto max-h-[60vh] custom-scrollbar bg-slate-50 flex justify-center">
+                                            <img src={capturedImage} alt="Captured List" className="w-full rounded-2xl shadow-sm border border-slate-200" />
+                                        </div>
+                                        <div className="p-4 bg-white w-full border-t border-slate-100 flex gap-2 rounded-b-[40px]">
+                                            <button onClick={() => setCapturedImage(null)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black shadow-sm active:scale-95 transition-all text-xs">다시 보기</button>
+                                            <button onClick={handleDownloadImage} className="flex-[2] py-3 bg-blue-600 text-white rounded-2xl font-black shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-1.5"><Icon.Save size={14}/> PC 다운로드</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div id="capture-area" className="bg-white flex flex-col w-full rounded-[40px] overflow-hidden">
+                                            <div className={`p-6 bg-slate-900 text-white text-center ${isCapturing ? '' : ''}`}>
+                                                <h3 className="text-xl font-black mb-1">{listModalData.title}</h3>
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total {listModalData.count} Members</p>
+                                            </div>
+                                            
+                                            <div className={`p-6 bg-white flex-1 ${isCapturing ? '' : 'overflow-y-auto custom-scrollbar'}`}>
+                                                <div className="flex flex-col space-y-1">
+                                                    {listModalData.items.map((item, idx) => (
+                                                        <div key={item.id || idx} className="flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-black text-slate-800">{item.name}</span>
+                                                                {item.tag && (
+                                                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold border border-slate-200">
+                                                                        {item.tag}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {item.details && (
+                                                                <span className="text-[10px] text-slate-500 font-bold text-right">
+                                                                    {item.details}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                {isCapturing && (
+                                                    <div className="mt-8 text-center text-slate-300 font-black text-[9px] uppercase tracking-widest">
+                                                        OTP FC Attendance System
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {!isCapturing && (
+                                            <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2 rounded-b-[40px]">
+                                                <button 
+                                                    onClick={handleCaptureImage} 
+                                                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-md active:scale-95 transition-all text-sm flex items-center justify-center gap-2"
+                                                >
+                                                    <Icon.Save size={16}/> 이 화면을 이미지로 저장
+                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => { setListModalData(null); setCapturedImage(null); }} 
+                                                        className="flex-1 py-3 bg-white border border-slate-200 text-slate-500 rounded-2xl font-black shadow-sm active:scale-95 transition-all text-xs"
+                                                    >
+                                                        닫기
+                                                    </button>
+                                                    <button 
+                                                        onClick={handleCopyFromModal} 
+                                                        className="flex-1 py-3 bg-slate-800 text-white rounded-2xl font-black shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-1.5"
+                                                    >
+                                                        <Icon.FileSpreadsheet size={14}/> 텍스트 복사
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
                     )}
                 </div>
             );
